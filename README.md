@@ -26,6 +26,7 @@
 - **52 marketing tools** via Citedy MCP server
 - **Instant file publishing** — upload any file to [here.now](https://here.now), get a shareable link, host static sites, use your own domain
 - **14 LLM providers** — OpenAI (GPT-5.4, Codex), Anthropic, xAI, Aliyun (Qwen3.5), Z.AI (GLM-4.7), Moonshot (Kimi K2.5), Ollama, llama.cpp, MLX, and more. Add custom providers via API
+- **LLM auto-fallback** — if the primary model fails (timeout, rate limit, auth error), automatically switches to the next model in a configurable fallback chain
 - **Multi-channel** — Telegram, Discord, DingTalk, Feishu, QQ, Console
 - **Web UI** — dashboard, per-persona chat tabs, skills, models, and channels from the browser
 
@@ -70,6 +71,7 @@
 | Self-Healing Skills | Broken skill YAML? Auto-fixed by your LLM — no manual intervention |
 | Security Scanning | Every skill gets a security score (0-100) from 208-pattern static analysis |
 | Security Badges | Visual badges on each skill card: pattern scan, LLM audit, auto-heal status |
+| LLM Auto-Fallback | Primary model down? Auto-switch to backup — configurable chain, timeout, priority |
 | File Publishing | Instantly publish any file to the web via [here.now](https://here.now) — share reports, host static sites, publish on your own domain |
 | AgentHub Tasks | Browse, join, and complete distributed tasks from [Clawsy AgentHub](https://www.clawsy.app) ([GitHub](https://github.com/nttylock/agenthub)) — earn karma for quality work |
 
