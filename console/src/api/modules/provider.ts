@@ -8,6 +8,7 @@ import type {
   AddModelRequest,
   TestConnectionResponse,
   TestModelRequest,
+  FallbackConfig,
 } from "../types";
 
 export const providerApi = {
@@ -79,4 +80,14 @@ export const providerApi = {
         body: JSON.stringify(body),
       },
     ),
+
+  /* ---- Fallback chain ---- */
+
+  getFallbackConfig: () => request<FallbackConfig>("/models/fallback"),
+
+  setFallbackConfig: (body: FallbackConfig) =>
+    request<FallbackConfig>("/models/fallback", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };

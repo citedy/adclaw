@@ -97,4 +97,4 @@ The goal isn't more agents. It's agents that actually get things done without yo
 
 ---
 
-*AdClaw is an open-source AI agent platform for marketing teams. Try it at [github.com/Citedy/adclaw](https://github.com/Citedy/adclaw).*
+*AdClaw is an open-source AI agent platform for marketing teams. Try it at [github.com/nttylock/AdClaw](https://github.com/nttylock/AdClaw).*

@@ -105,6 +105,19 @@ export interface OllamaDownloadTaskResponse {
   result: OllamaModelResponse | null;
 }
 
+/* ---- Fallback chain ---- */
+
+export interface FallbackSlot {
+  provider_id: string;
+  model: string;
+}
+
+export interface FallbackConfig {
+  enabled: boolean;
+  timeout_seconds: number;
+  chain: FallbackSlot[];
+}
+
 /* ---- Test Connection ---- */
 
 export interface TestConnectionResponse {

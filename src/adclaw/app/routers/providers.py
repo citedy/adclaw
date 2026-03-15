@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 
 from ...providers import (
     ActiveModelsInfo,
+    FallbackConfig,
+    FallbackSlot,
     ModelInfo,
     ProviderDefinition,
     ProviderInfo,
@@ -17,12 +19,14 @@ from ...providers import (
     add_model,
     create_custom_provider,
     delete_custom_provider,
+    get_fallback_config,
     get_provider,
     list_providers,
     load_providers_json,
     mask_api_key,
     remove_model,
     set_active_llm,
+    set_fallback_config,
     test_model_connection,
     test_provider_connection,
     update_provider_settings,
@@ -330,3 +334,92 @@ async def set_active_model(
 
     data = set_active_llm(body.provider_id, body.model)
     return ActiveModelsInfo(active_llm=data.active_llm)
+
+
+# -- Fallback chain endpoints --
+
+
+class FallbackSlotRequest(BaseModel):
+    provider_id: str = Field(..., description="Provider to fall back to")
+    model: str = Field(..., description="Model identifier")
+
+
+class FallbackConfigRequest(BaseModel):
+    enabled: bool = Field(default=False)
+    timeout_seconds: int = Field(default=30)
+    chain: List[FallbackSlotRequest] = Field(default_factory=list)
+
+
+class FallbackConfigResponse(BaseModel):
+    enabled: bool
+    timeout_seconds: int
+    chain: List[FallbackSlotRequest]
+
+
+@router.get(
+    "/fallback",
+    response_model=FallbackConfigResponse,
+    summary="Get fallback chain config",
+)
+async def get_fallback() -> FallbackConfigResponse:
+    cfg = get_fallback_config()
+    return FallbackConfigResponse(
+        enabled=cfg.enabled,
+        timeout_seconds=cfg.timeout_seconds,
+        chain=[
+            FallbackSlotRequest(provider_id=s.provider_id, model=s.model)
+            for s in cfg.chain
+        ],
+    )
+
+
+@router.put(
+    "/fallback",
+    response_model=FallbackConfigResponse,
+    summary="Update fallback chain config",
+)
+async def update_fallback(
+    body: FallbackConfigRequest = Body(...),
+) -> FallbackConfigResponse:
+    if body.timeout_seconds < 5:
+        raise HTTPException(
+            status_code=400,
+            detail="Timeout must be at least 5 seconds.",
+        )
+    if body.timeout_seconds > 300:
+        raise HTTPException(
+            status_code=400,
+            detail="Timeout must not exceed 300 seconds.",
+        )
+
+    # Validate that all providers in chain exist and are configured
+    for slot in body.chain:
+        provider = get_provider(slot.provider_id)
+        if provider is None:
+            raise HTTPException(
+                404,
+                detail=f"Provider '{slot.provider_id}' not found",
+            )
+        if not slot.model:
+            raise HTTPException(
+                400,
+                detail=f"Model is required for provider '{slot.provider_id}'",
+            )
+
+    fallback = FallbackConfig(
+        enabled=body.enabled,
+        timeout_seconds=body.timeout_seconds,
+        chain=[
+            FallbackSlot(provider_id=s.provider_id, model=s.model)
+            for s in body.chain
+        ],
+    )
+    set_fallback_config(fallback)
+    return FallbackConfigResponse(
+        enabled=fallback.enabled,
+        timeout_seconds=fallback.timeout_seconds,
+        chain=[
+            FallbackSlotRequest(provider_id=s.provider_id, model=s.model)
+            for s in fallback.chain
+        ],
+    )

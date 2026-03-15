@@ -149,6 +149,15 @@ class AgentRunner(Runner):
                 self._session_persona_map[request.session_id] = persona.id
                 session_id = f"{persona.id}::{session_id}"
 
+            # Load fallback config for timeout
+            from ...providers.store import get_fallback_config
+            fallback_cfg = get_fallback_config()
+            _timeout = (
+                fallback_cfg.timeout_seconds
+                if fallback_cfg.enabled
+                else None
+            )
+
             agent = AdClawAgent(
                 env_context=env_context,
                 mcp_clients=mcp_clients,
@@ -158,6 +167,7 @@ class AgentRunner(Runner):
                 max_input_length=max_input_length,
                 persona=persona,
                 team_summary=persona_mgr.get_team_summary() if persona_mgr.all_personas else "",
+                timeout_seconds=_timeout,
             )
             await agent.register_mcp_clients()
             agent.set_console_output_enabled(enabled=False)
@@ -201,47 +211,134 @@ class AgentRunner(Runner):
                 ):
                     yield msg, last
             except Exception as first_err:
-                # Only retry on specific LLM rejection errors (BadRequestError
-                # from openai SDK), not on arbitrary 400s or other exceptions.
-                from openai import BadRequestError as _OAIBadRequest
+                from openai import (
+                    APIConnectionError as _OAIConnErr,
+                    APITimeoutError as _OAITimeout,
+                    AuthenticationError as _OAIAuthErr,
+                    BadRequestError as _OAIBadRequest,
+                    RateLimitError as _OAIRateLimit,
+                )
 
-                if not isinstance(first_err, _OAIBadRequest):
+                # --- Original retry: stale-session BadRequestError ---
+                if isinstance(first_err, _OAIBadRequest):
+                    err_str = str(first_err).lower()
+                    if "invalid_parameter" in err_str:
+                        logger.warning(
+                            "LLM rejected request (likely stale session), "
+                            "clearing history and retrying: %s",
+                            first_err,
+                        )
+                        if hasattr(agent, "memory") and hasattr(
+                            agent.memory, "clear"
+                        ):
+                            agent.memory.clear()
+                        elif hasattr(agent, "memory") and hasattr(
+                            agent.memory, "content"
+                        ):
+                            agent.memory.content.clear()
+
+                        from agentscope.message import Msg
+                        reset_msg = Msg(
+                            name="system",
+                            role="assistant",
+                            content="⚠️ Session history was cleared due to a provider error. Continuing with fresh context.",
+                        )
+                        yield reset_msg, False
+
+                        async for msg, last in stream_printing_messages(
+                            agents=[agent],
+                            coroutine_task=agent(msgs),
+                        ):
+                            yield msg, last
+                        return  # done, no fallback needed
+
+                # --- Fallback chain logic ---
+                _fallback_errors = (
+                    _OAITimeout, _OAIRateLimit, _OAIAuthErr, _OAIConnErr,
+                )
+                if not isinstance(first_err, _fallback_errors):
                     raise
 
-                err_str = str(first_err).lower()
-                if "invalid_parameter" not in err_str:
+                from ...providers.store import (
+                    get_fallback_config,
+                    resolve_fallback_chain,
+                )
+                fallback_cfg = get_fallback_config()
+                if not fallback_cfg.enabled:
                     raise
 
+                resolved_chain = resolve_fallback_chain()
+                if not resolved_chain:
+                    raise
+
+                primary_model = (
+                    agent.model.model_name
+                    if hasattr(agent, "model")
+                    and hasattr(agent.model, "model_name")
+                    else "primary model"
+                )
+                err_type = type(first_err).__name__
                 logger.warning(
-                    "LLM rejected request (likely stale session), "
-                    "clearing history and retrying: %s",
-                    first_err,
+                    "Primary LLM (%s) failed with %s, "
+                    "trying fallback chain (%d candidates)",
+                    primary_model, err_type, len(resolved_chain),
                 )
-                # Clear the agent's conversation memory
-                if hasattr(agent, "memory") and hasattr(
-                    agent.memory, "clear"
-                ):
-                    agent.memory.clear()
-                elif hasattr(agent, "memory") and hasattr(
-                    agent.memory, "content"
-                ):
-                    agent.memory.content.clear()
 
-                # Notify user that session was reset
                 from agentscope.message import Msg
-                reset_msg = Msg(
-                    name="system",
-                    role="assistant",
-                    content="⚠️ Session history was cleared due to a provider error. Continuing with fresh context.",
-                )
-                yield reset_msg, False
 
-                # Retry with clean context
-                async for msg, last in stream_printing_messages(
-                    agents=[agent],
-                    coroutine_task=agent(msgs),
-                ):
-                    yield msg, last
+                for fb_cfg in resolved_chain:
+                    try:
+                        fb_model, fb_formatter = create_model_and_formatter(
+                            fb_cfg,
+                            timeout_seconds=fallback_cfg.timeout_seconds,
+                        )
+
+                        notify_msg = Msg(
+                            name="system",
+                            role="assistant",
+                            content=(
+                                f"⚠️ {primary_model} unavailable ({err_type}). "
+                                f"Switching to {fb_cfg.model}..."
+                            ),
+                        )
+                        yield notify_msg, False
+
+                        # Fallback agent is intentionally created without
+                        # session state: the primary model already failed mid-
+                        # request, so we start fresh with only the current msgs
+                        # to avoid stale-context issues.
+                        fb_agent = AdClawAgent(
+                            env_context=getattr(agent, "_env_context", None),
+                            mcp_clients=getattr(agent, "_mcp_clients", []),
+                            memory_manager=self.memory_manager,
+                            aom_manager=self._aom_manager,
+                            max_iters=max_iters,
+                            max_input_length=max_input_length,
+                            persona=getattr(agent, "_persona", None),
+                            team_summary=getattr(agent, "_team_summary", ""),
+                            model=fb_model,
+                            formatter=fb_formatter,
+                        )
+                        await fb_agent.register_mcp_clients()
+                        fb_agent.set_console_output_enabled(enabled=False)
+
+                        async for msg, last in stream_printing_messages(
+                            agents=[fb_agent],
+                            coroutine_task=fb_agent(msgs),
+                        ):
+                            yield msg, last
+                        return  # success
+                    except (
+                        _OAITimeout, _OAIRateLimit, _OAIAuthErr, _OAIConnErr,
+                    ) as fb_err:
+                        logger.warning(
+                            "Fallback model %s also failed: %s",
+                            fb_cfg.model, fb_err,
+                        )
+                        continue
+
+                # All fallbacks exhausted — re-raise original error
+                raise
 
         except asyncio.CancelledError:
             if agent is not None:

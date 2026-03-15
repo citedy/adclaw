@@ -8,6 +8,7 @@ import {
   ProviderCard,
   ModelsSection,
   CustomProviderModal,
+  FallbackSection,
 } from "./components";
 import { useTranslation } from "react-i18next";
 import type { ProviderInfo } from "../../../api/types/provider";
@@ -72,6 +73,9 @@ function ModelsPage() {
             activeModels={activeModels}
             onSaved={fetchAll}
           />
+
+          {/* ---- Fallback Section ---- */}
+          <FallbackSection providers={providers} />
 
           {/* ---- Providers Section (below) ---- */}
           <div className={styles.providersBlock}>

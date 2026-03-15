@@ -174,32 +174,27 @@ def _strip_top_level_message_name(
 
 def create_model_and_formatter(
     llm_cfg: Optional["ResolvedModelConfig"] = None,
+    timeout_seconds: Optional[int] = None,
 ) -> Tuple[ChatModelBase, FormatterBase]:
     """Factory method to create model and formatter instances.
-
-    This method handles both local and remote models, selecting the
-    appropriate chat model class and formatter based on configuration.
 
     Args:
         llm_cfg: Resolved model configuration. If None, will call
             get_active_llm_config() to fetch the active configuration.
+        timeout_seconds: Optional timeout for the OpenAI client.
+            If None, no explicit timeout is set (SDK default).
 
     Returns:
         Tuple of (model_instance, formatter_instance)
-
-    Example:
-        >>> model, formatter = create_model_and_formatter()
-        >>> # Use with custom config
-        >>> from adclaw.providers import get_active_llm_config
-        >>> custom_cfg = get_active_llm_config()
-        >>> model, formatter = create_model_and_formatter(custom_cfg)
     """
     # Fetch config if not provided
     if llm_cfg is None:
         llm_cfg = get_active_llm_config()
 
     # Create the model instance and determine chat model class
-    model, chat_model_class = _create_model_instance(llm_cfg)
+    model, chat_model_class = _create_model_instance(
+        llm_cfg, timeout_seconds=timeout_seconds,
+    )
 
     # Create the formatter based on chat_model_class
     formatter = _create_formatter_instance(chat_model_class)
@@ -209,11 +204,13 @@ def create_model_and_formatter(
 
 def _create_model_instance(
     llm_cfg: Optional["ResolvedModelConfig"],
+    timeout_seconds: Optional[int] = None,
 ) -> Tuple[ChatModelBase, Type[ChatModelBase]]:
     """Create a chat model instance and determine its class.
 
     Args:
         llm_cfg: Resolved model configuration
+        timeout_seconds: Optional timeout for the OpenAI client
 
     Returns:
         Tuple of (model_instance, chat_model_class)
@@ -232,7 +229,9 @@ def _create_model_instance(
     chat_model_class = _get_chat_model_class_from_provider()
 
     # Create remote model instance with configuration
-    model = _create_remote_model_instance(llm_cfg, chat_model_class)
+    model = _create_remote_model_instance(
+        llm_cfg, chat_model_class, timeout_seconds=timeout_seconds,
+    )
 
     return model, chat_model_class
 
@@ -265,12 +264,14 @@ def _get_chat_model_class_from_provider() -> Type[ChatModelBase]:
 def _create_remote_model_instance(
     llm_cfg: Optional["ResolvedModelConfig"],
     chat_model_class: Type[ChatModelBase],
+    timeout_seconds: Optional[int] = None,
 ) -> ChatModelBase:
     """Create a remote model instance with configuration.
 
     Args:
         llm_cfg: Resolved model configuration
         chat_model_class: Chat model class to instantiate
+        timeout_seconds: Optional timeout for the OpenAI client
 
     Returns:
         Configured chat model instance
@@ -289,12 +290,21 @@ def _create_remote_model_instance(
         api_key = os.getenv("DASHSCOPE_API_KEY", "")
         base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
+    # Build client_kwargs with optional timeout
+    client_kwargs: dict = {"base_url": base_url}
+    if timeout_seconds is not None:
+        import httpx
+
+        client_kwargs["timeout"] = httpx.Timeout(
+            float(timeout_seconds), connect=10.0,
+        )
+
     # Instantiate model
     model = chat_model_class(
         model_name,
         api_key=api_key,
         stream=True,
-        client_kwargs={"base_url": base_url},
+        client_kwargs=client_kwargs,
     )
 
     return model

@@ -76,6 +76,24 @@ class ModelSlotConfig(BaseModel):
     model: str = Field(default="")
 
 
+class FallbackSlot(BaseModel):
+    """One entry in the fallback chain."""
+
+    provider_id: str = Field(..., description="Provider to fall back to")
+    model: str = Field(..., description="Model identifier")
+
+
+class FallbackConfig(BaseModel):
+    """Fallback chain configuration."""
+
+    enabled: bool = Field(default=False)
+    timeout_seconds: int = Field(
+        default=30,
+        description="Timeout per LLM call before trying next in chain",
+    )
+    chain: List[FallbackSlot] = Field(default_factory=list)
+
+
 class ProvidersData(BaseModel):
     """Top-level structure of providers.json."""
 
@@ -84,6 +102,7 @@ class ProvidersData(BaseModel):
         default_factory=dict,
     )
     active_llm: ModelSlotConfig = Field(default_factory=ModelSlotConfig)
+    fallback: FallbackConfig = Field(default_factory=FallbackConfig)
 
     def get_credentials(self, provider_id: str) -> tuple[str, str]:
         """Return ``(base_url, api_key)`` for *provider_id*."""

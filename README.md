@@ -4,7 +4,7 @@
 
 **AI Marketing Agent Team powered by [Citedy](https://www.citedy.com)**
 
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/Citedy/adclaw)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/nttylock/AdClaw)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 
@@ -161,7 +161,7 @@ docker run -d --name adclaw --restart unless-stopped \
 ### Docker Compose
 
 ```bash
-git clone https://github.com/Citedy/adclaw.git
+git clone https://github.com/nttylock/AdClaw.git
 cd AdClaw
 cp .env.example .env  # edit with your keys
 docker compose up -d
@@ -211,14 +211,15 @@ Create a team of specialized AI agents, each with its own personality, LLM, skil
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CITEDY_API_KEY` | Citedy API key for MCP tools and skills | - |
 | `ADCLAW_ENABLED_CHANNELS` | Enabled messaging channels | `discord,dingtalk,feishu,qq,console,telegram` |
 | `ADCLAW_PORT` | Web UI port | `8088` |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token | - |
+| `CITEDY_API_KEY` | Citedy API key for MCP tools and skills | - |
 | `AGENTHUB_API_KEY` | Clawsy AgentHub API key for distributed tasks | - |
-| `TAVILY_API_KEY` | Tavily search API key | - |
-| `GITHUB_TOKEN` | GitHub token for skill hub | - |
+| `GITHUB_TOKEN` | GitHub token — raises API rate limit when installing skills from GitHub (60 → 5000 req/hr) | - |
 | `LOG_LEVEL` | Logging level | `INFO` |
+
+> **Skill-specific API keys** (Unosend, Google, Tavily, etc.) are configured per-skill in **Settings > Skills**. Each skill declares which env vars it needs.
 
 ---
 

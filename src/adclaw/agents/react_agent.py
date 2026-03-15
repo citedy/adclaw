@@ -35,6 +35,7 @@ from .tools import (
     get_current_time,
     read_file,
     send_file_to_user,
+    send_email,
     write_file,
     create_memory_search_tool,
 )
@@ -88,6 +89,9 @@ class AdClawAgent(ReActAgent):
         namesake_strategy: NamesakeStrategy = "skip",
         persona=None,
         team_summary: str = "",
+        model=None,
+        formatter=None,
+        timeout_seconds: Optional[int] = None,
     ):
         """Initialize AdClawAgent.
 
@@ -132,8 +136,15 @@ class AdClawAgent(ReActAgent):
         # Build system prompt
         sys_prompt = self._build_sys_prompt()
 
-        # Create model and formatter using factory method
-        model, formatter = create_model_and_formatter()
+        # Create model and formatter using factory method (unless injected)
+        if (model is None) != (formatter is None):
+            raise ValueError(
+                "model and formatter must both be provided or both be None",
+            )
+        if model is None:
+            model, formatter = create_model_and_formatter(
+                timeout_seconds=timeout_seconds,
+            )
 
         # Initialize parent ReActAgent
         super().__init__(
@@ -210,6 +221,10 @@ class AdClawAgent(ReActAgent):
         )
         toolkit.register_tool_function(
             send_file_to_user,
+            namesake_strategy=namesake_strategy,
+        )
+        toolkit.register_tool_function(
+            send_email,
             namesake_strategy=namesake_strategy,
         )
         toolkit.register_tool_function(

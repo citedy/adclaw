@@ -6,13 +6,15 @@ Set these in your `.env` file or pass with `-e` to `docker run`:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `CITEDY_API_KEY` | Yes | Your Citedy agent API key (`citedy_agent_...`) |
-| `TELEGRAM_BOT_TOKEN` | No | Telegram bot token from @BotFather |
 | `ADCLAW_ENABLED_CHANNELS` | No | Comma-separated list of channels. Default: `discord,dingtalk,feishu,qq,console,telegram` |
 | `ADCLAW_PORT` | No | Web UI port. Default: `8088` |
+| `TELEGRAM_BOT_TOKEN` | No | Telegram bot token from @BotFather |
+| `CITEDY_API_KEY` | No | Your Citedy agent API key (`citedy_agent_...`) |
+| `AGENTHUB_API_KEY` | No | Clawsy AgentHub API key for distributed tasks |
+| `GITHUB_TOKEN` | No | GitHub token — raises API rate limit when installing skills from GitHub (60 → 5000 req/hr) |
 | `LOG_LEVEL` | No | Logging level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. Default: `INFO` |
-| `GITHUB_TOKEN` | No | GitHub token for skill hub (avoids rate limits) |
-| `TAVILY_API_KEY` | No | Tavily search API key for web search skill |
+
+> **Skill-specific API keys** (Unosend, Google, Tavily, etc.) are configured per-skill in **Settings > Skills**. Each skill declares which env vars it needs.
 
 ## LLM Configuration
 

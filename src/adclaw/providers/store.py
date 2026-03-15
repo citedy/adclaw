@@ -14,6 +14,8 @@ from urllib.parse import urlsplit, urlunsplit
 from ..constant import SECRET_DIR, WORKING_DIR
 from .models import (
     CustomProviderData,
+    FallbackConfig,
+    FallbackSlot,
     ModelInfo,
     ModelSlotConfig,
     ProviderSettings,
@@ -167,7 +169,7 @@ def _migrate_legacy_custom(
 
 
 def _parse_new_format(raw: dict):
-    """Returns ``(providers, custom_providers, active_llm)``."""
+    """Returns ``(providers, custom_providers, active_llm, fallback)``."""
     providers: dict[str, ProviderSettings] = {}
     for key, value in raw.get("providers", {}).items():
         if isinstance(value, dict):
@@ -186,11 +188,18 @@ def _parse_new_format(raw: dict):
         if isinstance(llm_raw, dict)
         else ModelSlotConfig()
     )
-    return providers, custom_providers, active_llm
+
+    fallback_raw = raw.get("fallback")
+    fallback = (
+        FallbackConfig.model_validate(fallback_raw)
+        if isinstance(fallback_raw, dict)
+        else FallbackConfig()
+    )
+    return providers, custom_providers, active_llm, fallback
 
 
 def _parse_legacy_format(raw: dict):
-    """Returns ``(providers, custom_providers, active_llm)``."""
+    """Returns ``(providers, custom_providers, active_llm, fallback)``."""
     providers: dict[str, ProviderSettings] = {}
     custom_providers: dict[str, CustomProviderData] = {}
     old_active = raw.get("active_provider", "")
@@ -210,7 +219,7 @@ def _parse_legacy_format(raw: dict):
         if old_active
         else ModelSlotConfig()
     )
-    return providers, custom_providers, active_llm
+    return providers, custom_providers, active_llm, FallbackConfig()
 
 
 def _validate_active_llm(data: ProvidersData) -> None:
@@ -272,18 +281,19 @@ def load_providers_json(path: Optional[Path] = None) -> ProvidersData:
     providers: dict[str, ProviderSettings] = {}
     custom_providers: dict[str, CustomProviderData] = {}
     active_llm = ModelSlotConfig()
+    fallback = FallbackConfig()
 
     if path.is_file():
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 raw: dict = json.load(fh)
             if "providers" in raw and isinstance(raw["providers"], dict):
-                providers, custom_providers, active_llm = _parse_new_format(
-                    raw,
+                providers, custom_providers, active_llm, fallback = (
+                    _parse_new_format(raw)
                 )
             else:
-                providers, custom_providers, active_llm = _parse_legacy_format(
-                    raw,
+                providers, custom_providers, active_llm, fallback = (
+                    _parse_legacy_format(raw)
                 )
         except (json.JSONDecodeError, ValueError):
             providers = {}
@@ -297,6 +307,7 @@ def load_providers_json(path: Optional[Path] = None) -> ProvidersData:
         providers=providers,
         custom_providers=custom_providers,
         active_llm=active_llm,
+        fallback=fallback,
     )
     _validate_active_llm(data)
     save_providers_json(data, path)
@@ -326,6 +337,7 @@ def save_providers_json(
             for pid, cpd in data.custom_providers.items()
         },
         "active_llm": data.active_llm.model_dump(mode="json"),
+        "fallback": data.fallback.model_dump(mode="json"),
     }
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=2, ensure_ascii=False)
@@ -411,6 +423,39 @@ def _resolve_slot(
 def get_active_llm_config() -> Optional[ResolvedModelConfig]:
     data = load_providers_json()
     return _resolve_slot(data.active_llm, data)
+
+
+def get_fallback_config() -> FallbackConfig:
+    """Return the current fallback chain configuration."""
+    data = load_providers_json()
+    return data.fallback
+
+
+def set_fallback_config(fallback: FallbackConfig) -> ProvidersData:
+    """Update the fallback chain configuration."""
+    data = load_providers_json()
+    data.fallback = fallback
+    save_providers_json(data)
+    return data
+
+
+def resolve_fallback_chain() -> list[ResolvedModelConfig]:
+    """Resolve the fallback chain to a list of usable model configs.
+
+    Only returns entries whose provider is configured (has credentials).
+    """
+    data = load_providers_json()
+    if not data.fallback.enabled:
+        return []
+    result = []
+    for slot in data.fallback.chain:
+        cfg = _resolve_slot(
+            ModelSlotConfig(provider_id=slot.provider_id, model=slot.model),
+            data,
+        )
+        if cfg is not None:
+            result.append(cfg)
+    return result
 
 
 # -- Utilities --
