@@ -1,0 +1,69 @@
+.page {
+  padding: 24px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--citedy-slate-900);
+}
+
+.description {
+  font-size: 14px;
+  color: var(--citedy-slate-600);
+  margin: 0;
+}
+
+.formCard {
+  max-width: 800px;
+
+  &:hover {
+    border: 1px solid var(--citedy-slate-300) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+.form {
+  :global {
+    .ant-form-item-label > label {
+      font-weight: 500;
+    }
+  }
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  margin-bottom: 0;
+}
+
+.centerState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  gap: 16px;
+}
+
+.stateText {
+  font-size: 14px;
+  color: var(--citedy-slate-600);
+}
+
+.stateTextError {
+  font-size: 14px;
+  color: var(--citedy-red-600);
+}

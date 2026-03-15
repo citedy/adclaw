@@ -1,0 +1,161 @@
+.mcpCard {
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+
+  &.enabledCard {
+    border: 2px solid var(--citedy-slate-900) !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12) !important;
+  }
+
+  &.hover {
+    transform: translateY(-2px);
+    border: 1px solid var(--citedy-slate-300) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  &.normal {
+    border: 1px solid rgba(226, 232, 240, 0.4) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  }
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mcpTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--citedy-slate-600);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.typeBadge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+
+  &.local {
+    background-color: rgba(59, 130, 246, 0.08);
+    color: var(--citedy-blue-500);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  &.remote {
+    background-color: rgba(245, 158, 11, 0.08);
+    color: var(--citedy-amber-500);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+}
+
+.fileIcon {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.description {
+  font-size: 14px;
+  color: var(--citedy-slate-600);
+  line-height: 1.6;
+  margin-bottom: 32px;
+  min-height: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  margin-top: auto;
+  border-top: 1px solid rgba(226, 232, 240, 0.4);
+}
+
+.actionButton {
+  padding: 0;
+  font-size: 12px;
+}
+
+.deleteButton {
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: var(--citedy-red-600) !important;
+    color: #fff !important;
+    border-color: var(--citedy-red-600) !important;
+  }
+}
+
+.statusContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+
+  &.enabled {
+    background-color: var(--citedy-green-500);
+  }
+
+  &.disabled {
+    background-color: var(--citedy-slate-300);
+  }
+}
+
+.statusText {
+  font-size: 12px;
+
+  &.enabled {
+    color: var(--citedy-green-500);
+  }
+
+  &.disabled {
+    color: var(--citedy-slate-400);
+  }
+}
+
+.editJsonTextArea {
+  width: 100%;
+  min-height: 500px;
+  font-family: Monaco, Courier New, monospace;
+  font-size: 13px;
+  padding: 16px;
+  border: 1px solid var(--citedy-slate-200);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.preformattedText {
+  background-color: var(--citedy-slate-50);
+  padding: 16px;
+  border-radius: 8px;
+  max-height: 500px;
+  overflow: auto;
+}

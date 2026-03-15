@@ -1,0 +1,26 @@
+spec:
+  name: adclaw
+  region: ams
+  services:
+    - name: adclaw
+      image:
+        registry_type: DOCKER_HUB
+        registry: nttylock
+        repository: adclaw
+        tag: latest
+      instance_count: 1
+      instance_size_slug: basic-s
+      http_port: 8088
+      envs:
+        - key: CITEDY_API_KEY
+          scope: RUN_TIME
+          type: SECRET
+        - key: TELEGRAM_BOT_TOKEN
+          scope: RUN_TIME
+          type: SECRET
+        - key: ADCLAW_ENABLED_CHANNELS
+          scope: RUN_TIME
+          value: discord,dingtalk,feishu,qq,console,telegram
+        - key: LOG_LEVEL
+          scope: RUN_TIME
+          value: INFO

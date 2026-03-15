@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: adclaw
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: CITEDY_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ADCLAW_ENABLED_CHANNELS
+        value: discord,dingtalk,feishu,qq,console,telegram
+      - key: LOG_LEVEL
+        value: INFO
+    disk:
+      name: adclaw-data
+      mountPath: /app/working
+      sizeGB: 1

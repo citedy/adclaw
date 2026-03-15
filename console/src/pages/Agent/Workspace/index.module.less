@@ -1,0 +1,366 @@
+.agentsPage {
+  padding: 24px;
+  height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  flex-shrink: 0;
+}
+
+.title {
+  margin-bottom: 4px;
+  font-size: 24px;
+  color: var(--citedy-slate-900);
+  font-weight: 700;
+}
+
+.description {
+  margin: 0;
+  color: var(--citedy-slate-500);
+  font-size: 14px;
+}
+
+.content {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 12px;
+}
+
+.fileListPanel {
+  width: 400px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cardBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+}
+
+.cardContainer {
+  flex: 1;
+  min-height: 0;
+}
+
+.workspaceInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--citedy-slate-900);
+}
+
+.infoText {
+  margin: 0;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--citedy-slate-500);
+  flex-shrink: 0;
+}
+
+.workspacePath {
+  margin: 0;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--citedy-slate-600);
+  font-family: monospace;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.divider {
+  height: 1px;
+  background-color: rgba(226, 232, 240, 0.6);
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.scrollContainer {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fileEditor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.editorCard {
+  height: 100% !important;
+
+  :global {
+    .adclaw-card-body {
+      height: 100%;
+
+      .adclaw-spark-card-wrapper {
+        height: 100%;
+      }
+
+      .adclaw-spark-content {
+        height: 100%;
+      }
+
+      .agentscope-runtime-webui-spark-card-wrapper {
+        height: 100%;
+
+        .agentscope-runtime-webui-spark-content {
+          height: 100%;
+        }
+      }
+
+      .spark-card-wrapper {
+        height: 100%;
+
+        .spark-content {
+          height: 100%;
+          overflow: hidden;
+        }
+      }
+    }
+  }
+}
+
+.editorHeader {
+  padding: 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.fileName {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--citedy-slate-900);
+}
+
+.filePath {
+  font-size: 12px;
+  color: var(--citedy-slate-500);
+  font-family: monospace;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.editorContent {
+  padding: 16px;
+  height: calc(100% - 96px);
+
+  textarea {
+    font-family: monospace;
+    font-size: 13px;
+    resize: vertical;
+    height: 100%;
+  }
+}
+
+.contentLabel {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 20px;
+}
+
+.markdownViewer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+  border: 1px solid var(--citedy-slate-200);
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.textarea {
+  font-family: monospace;
+  font-size: 13px;
+  resize: vertical;
+  height: min(100%, clamp(280px, 50vh, 640px));
+  min-height: min(240px, 100%);
+  max-height: 100%;
+}
+
+.markdownToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggleLabel {
+  font-size: 12px;
+  color: var(--citedy-slate-600);
+  white-space: nowrap;
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--citedy-slate-400);
+}
+
+.copyButton {
+  border-radius: 4px;
+}
+
+.fileItem {
+  padding: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.6);
+  transition: all 0.2s;
+
+  &:hover:not(.selected) {
+    border-color: var(--citedy-slate-300);
+    background-color: var(--citedy-slate-50);
+  }
+
+  &.selected {
+    border: 2px solid var(--citedy-slate-900);
+    background-color: rgba(15, 23, 42, 0.04);
+    border-radius: 10px;
+  }
+}
+
+.fileItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fileInfo {
+  flex: 1;
+}
+
+.fileActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileItemName {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--citedy-slate-900);
+}
+
+.fileItemMeta {
+  font-size: 12px;
+  color: var(--citedy-slate-500);
+}
+
+.expandIcon {
+  font-size: 12px;
+  color: var(--citedy-slate-400);
+  margin-left: 8px;
+}
+
+.dailyMemoryList {
+  margin-left: 16px;
+  margin-top: -4px;
+  margin-bottom: 8px;
+}
+
+.dailyMemoryItem {
+  padding: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.6);
+  transition: all 0.2s;
+
+  &:hover:not(.selected) {
+    border-color: var(--citedy-slate-300);
+    background-color: var(--citedy-slate-50);
+  }
+
+  &.selected {
+    border: 2px solid var(--citedy-slate-900);
+    background-color: rgba(15, 23, 42, 0.04);
+  }
+}
+
+.dailyMemoryName {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  color: var(--citedy-slate-900);
+}
+
+.dailyMemoryMeta {
+  font-size: 11px;
+  color: var(--citedy-slate-500);
+}
+
+.attribution {
+  margin: 0;
+  padding: 4px 0 0;
+  font-size: 11px;
+  color: var(--citedy-slate-400);
+  text-align: right;
+  flex-shrink: 0;
+}

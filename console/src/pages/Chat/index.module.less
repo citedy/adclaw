@@ -1,0 +1,41 @@
+/* Welcome avatar: fit wide logo. */
+:global([class*="chat-anywhere-welcome-default"] [class*="-avatar"]) {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  font-size: 18px !important;
+  flex-shrink: 0;
+  overflow: visible !important;
+}
+
+:global([class*="chat-anywhere-welcome-default"] [class*="-avatar"] > img) {
+  object-fit: contain !important;
+  object-position: center;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Disabled input overlay */
+.chatDisabledOverlay {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.chatDisabledOverlay :global([class*="chat-anywhere-input"]),
+.chatDisabledOverlay :global([class*="chat-input"]),
+.chatDisabledOverlay :global(textarea),
+.chatDisabledOverlay :global(input[type="text"]) {
+  pointer-events: none !important;
+  opacity: 0.5 !important;
+  background-color: var(--citedy-slate-50) !important;
+  cursor: not-allowed !important;
+}
+
+.chatDisabledOverlay :global(button[class*="send"]),
+.chatDisabledOverlay :global(button[class*="submit"]) {
+  pointer-events: none !important;
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+}

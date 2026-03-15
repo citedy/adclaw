@@ -1,0 +1,22 @@
+{
+  "owner": "jdrhyne",
+  "slug": "ga4",
+  "displayName": "GA4 Analytics",
+  "latest": {
+    "version": "1.2.2",
+    "publishedAt": 1772258479418,
+    "commit": "https://github.com/openclaw/skills/commit/d802d1bc0daaedeca3104c8f0aa2d5472a8dc464"
+  },
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1772253026824,
+      "commit": "https://github.com/openclaw/skills/commit/bdd765f30a0f735ed08f28bed973b441a4479105"
+    },
+    {
+      "version": "1.0.0",
+      "publishedAt": 1768536776793,
+      "commit": "https://github.com/clawdbot/skills/commit/50cf8fde8f96775da4f8674318bac13c73354400"
+    }
+  ]
+}

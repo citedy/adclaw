@@ -1,0 +1,96 @@
+.page {
+  padding: 24px;
+}
+
+.title {
+  margin-bottom: 4px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--citedy-slate-900);
+}
+
+.description {
+  margin: 0;
+  color: var(--citedy-slate-500);
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.card {
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.4);
+  background: linear-gradient(
+    135deg,
+    rgba(248, 250, 252, 0.8),
+    rgba(255, 255, 255, 0.6),
+    rgba(249, 250, 251, 0.8)
+  );
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.personaName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--citedy-slate-900);
+}
+
+.personaRole {
+  font-size: 13px;
+  color: var(--citedy-slate-500);
+  margin-top: 2px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.statsRow {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--citedy-slate-600);
+}
+
+.cronList {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--citedy-slate-600);
+}
+
+.cronItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+}

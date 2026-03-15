@@ -1,0 +1,58 @@
+# Git and IDE
+.git
+.gitignore
+.idea
+.vscode
+*.md
+!README.md
+
+# Python dev and cache
+__pycache__
+*.py[cod]
+*$py.class
+.venv
+venv
+uv.lock
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.mypy_cache
+.ruff_cache
+
+# Tests (not needed in runtime image)
+tests
+test.py
+*_test.py
+pytest.ini
+.pre-commit-config.yaml
+.flake8
+.eslintrc
+.stylelintrc
+
+# Frontend: exclude build artifacts; ship pre-built src/console/dist in image
+website
+console/node_modules
+console/dist
+console/.vite
+node_modules
+**/node_modules
+**/dist
+!src/adclaw/console/dist
+!src/adclaw/console/dist/**
+**/.vite
+
+# Example and local config (mount at runtime instead)
+example
+config.json
+jobs.json
+sessions_mount_dir
+
+# Misc
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+logs
+cookbook

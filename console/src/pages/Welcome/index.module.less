@@ -1,0 +1,93 @@
+.welcomeContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, rgba(239, 246, 255, 0.4) 50%, rgba(250, 245, 255, 0.3) 100%);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative orbs */
+.welcomeContainer::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.08);
+  filter: blur(64px);
+  top: -100px;
+  right: -100px;
+  pointer-events: none;
+}
+
+.welcomeContainer::after {
+  content: '';
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.06);
+  filter: blur(64px);
+  bottom: -80px;
+  left: -80px;
+  pointer-events: none;
+}
+
+.welcomeContent {
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.heroSection {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo {
+  height: 64px;
+  width: auto;
+  margin-bottom: 16px;
+  object-fit: contain;
+}
+
+.title {
+  margin-bottom: 8px !important;
+  color: var(--citedy-slate-900);
+  font-weight: 700;
+}
+
+.subtitle {
+  color: var(--citedy-slate-500);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.steps {
+  margin-bottom: 32px;
+
+  :global {
+    .adclaw-steps-item-icon {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+  }
+}
+
+.stepContent {
+  margin-bottom: 24px;
+}
+
+.stepCard {
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.skipSection {
+  text-align: center;
+}

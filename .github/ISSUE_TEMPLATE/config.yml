@@ -1,0 +1,12 @@
+# Issue template chooser. Templates are listed alphanumerically.
+# See: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
+
+blank_issues_enabled: true
+
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/agentscope-ai/AdClaw/discussions
+    about: Ask questions, share ideas, or discuss AdClaw here.
+  - name: View docs
+    url: https://adclaw.agentscope.io/
+    about: AdClaw docs and guides.

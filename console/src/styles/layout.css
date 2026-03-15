@@ -1,0 +1,74 @@
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f8fafc, rgba(239, 246, 255, 0.3), rgba(250, 245, 255, 0.2));
+}
+
+.ant-layout {
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.ant-layout-content {
+  overflow: hidden;
+}
+
+.page-container {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  flex: 0 0 auto;
+}
+
+.page-content {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 0 24px 24px 24px;
+}
+
+.table-container {
+  height: 100%;
+  overflow: hidden;
+}
+
+.table-wrapper {
+  height: 100%;
+  overflow: auto;
+}
+
+/* .ant-card {
+  height: 100%;
+} */
+
+.ant-card-body {
+  height: 100%;
+  padding: 0;
+}
+
+/* Welcome avatar: fit wide logo. */
+[class*="chat-anywhere-welcome-default"] [class*="-avatar"],
+[class*="message-list-welcome"] [class*="welcome-default"] [class*="-avatar"] {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  overflow: visible !important;
+}
+[class*="chat-anywhere-welcome-default"] [class*="-avatar"] > img,
+[class*="message-list-welcome"] [class*="-avatar"] > img {
+  object-fit: contain !important;
+  object-position: center;
+}

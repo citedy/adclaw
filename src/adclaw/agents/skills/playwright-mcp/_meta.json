@@ -1,0 +1,11 @@
+{
+  "owner": "jolestar",
+  "slug": "playwright-mcp-skill",
+  "displayName": "Playwright Mcp Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772547010521,
+    "commit": "https://github.com/openclaw/skills/commit/cdf2d66116c157817169ea343f9385fd5f3b1ab5"
+  },
+  "history": []
+}

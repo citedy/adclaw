@@ -1,0 +1,547 @@
+/* ============================================
+   Citedy Design System — Global Overrides
+   ============================================
+   Strategy: CSS overrides on top of Ant Design 5.x
+   Reference: CARD_BASE = "rounded-2xl bg-gradient-to-br from-slate-50/80
+              via-white/60 to-gray-50/80 backdrop-blur-sm border border-slate-200/40"
+   ============================================ */
+
+/* ---- CSS Custom Properties (Slate Scale) ---- */
+
+:root {
+  --citedy-slate-50: #f8fafc;
+  --citedy-slate-100: #f1f5f9;
+  --citedy-slate-200: #e2e8f0;
+  --citedy-slate-300: #cbd5e1;
+  --citedy-slate-400: #94a3b8;
+  --citedy-slate-500: #64748b;
+  --citedy-slate-600: #475569;
+  --citedy-slate-700: #334155;
+  --citedy-slate-800: #1e293b;
+  --citedy-slate-900: #0f172a;
+  --citedy-slate-950: #020617;
+
+  --citedy-green-500: #22c55e;
+  --citedy-amber-500: #f59e0b;
+  --citedy-red-600: #dc2626;
+  --citedy-emerald-500: #10b981;
+  --citedy-blue-500: #3b82f6;
+  --citedy-cyan-500: #06b6d4;
+
+  /* Spacing scale */
+  --citedy-space-xs: 8px;
+  --citedy-space-sm: 12px;
+  --citedy-space-md: 16px;
+  --citedy-space-lg: 20px;
+  --citedy-space-xl: 24px;
+
+  --citedy-card-bg: linear-gradient(135deg,
+    rgba(248, 250, 252, 0.8),
+    rgba(255, 255, 255, 0.6),
+    rgba(249, 250, 251, 0.8));
+  --citedy-card-border: rgba(226, 232, 240, 0.4);
+  --citedy-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --citedy-card-hover-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --citedy-glass-bg: #ffffff;
+  --citedy-glass-blur: blur(0px);
+}
+
+/* ---- Glassmorphism Cards ---- */
+
+.ant-card,
+.adclaw-card,
+[class*="ant-card"] {
+  background: var(--citedy-card-bg) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid var(--citedy-card-border) !important;
+  border-radius: 16px !important;
+}
+
+/* ---- Pill Buttons ---- */
+
+.ant-btn,
+.adclaw-btn,
+[class*="ant-btn"],
+[class*="adclaw-btn"] {
+  border-radius: 9999px !important;
+}
+
+/* Keep icon-only buttons circular */
+.ant-btn-icon-only,
+.adclaw-btn-icon-only,
+[class*="btn-icon-only"] {
+  border-radius: 50% !important;
+}
+
+/* Primary button: slate-900 */
+.ant-btn-primary,
+.adclaw-btn-primary,
+[class*="ant-btn-primary"],
+[class*="adclaw-btn-primary"] {
+  background-color: var(--citedy-slate-900) !important;
+  border-color: var(--citedy-slate-900) !important;
+  color: #fff !important;
+
+  &:hover,
+  &:focus {
+    background-color: var(--citedy-slate-800) !important;
+    border-color: var(--citedy-slate-800) !important;
+  }
+}
+
+/* ---- Header Glassmorphism ---- */
+
+.adclaw-layout-header,
+[class*="adclaw-layout-header"],
+.ant-layout-header,
+[class*="ant-layout-header"] {
+  background: var(--citedy-glass-bg) !important;
+  backdrop-filter: var(--citedy-glass-blur) !important;
+  -webkit-backdrop-filter: var(--citedy-glass-blur) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+}
+
+/* ---- Modal Glassmorphism ---- */
+
+.ant-modal-content,
+.adclaw-modal-content,
+[class*="ant-modal-content"],
+[class*="adclaw-modal-content"] {
+  border-radius: 24px !important;
+  background: #fff !important;
+  backdrop-filter: var(--citedy-glass-blur) !important;
+  -webkit-backdrop-filter: var(--citedy-glass-blur) !important;
+  border: 1px solid var(--citedy-card-border) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.ant-modal-header,
+.adclaw-modal-header,
+[class*="ant-modal-header"],
+[class*="adclaw-modal-header"] {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4) !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+/* ---- Drawer Glassmorphism ---- */
+
+.ant-drawer-content,
+.adclaw-drawer-content,
+[class*="ant-drawer-content"],
+[class*="adclaw-drawer-content"] {
+  background: var(--citedy-glass-bg) !important;
+  backdrop-filter: var(--citedy-glass-blur) !important;
+  -webkit-backdrop-filter: var(--citedy-glass-blur) !important;
+}
+
+.ant-drawer-header,
+.adclaw-drawer-header,
+[class*="ant-drawer-header"],
+[class*="adclaw-drawer-header"] {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4) !important;
+}
+
+/* ---- Popups / Dropdowns / Tooltips: solid background ---- */
+
+/* Popups, dropdowns, tooltips — solid white, no transparency */
+.ant-popover-inner,
+.adclaw-popover-inner,
+[class*="popover-inner"],
+.ant-dropdown,
+.adclaw-dropdown,
+[class*="dropdown"],
+.ant-tooltip-inner,
+[class*="tooltip-inner"] {
+  background: #fff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Collapsed sidebar submenu popup — must be solid and above everything */
+.adclaw-menu-submenu-popup.adclaw-menu-submenu,
+.adclaw-menu.adclaw-menu-submenu-popup,
+.ant-menu-submenu-popup,
+[class*="menu-submenu-popup"] {
+  background: #fff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid var(--citedy-slate-200) !important;
+  z-index: 1050 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+/* UL menu list inside popup — also solid white */
+.adclaw-menu-submenu-popup > ul,
+.adclaw-menu-submenu-popup .adclaw-menu,
+.adclaw-menu-submenu-popup .adclaw-menu-sub,
+[class*="menu-submenu-popup"] > ul,
+[class*="menu-submenu-popup"] [class*="menu-sub"] {
+  background: #fff !important;
+}
+
+/* Popup menu items — clean layout */
+.adclaw-menu-submenu-popup .adclaw-menu-item,
+[class*="menu-submenu-popup"] [class*="menu-item"] {
+  margin: 0 4px !important;
+  border-radius: 6px !important;
+}
+
+/* Collapsed sidebar: center all menu icons */
+.adclaw-layout-sider-collapsed .adclaw-menu-item,
+.adclaw-layout-sider-collapsed .adclaw-menu-submenu-title {
+  padding-inline: 0 !important;
+  padding-left: calc(50% - 8px) !important;
+  margin-inline: 0 !important;
+}
+
+/* ---- Tags & Badges: pill + glassmorphism ---- */
+
+.ant-tag,
+.adclaw-tag,
+[class*="ant-tag"],
+[class*="adclaw-tag"] {
+  border-radius: 9999px !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* ---- Menu Items: rounded-xl style (matches Citedy blog-sidebar) ---- */
+
+.ant-menu-item,
+.adclaw-menu-item,
+[class*="ant-menu-item"],
+[class*="adclaw-menu-item"] {
+  border-radius: 12px !important;
+  margin: 2px 8px !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    background-color: rgba(241, 245, 249, 0.4) !important;
+    color: var(--citedy-slate-700) !important;
+  }
+}
+
+/* Submenu titles: same rounded style */
+.ant-menu-submenu-title,
+.adclaw-menu-submenu-title,
+[class*="ant-menu-submenu-title"],
+[class*="adclaw-menu-submenu-title"] {
+  border-radius: 12px !important;
+  margin: 2px 8px !important;
+}
+
+/* Active menu item: subtle blue→purple gradient (like blog-sidebar) */
+.ant-menu-item-selected,
+.adclaw-menu-item-selected,
+[class*="ant-menu-item-selected"],
+[class*="adclaw-menu-item-selected"] {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.08), rgba(168, 85, 247, 0.08)) !important;
+  color: var(--citedy-slate-700) !important;
+
+  &::after {
+    display: none !important;
+  }
+
+  a, span, .anticon, [class*="icon"] {
+    color: var(--citedy-slate-700) !important;
+  }
+}
+
+/* Remove left-border selection indicator */
+.ant-menu-item::after,
+.adclaw-menu-item::after,
+[class*="ant-menu-item"]::after,
+[class*="adclaw-menu-item"]::after {
+  display: none !important;
+}
+
+/* Collapsed sidebar: center icons (ant-prefixed selectors) */
+.ant-layout-sider-collapsed .ant-menu-item,
+.ant-layout-sider-collapsed .ant-menu-submenu-title {
+  padding-inline: 0 !important;
+  padding-left: calc(50% - 8px) !important;
+  margin-inline: 0 !important;
+}
+
+/* ---- Sidebar: gradient background + accent overlay ---- */
+
+.ant-layout-sider,
+.adclaw-layout-sider,
+[class*="ant-layout-sider"],
+[class*="adclaw-layout-sider"] {
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.90),
+    rgba(248, 250, 252, 0.95)) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.5) !important;
+  position: relative !important;
+}
+
+/* Sidebar gradient accent overlay */
+.ant-layout-sider::before,
+.adclaw-layout-sider::before,
+[class*="ant-layout-sider"]::before,
+[class*="adclaw-layout-sider"]::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(to bottom,
+    rgba(239, 246, 255, 0.3),
+    transparent,
+    rgba(250, 245, 255, 0.2)) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* Ensure sidebar content is above overlay */
+.ant-layout-sider > *,
+.adclaw-layout-sider > *,
+[class*="ant-layout-sider"] > *,
+[class*="adclaw-layout-sider"] > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Sidebar menu background transparent to show gradient through */
+.ant-menu,
+.adclaw-menu,
+[class*="ant-menu"] {
+  background: transparent !important;
+}
+
+/* Gradient divider for sidebar sections */
+.ant-menu-item-group-title,
+[class*="ant-menu-item-group-title"] {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--citedy-slate-400) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ---- Typography ---- */
+
+/* Page titles */
+.page-header h1,
+.page-header h2,
+[class*="Title"] {
+  font-weight: 700;
+}
+
+/* ---- Table Overrides ---- */
+
+.ant-table,
+[class*="ant-table"] {
+  background: transparent !important;
+}
+
+.ant-table-thead > tr > th,
+[class*="ant-table-thead"] > tr > th {
+  background: var(--citedy-slate-50) !important;
+  border-bottom: 1px solid var(--citedy-slate-200) !important;
+  color: var(--citedy-slate-600) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+.ant-table-tbody > tr > td,
+[class*="ant-table-tbody"] > tr > td {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4) !important;
+}
+
+.ant-table-tbody > tr:hover > td,
+[class*="ant-table-tbody"] > tr:hover > td {
+  background: var(--citedy-slate-50) !important;
+}
+
+/* ---- Form Inputs ---- */
+
+.ant-input:focus,
+.ant-input-focused,
+.adclaw-input:focus,
+[class*="ant-input"]:focus {
+  border-color: var(--citedy-slate-900) !important;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
+}
+
+.ant-select-focused .ant-select-selector,
+[class*="ant-select-focused"] [class*="ant-select-selector"] {
+  border-color: var(--citedy-slate-900) !important;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
+}
+
+/* ---- Checkbox Accent ---- */
+
+.ant-checkbox-checked .ant-checkbox-inner,
+[class*="ant-checkbox-checked"] [class*="ant-checkbox-inner"] {
+  background-color: var(--citedy-slate-900) !important;
+  border-color: var(--citedy-slate-900) !important;
+}
+
+/* ---- Switch Accent ---- */
+
+.ant-switch-checked,
+[class*="ant-switch-checked"] {
+  background-color: var(--citedy-slate-900) !important;
+}
+
+/* ---- Decorative Orbs ---- */
+
+.citedy-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.citedy-orb-blue {
+  width: 400px;
+  height: 400px;
+  background: rgba(59, 130, 246, 0.08);
+  top: -100px;
+  right: -100px;
+}
+
+.citedy-orb-purple {
+  width: 350px;
+  height: 350px;
+  background: rgba(139, 92, 246, 0.06);
+  bottom: -80px;
+  left: -80px;
+}
+
+.citedy-orb-cyan {
+  width: 300px;
+  height: 300px;
+  background: rgba(6, 182, 212, 0.05);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ---- Card Decorative Icon Base ---- */
+
+.citedy-card-decor {
+  position: absolute;
+  bottom: -16px;
+  right: -16px;
+  width: 128px;
+  height: 128px;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ---- Hover Animations for Cards ---- */
+
+.citedy-card-hover {
+  transition: all 0.3s ease !important;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--citedy-card-hover-shadow) !important;
+  }
+}
+
+/* ---- Scrollbar Styling ---- */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--citedy-slate-300);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--citedy-slate-400);
+}
+
+/* ---- Two-Tone Heading Utility ---- */
+
+.citedy-gradient-text {
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ---- Page Header Utility ---- */
+
+.citedy-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--citedy-space-md);
+}
+
+.citedy-page-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--citedy-slate-900);
+}
+
+.citedy-page-description {
+  margin: 0;
+  color: var(--citedy-slate-500);
+  font-size: 14px;
+}
+
+/* ---- Content Grid ---- */
+
+.citedy-content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--citedy-space-lg);
+}
+
+/* ---- Promo Card (Citedy) ---- */
+
+.citedy-promo-card {
+  margin-bottom: var(--citedy-space-lg);
+}
+
+.citedy-promo-card.configured {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%) !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.citedy-promo-card.unconfigured {
+  background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%) !important;
+  border: 1px solid #fde68a !important;
+}
+
+/* ---- Drawer Footer ---- */
+
+.ant-drawer-footer,
+[class*="ant-drawer-footer"] {
+  border-top: 1px solid rgba(226, 232, 240, 0.4) !important;
+  padding: 12px 24px !important;
+}
+
+/* ---- Cron Tooltip ---- */
+
+.citedy-cron-tooltip-sub {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
