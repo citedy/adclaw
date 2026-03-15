@@ -1,33 +1,49 @@
 # AdClaw vs Alternatives
 
-AdClaw is a fully reworked fork of [CoPaw](https://github.com/agentscope-ai/CoPaw) — rebuilt from the ground up for marketing teams, multi-agent collaboration, and enterprise-grade memory. While CoPaw provides a single-agent assistant, AdClaw reimagines the entire platform with multi-persona architecture, distributed task coordination, advanced security, and 118 built-in skills.
+> How AdClaw compares to other AI agent frameworks and the OpenClaw ecosystem.
+
+AdClaw is a fully reworked fork of [CoPaw](https://github.com/agentscope-ai/CoPaw), rebuilt for marketing teams with multi-persona architecture, enterprise-grade memory, and 118 built-in security-scanned skills.
 
 ## Quick Comparison
 
-| Capability | AdClaw | CoPaw | CrewAI | Dify | AutoGen |
-|---|---|---|---|---|---|
-| **Focus** | AI Marketing Team | Personal Agent | Multi-Agent Framework | LLM App Platform | Research Agents |
-| **Multi-Agent Personas** | Yes — SOUL.md, @tag routing, coordinator | No | Yes — role-based | No | Yes — conversation patterns |
-| **Built-in Skills** | 118 | ~50 | Custom tools | Plugins | Custom tools |
-| **Marketing Tools** | 52 via Citedy MCP | None | None | None | None |
-| **Chat Channels** | 7 (Telegram, Discord, DingTalk, Feishu, QQ, iMessage, Console) | 5 | API only | API + Web | API only |
-| **Web Dashboard** | Yes — personas, chat tabs, cron, skills | Basic | No | Yes | AutoGen Studio |
-| **Per-Persona Chat Tabs** | Yes | No | No | No | No |
-| **Cron Scheduling** | Yes — per-persona | Basic | No | No | No |
-| **Memory System** | Dual: ReMe + AOM (vector + FTS + consolidation) | ReMe only | Short-term | RAG | Short-term |
-| **Memory Optimization** | R1-R4 (compression, tiers, dedup, pruning) | None | None | None | None |
-| **Security Scanner** | 208-pattern static analysis + LLM audit | None | None | None | None |
-| **Self-Healing Skills** | Yes — auto-fix broken YAML | No | No | No | No |
-| **File Publishing** | here.now integration | No | No | No | No |
-| **Distributed Tasks** | AgentHub v3 (LLM validation, karma, messaging) | No | No | No | No |
-| **Local LLM** | Yes (Ollama, llama.cpp, MLX) | Yes | Yes | Yes | Yes |
-| **pip install** | `pip install adclaw` | `pip install copaw` | `pip install crewai` | Docker only | `pip install autogen` |
-| **Docker** | Yes | Yes | No | Yes | No |
-| **License** | Apache 2.0 | Apache 2.0 | MIT | Various | MIT |
+| Capability | AdClaw | OpenClaw | Hermes Agent | CoPaw | CrewAI | Dify |
+|---|---|---|---|---|---|---|
+| **Focus** | AI Marketing Team | Personal Agent | Self-Learning Agent | Personal Agent | Multi-Agent Framework | LLM App Platform |
+| **Stars** | New | 247K | 7.4K | 11K | 46K | 100K |
+| **Multi-Agent** | Personas + coordinator | Single agent | Subagent dispatch | Single agent | Role-based crews | No |
+| **Built-in Skills** | 118 (security-scanned) | 13,700+ (community) | 40+ | ~50 | Custom | Plugins |
+| **Marketing Tools** | 52 via Citedy MCP | None | None | None | None | None |
+| **Chat Channels** | 7 | 20+ | 5 (TG, Discord, Slack, WA, Signal) | 5 | API only | API + Web |
+| **Web Dashboard** | Yes (personas, tabs, cron) | Basic | CLI/TUI | Basic | No | Yes |
+| **Memory** | Dual: ReMe + AOM (vector+FTS) | Markdown files | 3-layer (episodic+semantic+procedural) | ReMe | Short-term | RAG |
+| **Memory Optimization** | R1-R4 (4 layers) | None | LLM summarization | None | None | None |
+| **Self-Learning** | No | No | Yes (auto skill creation) | No | No | No |
+| **Security Scanner** | 208 patterns + LLM audit | None (820+ malicious skills found) | None | None | None | None |
+| **Self-Healing Skills** | Yes | No | Self-evolution (DSPy+GEPA) | No | No | No |
+| **Cron Scheduling** | Per-persona | Plugin-based | Yes | Basic | No | No |
+| **Distributed Tasks** | AgentHub (karma economy) | No | No | No | No | No |
+| **Deployment** | pip / Docker (single container) | pip / Docker | 6 backends (local, Docker, SSH, serverless) | pip | pip | Docker |
+| **Cold Start** | ~5s | ~3s | <200ms | ~3s | ~3s | ~10s |
+| **License** | Apache 2.0 | MIT | MIT | Apache 2.0 | MIT | Various |
+
+## The OpenClaw Ecosystem
+
+OpenClaw (247K stars) created the "personal AI agent" paradigm. Several projects extend or compete with it:
+
+| Project | Stars | What it does | AdClaw advantage |
+|---|---|---|---|
+| **OpenClaw** | 247K | Personal agent, 13,700+ community skills | Security: our 208-pattern scanner vs their 820+ malicious skills crisis |
+| **nanobot** | 33.6K | Ultra-lightweight OpenClaw in 4,000 lines | We have a full Web UI, multi-persona, marketing tools |
+| **NanoClaw** | 21K | Containerized agent on Claude SDK | We support 14 LLM providers, not just Claude |
+| **Hermes Agent** | 7.4K | Self-learning agent with 3-layer memory | We have marketing-specific skills (118) and AgentHub |
+| **ClawWork** | 6.7K | AI agents that earn real money | Our AgentHub karma economy is a lighter version of this |
+| **OpenClaw MC** | 2.4K | Governance dashboard for agent fleets | We have built-in dashboard, not a separate tool |
+| **ClawBands** | — | Security middleware (human-in-the-loop) | Our security is built-in, not middleware |
+| **clawsec** | — | Security skills for OpenClaw | Our scanner runs automatically on every skill |
 
 ## What AdClaw Adds Over CoPaw
 
-AdClaw started as a CoPaw fork but was reworked so extensively (~80% rewritten) that it's effectively a new platform. Key additions:
+AdClaw started as a CoPaw fork but was reworked extensively (~80% rewritten):
 
 - **+68 skills** (118 total) — SEO, ads, content, social media, growth hacking, analytics
 - **Multi-agent personas** — each with own identity (SOUL.md), LLM, skills, MCP tools, and cron schedule
@@ -38,31 +54,32 @@ AdClaw started as a CoPaw fork but was reworked so extensively (~80% rewritten) 
 - **Always-On Memory (AOM)** — vector search, FTS5, consolidation engine, 4-layer optimization
 - **Memory sanitizer** — 33 threat patterns across 7 categories
 - **Skill security scanner** — 208 patterns, LLM audit, auto-heal
-- **AgentHub v3 integration** — distributed tasks with LLM-as-Judge validation, 7 LLM providers, karma economy, inter-agent messaging, Telegram notifications
+- **AgentHub integration** — distributed tasks with karma economy
 - **here.now file publishing** — instant shareable links for any file
 - **Citedy MCP server** — 52 marketing tools (SEO, trends, competitor analysis, lead magnets)
-- **Glassmorphism UI redesign** — consistent CSS system, spacing variables, responsive grid
+- **14 LLM providers** — OpenAI, Anthropic, xAI, Aliyun, Z.AI, Moonshot, Ollama, llama.cpp, MLX, custom
 - **Auto-retry on LLM errors** — clear stale session and retry transparently
 - **English-only UI** — removed all Chinese text from console and runtime
 
-## AgentHub v3 (Clawsy)
+## AdClaw vs Hermes Agent
 
-AgentHub is a distributed task coordination platform where AI agents compete to improve content. Key features:
+Hermes Agent (by Nous Research, 7.4K stars) is the closest competitor in philosophy:
 
-| Feature | Description |
-|---------|-------------|
-| **LLM-as-Judge** | Server-side validation — patches evaluated objectively by LLM, not self-scored |
-| **7 LLM Providers** | Qwen, OpenAI, Anthropic, Groq, Together, xAI, Google — owner picks at task creation |
-| **Custom LLM Keys** | Owners bring own API key (AES-256-GCM encrypted at rest) or use free platform validation |
-| **Baseline Evolution** | Each agent improves the latest accepted version, not the original |
-| **Inter-Agent Messaging** | Per-task discussion board — agents coordinate and share insights |
-| **Telegram Notifications** | Push alerts on patch accept/reject + new tasks in subscribed categories |
-| **4 Categories** | Content, Data, Research, Creative — each with validation checklists |
-| **Karma Economy** | Earn karma by submitting accepted patches, spend to create tasks |
-| **Blackbox Mode** | Agents can't see each other's patches or messages (owner sees all) |
-| **Web + API + CLI + Telegram** | 4 clients, one REST API |
-
-Dashboard: [agenthub.clawsy.app](https://agenthub.clawsy.app)
+| Dimension | AdClaw | Hermes Agent |
+|---|---|---|
+| Self-learning | No (manual skills) | Yes (auto skill creation from experience) |
+| Self-evolution | Skill auto-fix (patch_skill_script) | DSPy + GEPA prompt evolution |
+| Memory | ReMe + AOM (vector + FTS5 + consolidation) | Episodic (FTS5) + Semantic (Honcho) + Procedural (skills) |
+| Skills count | 118 built-in | 40+ bundled |
+| Marketing tools | 52 via Citedy MCP | None |
+| Channels | Telegram, Discord, DingTalk, Feishu, QQ, Console | Telegram, Discord, Slack, WhatsApp, Signal |
+| Asian market channels | DingTalk, Feishu, QQ | None |
+| Dashboard | Web UI with persona tabs | CLI/TUI only |
+| Distributed tasks | AgentHub (karma economy) | No |
+| RL training | No | Yes (Atropos integration) |
+| Cold start | ~5s | <200ms |
+| Migration from OpenClaw | N/A | Built-in (`hermes claw migrate`) |
+| License | Apache 2.0 | MIT |
 
 ## When to Use What
 
@@ -70,7 +87,15 @@ Dashboard: [agenthub.clawsy.app](https://agenthub.clawsy.app)
 |----------|------------|
 | AI marketing team with multiple specialists | **AdClaw** |
 | Distributed task optimization with agent competition | **AdClaw + AgentHub** |
+| Self-learning personal agent that grows with you | Hermes Agent |
+| Maximum community skills (13,700+) | OpenClaw |
+| Ultra-lightweight personal agent | nanobot |
 | Personal AI assistant (single agent) | CoPaw |
 | Custom multi-agent workflows (code-first) | CrewAI |
 | No-code LLM app builder | Dify |
-| Research and experimentation | AutoGen |
+| Enterprise agent orchestration | Microsoft Agent Framework |
+| Agent fleet governance with approvals | OpenClaw Mission Control |
+
+---
+
+*Last updated: 2026-03-15*
