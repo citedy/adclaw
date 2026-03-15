@@ -408,6 +408,7 @@ def _resolve_slot(
         return ResolvedModelConfig(
             model=slot.model,
             is_local=True,
+            provider_id=pid,
         )
 
     if pid not in data.custom_providers and pid not in data.providers:
@@ -417,6 +418,7 @@ def _resolve_slot(
         model=slot.model,
         base_url=base_url,
         api_key=api_key,
+        provider_id=pid,
     )
 
 
@@ -455,6 +457,12 @@ def resolve_fallback_chain() -> list[ResolvedModelConfig]:
         )
         if cfg is not None:
             result.append(cfg)
+        else:
+            logger.warning(
+                "Fallback slot %s/%s could not be resolved "
+                "(provider missing or not configured) — skipping",
+                slot.provider_id, slot.model,
+            )
     return result
 
 

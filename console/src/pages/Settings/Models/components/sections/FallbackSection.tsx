@@ -4,7 +4,6 @@ import {
   Switch,
   InputNumber,
   Select,
-  Space,
   message,
 } from "@agentscope-ai/design";
 import {
@@ -41,8 +40,12 @@ export function FallbackSection({ providers }: Props) {
     try {
       const data = await api.getFallbackConfig();
       setConfig(data);
-    } catch {
-      // Fallback config may not exist yet — use defaults
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("404")) {
+        console.error("Failed to load fallback config:", err);
+        message.warning("Could not load fallback configuration. Using defaults.");
+      }
     } finally {
       setLoading(false);
     }
@@ -262,7 +265,7 @@ export function FallbackSection({ providers }: Props) {
 
           {dirty && (
             <div className={styles.slotActions}>
-              <Space>
+              <div style={{ display: "flex", gap: 8 }}>
                 <Button
                   onClick={() => {
                     fetchConfig();
@@ -274,7 +277,7 @@ export function FallbackSection({ providers }: Props) {
                 <Button type="primary" loading={saving} onClick={handleSave}>
                   {t("common.save", "Save")}
                 </Button>
-              </Space>
+              </div>
             </div>
           )}
         </>

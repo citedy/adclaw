@@ -149,7 +149,7 @@ class AgentRunner(Runner):
                 self._session_persona_map[request.session_id] = persona.id
                 session_id = f"{persona.id}::{session_id}"
 
-            # Load fallback config for timeout
+            # Resolve timeout from fallback config
             from ...providers.store import get_fallback_config
             fallback_cfg = get_fallback_config()
             _timeout = (
@@ -219,7 +219,7 @@ class AgentRunner(Runner):
                     RateLimitError as _OAIRateLimit,
                 )
 
-                # --- Original retry: stale-session BadRequestError ---
+                # --- Retry on stale-session BadRequestError ---
                 if isinstance(first_err, _OAIBadRequest):
                     err_str = str(first_err).lower()
                     if "invalid_parameter" in err_str:
@@ -303,10 +303,10 @@ class AgentRunner(Runner):
                         )
                         yield notify_msg, False
 
-                        # Fallback agent is intentionally created without
-                        # session state: the primary model already failed mid-
-                        # request, so we start fresh with only the current msgs
-                        # to avoid stale-context issues.
+                        # Fallback agent is created without loading session
+                        # state. This is intentional: loading the same history
+                        # that may have caused the primary failure could trigger
+                        # the same error on the fallback provider.
                         fb_agent = AdClawAgent(
                             env_context=getattr(agent, "_env_context", None),
                             mcp_clients=getattr(agent, "_mcp_clients", []),
@@ -314,6 +314,7 @@ class AgentRunner(Runner):
                             aom_manager=self._aom_manager,
                             max_iters=max_iters,
                             max_input_length=max_input_length,
+                            namesake_strategy=getattr(agent, "_namesake_strategy", "skip"),
                             persona=getattr(agent, "_persona", None),
                             team_summary=getattr(agent, "_team_summary", ""),
                             model=fb_model,
@@ -332,13 +333,29 @@ class AgentRunner(Runner):
                         _OAITimeout, _OAIRateLimit, _OAIAuthErr, _OAIConnErr,
                     ) as fb_err:
                         logger.warning(
-                            "Fallback model %s also failed: %s",
+                            "Fallback model %s failed with LLM error: %s",
                             fb_cfg.model, fb_err,
                         )
                         continue
+                    except Exception as fb_err:
+                        logger.error(
+                            "Fallback model %s failed with unexpected error: %s",
+                            fb_cfg.model, fb_err,
+                            exc_info=True,
+                        )
+                        continue
 
-                # All fallbacks exhausted — re-raise original error
-                raise
+                # All fallbacks exhausted — notify user and re-raise
+                exhausted_msg = Msg(
+                    name="system",
+                    role="assistant",
+                    content=(
+                        f"All {len(resolved_chain)} fallback model(s) "
+                        "also failed. Please check your provider configurations."
+                    ),
+                )
+                yield exhausted_msg, False
+                raise first_err
 
         except asyncio.CancelledError:
             if agent is not None:

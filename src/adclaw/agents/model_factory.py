@@ -226,7 +226,8 @@ def _create_model_instance(
         return model, OpenAIChatModel
 
     # Handle remote models - determine chat_model_class from provider config
-    chat_model_class = _get_chat_model_class_from_provider()
+    provider_id = llm_cfg.provider_id if llm_cfg else ""
+    chat_model_class = _get_chat_model_class_from_provider(provider_id)
 
     # Create remote model instance with configuration
     model = _create_remote_model_instance(
@@ -236,8 +237,14 @@ def _create_model_instance(
     return model, chat_model_class
 
 
-def _get_chat_model_class_from_provider() -> Type[ChatModelBase]:
+def _get_chat_model_class_from_provider(
+    override_provider_id: str = "",
+) -> Type[ChatModelBase]:
     """Get the chat model class from provider configuration.
+
+    Args:
+        override_provider_id: If set, use this provider instead of the active one.
+            Used by fallback chain to resolve the correct chat model class.
 
     Returns:
         Chat model class, defaults to OpenAI-compatible chat model if not found
@@ -245,7 +252,7 @@ def _get_chat_model_class_from_provider() -> Type[ChatModelBase]:
     chat_model_class = get_chat_model_class("OpenAIChatModel")
     try:
         providers_data = load_providers_json()
-        provider_id = providers_data.active_llm.provider_id
+        provider_id = override_provider_id or providers_data.active_llm.provider_id
         if provider_id:
             chat_model_name = get_provider_chat_model(
                 provider_id,

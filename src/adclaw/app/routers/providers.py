@@ -339,21 +339,16 @@ async def set_active_model(
 # -- Fallback chain endpoints --
 
 
-class FallbackSlotRequest(BaseModel):
-    provider_id: str = Field(..., description="Provider to fall back to")
-    model: str = Field(..., description="Model identifier")
-
-
 class FallbackConfigRequest(BaseModel):
     enabled: bool = Field(default=False)
     timeout_seconds: int = Field(default=30)
-    chain: List[FallbackSlotRequest] = Field(default_factory=list)
+    chain: List[FallbackSlot] = Field(default_factory=list)
 
 
 class FallbackConfigResponse(BaseModel):
     enabled: bool
     timeout_seconds: int
-    chain: List[FallbackSlotRequest]
+    chain: List[FallbackSlot]
 
 
 @router.get(
@@ -367,7 +362,7 @@ async def get_fallback() -> FallbackConfigResponse:
         enabled=cfg.enabled,
         timeout_seconds=cfg.timeout_seconds,
         chain=[
-            FallbackSlotRequest(provider_id=s.provider_id, model=s.model)
+            FallbackSlot(provider_id=s.provider_id, model=s.model)
             for s in cfg.chain
         ],
     )
@@ -381,17 +376,6 @@ async def get_fallback() -> FallbackConfigResponse:
 async def update_fallback(
     body: FallbackConfigRequest = Body(...),
 ) -> FallbackConfigResponse:
-    if body.timeout_seconds < 5:
-        raise HTTPException(
-            status_code=400,
-            detail="Timeout must be at least 5 seconds.",
-        )
-    if body.timeout_seconds > 300:
-        raise HTTPException(
-            status_code=400,
-            detail="Timeout must not exceed 300 seconds.",
-        )
-
     # Validate that all providers in chain exist and are configured
     for slot in body.chain:
         provider = get_provider(slot.provider_id)
@@ -419,7 +403,7 @@ async def update_fallback(
         enabled=fallback.enabled,
         timeout_seconds=fallback.timeout_seconds,
         chain=[
-            FallbackSlotRequest(provider_id=s.provider_id, model=s.model)
+            FallbackSlot(provider_id=s.provider_id, model=s.model)
             for s in fallback.chain
         ],
     )

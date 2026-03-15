@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ModelInfo(BaseModel):
@@ -82,6 +82,13 @@ class FallbackSlot(BaseModel):
     provider_id: str = Field(..., description="Provider to fall back to")
     model: str = Field(..., description="Model identifier")
 
+    @field_validator("provider_id", "model", mode="before")
+    @classmethod
+    def _non_empty(cls, v: str) -> str:
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError("must be a non-empty string")
+        return v
+
 
 class FallbackConfig(BaseModel):
     """Fallback chain configuration."""
@@ -89,7 +96,9 @@ class FallbackConfig(BaseModel):
     enabled: bool = Field(default=False)
     timeout_seconds: int = Field(
         default=30,
-        description="Timeout per LLM call before trying next in chain",
+        ge=5,
+        le=300,
+        description="Timeout in seconds for each LLM call (primary and fallback)",
     )
     chain: List[FallbackSlot] = Field(default_factory=list)
 
@@ -164,3 +173,4 @@ class ResolvedModelConfig(BaseModel):
     base_url: str = Field(default="")
     api_key: str = Field(default="")
     is_local: bool = Field(default=False)
+    provider_id: str = Field(default="")
