@@ -2,6 +2,9 @@ name: NPM Format (website & console)
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   website:
     name: website format check

@@ -142,8 +142,10 @@ def _github_token_hint(bundle_url: str) -> str:
     """Hint to set GITHUB_TOKEN when URL is from GitHub/skills.sh."""
     if not bundle_url:
         return ""
-    lower = bundle_url.lower()
-    if "skills.sh" in lower or "github.com" in lower:
+    from urllib.parse import urlparse as _urlparse
+    _parsed_hint = _urlparse(bundle_url)
+    _hint_host = (_parsed_hint.hostname or "").lower()
+    if _hint_host in ("skills.sh", "www.skills.sh") or _hint_host == "github.com" or _hint_host.endswith(".github.com"):
         return " Tip: set GITHUB_TOKEN (or GH_TOKEN) to avoid rate limits."
     return ""
 
@@ -208,7 +210,7 @@ async def update_citedy_skills():
             results.append({"name": result.name, "updated": True})
         except Exception as e:
             logger.warning("Failed to update skill %s: %s", skill_name, e)
-            errors.append({"name": skill_name, "error": str(e)})
+            errors.append({"name": skill_name, "error": f"Update failed: {type(e).__name__}"})
     return {
         "updated": results,
         "errors": errors,

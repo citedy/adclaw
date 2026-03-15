@@ -407,7 +407,7 @@ class AdClawAgent(ReActAgent):
 
         from ..constant import WORKING_DIR
 
-        h = hashlib.md5(usedforsecurity=False)
+        h = hashlib.sha256()
         for name in ("AGENTS.md", "SOUL.md", "PROFILE.md"):
             p = Path(WORKING_DIR) / name
             if p.exists():

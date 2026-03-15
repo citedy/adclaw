@@ -2,6 +2,7 @@
 """API endpoints for environment variable management."""
 from __future__ import annotations
 
+import logging
 import re
 from typing import Dict, List, Optional
 
@@ -9,6 +10,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from ...envs import load_envs, save_envs, delete_env_var
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/envs", tags=["envs"])
 
@@ -180,9 +183,15 @@ async def bulk_import(body: BulkImportRequest) -> List[EnvVar]:
     KEY="VALUE", KEY='VALUE', and export KEY=VALUE formats.
     """
     parsed: Dict[str, str] = {}
+    skipped: list[str] = []
     for line in body.text.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
+            continue
+        if len(stripped) > 10000:
+            key = stripped.split("=", 1)[0] if "=" in stripped else "(unparseable)"
+            skipped.append(key)
+            logger.warning("Skipping env line exceeding 10000 chars: %s", key)
             continue
         m = _ENV_LINE_RE.match(stripped)
         if m:
@@ -192,8 +201,13 @@ async def bulk_import(body: BulkImportRequest) -> List[EnvVar]:
             )
             parsed[key] = value
 
-    if not parsed:
+    if not parsed and not skipped:
         raise HTTPException(400, detail="No valid KEY=VALUE lines found")
+    if not parsed and skipped:
+        raise HTTPException(
+            400,
+            detail=f"All lines skipped (exceeding 10000 chars): {', '.join(skipped)}",
+        )
 
     if body.merge:
         envs = load_envs()

@@ -15,6 +15,7 @@ Or set environment variables:
 import argparse
 import os
 import sys
+from pathlib import Path
 
 try:
     from google_auth_oauthlib.flow import InstalledAppFlow
@@ -79,15 +80,18 @@ def main():
         print("Trying console-based auth...")
         creds = flow.run_console()
     
+    # Write credentials to file instead of terminal to avoid cleartext logging
+    env_file = Path(".env.gsc")
+    fd = os.open(str(env_file), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.fchmod(fd, 0o600)  # enforce permissions even if file pre-existed
+    with os.fdopen(fd, "w") as f:
+        f.write(f"GOOGLE_CLIENT_ID={client_id}\n")
+        f.write(f"GOOGLE_CLIENT_SECRET={client_secret}\n")  # noqa: S105
+        f.write(f"GOOGLE_REFRESH_TOKEN={creds.refresh_token}\n")
     print()
     print("=" * 60)
-    print("SUCCESS! Add these to your .env file:")
-    print("=" * 60)
-    print()
-    print(f"GOOGLE_CLIENT_ID={client_id}")
-    print(f"GOOGLE_CLIENT_SECRET={client_secret}")
-    print(f"GOOGLE_REFRESH_TOKEN={creds.refresh_token}")
-    print()
+    print(f"SUCCESS! Credentials saved to {env_file.resolve()}")
+    print("Add the contents of this file to your .env")
     print("=" * 60)
 
 

@@ -297,8 +297,11 @@ class MCPClientConfig(BaseModel):
             )
 
         # Auto-inject Authorization header from CITEDY_API_KEY for Citedy MCP
+        from urllib.parse import urlparse as _urlparse
+        _parsed = _urlparse(self.url)
         if (
-            self.url.startswith("https://mcp.citedy.com")
+            _parsed.scheme == "https"
+            and _parsed.hostname == "mcp.citedy.com"
             and "Authorization" not in self.headers
         ):
             api_key = self.env.get("CITEDY_API_KEY") or os.getenv(

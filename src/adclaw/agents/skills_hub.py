@@ -123,6 +123,27 @@ def _join_url(base: str, path: str) -> str:
     return f"{base.rstrip('/')}/{path.lstrip('/')}"
 
 
+_ALLOWED_HOSTS = {
+    "api.github.com",
+    "raw.githubusercontent.com",
+    "github.com",
+    "skills.sh",
+    "clawhub.ai",
+    "www.clawhub.ai",
+    "skillsmp.com",
+    "www.skillsmp.com",
+}
+
+
+def _allowed_hosts() -> set[str]:
+    """Return allowed hosts, dynamically including the configured hub base URL."""
+    hosts = set(_ALLOWED_HOSTS)
+    hub_host = urlparse(_hub_base_url()).hostname
+    if hub_host:
+        hosts.add(hub_host.lower())
+    return hosts
+
+
 # pylint: disable-next=too-many-branches,too-many-statements
 def _http_get(
     url: str,
@@ -132,6 +153,13 @@ def _http_get(
     full_url = url
     if params:
         full_url = f"{url}?{urlencode(params)}"
+    # SSRF protection: only allow https to whitelisted hosts
+    parsed = urlparse(full_url)
+    if parsed.scheme != "https":
+        raise ValueError(f"Only https URLs are allowed, got {parsed.scheme!r}")
+    host = (parsed.hostname or "").lower()
+    if host not in _allowed_hosts():
+        raise ValueError(f"Host {host!r} is not in the allowed list")
     req = Request(
         full_url,
         headers={
@@ -139,10 +167,8 @@ def _http_get(
             "User-Agent": "adclaw-skills-hub/1.0",
         },
     )
-    parsed = urlparse(full_url)
-    host = (parsed.netloc or "").lower()
     github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    if github_token and "api.github.com" in host:
+    if github_token and host == "api.github.com":
         req.add_header("Authorization", f"Bearer {github_token}")
     retries = _hub_http_retries()
     timeout = _hub_http_timeout()
@@ -155,7 +181,7 @@ def _http_get(
         except HTTPError as e:
             last_error = e
             status = getattr(e, "code", 0) or 0
-            if status == 403 and "api.github.com" in host:
+            if status == 403 and host == "api.github.com":
                 body = ""
                 try:
                     body = e.read().decode("utf-8", errors="ignore")

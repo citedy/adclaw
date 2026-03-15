@@ -887,7 +887,11 @@ class SkillService:
             base_dir = get_builtin_skills_dir()
 
         skill_dir = base_dir / skill_name
-        full_path = skill_dir / file_path
+        full_path = (skill_dir / file_path).resolve()
+        skill_dir_resolved = str(skill_dir.resolve())
+        if not (str(full_path) + "/").startswith(skill_dir_resolved + "/"):
+            logger.error("Path traversal attempt: '%s'", file_path)
+            return None
 
         # Check if skill exists
         if not skill_dir.exists():

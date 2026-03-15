@@ -81,7 +81,7 @@ async def citedy_status():
             "configured": True,
             "api_key_prefix": api_key[:20] + "..." if len(api_key) > 20 else api_key,
             "balance": None,
-            "error": str(e),
+            "error": f"Could not check Citedy status ({type(e).__name__})",
             "developer_url": CITEDY_DEVELOPER_URL,
             "billing_url": CITEDY_BILLING_URL,
         }

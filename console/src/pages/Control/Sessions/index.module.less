@@ -90,6 +90,13 @@
   :global([class*="table-cell-fix-left"]),
   :global([class*="table-cell-fix-right"]) {
     background: #fff !important;
-    z-index: 2;
+    z-index: 2 !important;
+  }
+
+  /* Selection checkbox column must sit above other fixed-left columns */
+  :global(td.adclaw-table-selection-column),
+  :global(td.ant-table-selection-column),
+  :global(td[class*="selection-column"]) {
+    z-index: 3 !important;
   }
 }

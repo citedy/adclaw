@@ -18,6 +18,9 @@ on:
 env:
   IMAGE: nttylock/adclaw
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
