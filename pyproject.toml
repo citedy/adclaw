@@ -18,7 +18,7 @@ dependencies = [
     "transformers>=4.30.0",
     "python-dotenv>=1.0.0",
     "python-socks>=2.5.3",
-    "onnxruntime<1.24",
+    "onnxruntime<1.25",
     "lark-oapi>=1.5.3",
     "python-telegram-bot>=20.0",
     "aiosqlite>=0.19.0",
