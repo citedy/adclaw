@@ -5,13 +5,13 @@ AdClaw is an AI marketing assistant powered by [Citedy](https://www.citedy.com).
 ## Quick Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/nttylock/AdClaw/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Citedy/adclaw/main/install.sh | bash
 ```
 
 Or with Docker Compose:
 
 ```bash
-git clone https://github.com/nttylock/AdClaw.git
+git clone https://github.com/Citedy/adclaw.git
 cd AdClaw
 cp .env.example .env
 # Edit .env with your keys
