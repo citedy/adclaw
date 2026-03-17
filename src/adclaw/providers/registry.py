@@ -43,6 +43,8 @@ ALIYUN_CODINGPLAN_MODELS: List[ModelInfo] = [
 
 OPENAI_MODELS: List[ModelInfo] = [
     ModelInfo(id="gpt-5.4", name="GPT-5.4"),
+    ModelInfo(id="gpt-5.4-mini", name="GPT-5.4 Mini"),
+    ModelInfo(id="gpt-5.4-nano", name="GPT-5.4 Nano"),
     ModelInfo(id="gpt-5.3-codex", name="GPT-5.3 Codex"),
     ModelInfo(id="gpt-5", name="GPT-5"),
     ModelInfo(id="gpt-5-mini", name="GPT-5 Mini"),
