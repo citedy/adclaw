@@ -25,7 +25,7 @@
 - **117 built-in skills** — SEO, ads, content, social media, analytics, growth hacking
 - **52 marketing tools** via Citedy MCP server
 - **Instant file publishing** — upload any file to [here.now](https://here.now), get a shareable link, host static sites, use your own domain
-- **14 LLM providers** — OpenAI (GPT-5.4, Codex), Anthropic, xAI, Aliyun (Qwen3.5), Z.AI (GLM-4.7), Moonshot (Kimi K2.5), Ollama, llama.cpp, MLX, and more. Add custom providers via API
+- **22 LLM providers, 98+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, Minimax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more. Add custom providers via API
 - **LLM auto-fallback** — if the primary model fails (timeout, rate limit, auth error), automatically switches to the next model in a configurable fallback chain
 - **Multi-channel** — Telegram, Discord, DingTalk, Feishu, QQ, Console
 - **Web UI** — dashboard, per-persona chat tabs, skills, models, and channels from the browser
