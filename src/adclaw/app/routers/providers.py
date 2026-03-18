@@ -121,14 +121,7 @@ async def configure_provider(
     if provider is None:
         raise HTTPException(404, detail=f"Provider '{provider_id}' not found")
 
-    # Allow base_url for custom providers, providers without a default
-    # base URL (e.g. Azure OpenAI), and Ollama (user may override).
-    allow_base_url = (
-        provider.is_custom
-        or not provider.default_base_url
-        or provider.id == "ollama"
-    )
-    base_url = body.base_url if allow_base_url else None
+    base_url = body.base_url
     data = update_provider_settings(
         provider_id,
         api_key=body.api_key,

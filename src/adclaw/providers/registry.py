@@ -358,7 +358,7 @@ PROVIDER_BASETEN = ProviderDefinition(
 PROVIDER_MINIMAX = ProviderDefinition(
     id="minimax",
     name="Minimax AI",
-    default_base_url="https://api.minimaxi.chat/v1/text/chatcompletion_v2",
+    default_base_url="https://api.minimax.io/v1",
     api_key_prefix="",
     models=MINIMAX_MODELS,
 )
