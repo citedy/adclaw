@@ -156,9 +156,7 @@ TOGETHER_MODELS: List[ModelInfo] = [
     ModelInfo(id="moonshotai/Kimi-K2.5", name="Kimi K2.5"),
     ModelInfo(id="Qwen/Qwen3.5-9B", name="Qwen3.5 9B"),
     ModelInfo(id="zai-org/GLM-5", name="GLM-5"),
-    ModelInfo(id="zai-org/GLM-4.7", name="GLM 4.7"),
     ModelInfo(id="Qwen/Qwen3-Coder-Next-FP8", name="Qwen3 Coder Next FP8"),
-    ModelInfo(id="zai-org/GLM-4.5-Air-FP8", name="GLM 4.5 Air FP8"),
     ModelInfo(id="openai/gpt-oss-120b", name="GPT-OSS 120B"),
     ModelInfo(
         id="meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",

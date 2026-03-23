@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AdClaw — AI Marketing Team in One Command</title>
-  <meta name="description" content="Multi-agent AI marketing team with 118 skills, 7 channels, shared memory. pip install adclaw.">
+  <meta name="description" content="Multi-agent AI marketing team with 22 LLM providers, 100+ models, 118 skills, shared memory. pip install adclaw.">
   <link rel="icon" href="/favicon.ico">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Geist+Mono&display=swap');
@@ -272,7 +272,7 @@
 <section class="hero" style="border: none;">
   <div class="container">
     <h1>AI marketing team<br>that runs locally</h1>
-    <p class="sub">Create specialized agent personas — researcher, writer, SEO, ads — each with its own LLM, skills, and schedule. 117 built-in skills. 7 chat channels. Shared memory.</p>
+    <p class="sub">Create specialized agent personas — researcher, writer, SEO, ads — each with its own LLM, skills, and schedule. 22 LLM providers. 100+ models. 118 built-in skills. Auto-fallback.</p>
     <div class="install" onclick="copyCmd(this)">
       <span class="prompt">$</span>
       <span>pip install adclaw</span>
@@ -311,12 +311,20 @@ adclaw app</code>
         <p>Create researcher, writer, SEO specialist, ads manager. Each with custom identity (SOUL.md), its own LLM, and skill set.</p>
       </div>
       <div class="feat">
-        <h4>117 built-in skills</h4>
+        <h4>22 LLM providers, 100+ models</h4>
+        <p>OpenAI, Anthropic, Gemini, DeepSeek, Groq, OpenRouter, MiniMax, Cerebras, Together, Mistral, Baseten, and more. Auto-fallback chain.</p>
+      </div>
+      <div class="feat">
+        <h4>118 built-in skills</h4>
         <p>SEO articles, trend scouting, competitor analysis, lead magnets, AI video shorts, social media publishing, and more.</p>
       </div>
       <div class="feat">
         <h4>Shared memory (AOM)</h4>
         <p>Vector search + full-text search + 4-layer optimization. Agents share knowledge across sessions automatically.</p>
+      </div>
+      <div class="feat">
+        <h4>LLM auto-fallback</h4>
+        <p>Primary model down? Auto-switch to backup. Configurable chain with timeout. OpenRouter routing: auto, nitro, free, floor.</p>
       </div>
       <div class="feat">
         <h4>7 chat channels</h4>
@@ -386,8 +394,10 @@ adclaw app</code>
         <tr><th>Capability</th><th>AdClaw</th><th>CoPaw</th><th>CrewAI</th><th>Dify</th><th>OpenClaw MC</th></tr>
       </thead>
       <tbody>
+        <tr><td>LLM providers</td><td><strong>22 (100+ models)</strong></td><td>~5</td><td>Custom</td><td>~10</td><td>Custom</td></tr>
+        <tr><td>LLM auto-fallback</td><td class="y"><strong>Chain</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Multi-agent personas</td><td class="y">Yes</td><td class="n">No</td><td class="y">Yes</td><td class="n">No</td><td class="y">Yes</td></tr>
-        <tr><td>Built-in skills</td><td><strong>117</strong></td><td>~50</td><td>Custom</td><td>Plugins</td><td>—</td></tr>
+        <tr><td>Built-in skills</td><td><strong>118</strong></td><td>~50</td><td>Custom</td><td>Plugins</td><td>—</td></tr>
         <tr><td>Marketing tools (MCP)</td><td><strong>52</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Chat channels</td><td><strong>7</strong></td><td>5</td><td>API</td><td>API + Web</td><td>API</td></tr>
         <tr><td>Web dashboard</td><td class="y">Yes</td><td>Basic</td><td class="n">No</td><td class="y">Yes</td><td class="y">Yes</td></tr>
@@ -416,7 +426,7 @@ adclaw app</code>
 <section style="text-align: center; padding: 80px 0;">
   <div class="container">
     <h2 style="margin-bottom: 16px;">Open source. Apache 2.0.</h2>
-    <p style="color: var(--zinc-500); font-size: 15px; margin-bottom: 32px;">Fully reworked fork of <a href="https://github.com/agentscope-ai/CoPaw" style="color: var(--zinc-500); text-decoration: underline;">CoPaw</a> — rebuilt with multi-agent personas, distributed task coordination, 118 skills, and enterprise-grade memory.</p>
+    <p style="color: var(--zinc-500); font-size: 15px; margin-bottom: 32px;">22 LLM providers, 100+ models, 118 skills, dual-layer memory, auto-fallback. Built by a solo founder as a rework of <a href="https://github.com/agentscope-ai/CoPaw" style="color: var(--zinc-500); text-decoration: underline;">CoPaw</a>.</p>
     <a href="https://github.com/Citedy/adclaw" class="cta-btn">View on GitHub</a>
   </div>
 </section>
