@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # AdClaw — AI Marketing Assistant
-# Install: curl -fsSL https://get.adclaw.app/install.sh | bash
+# Install: curl -fsSL https://get.adclaw.app | bash
 #    or:   curl -fsSL https://raw.githubusercontent.com/Citedy/adclaw/main/install.sh | bash
 #
 # Options (env vars or flags):
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
 AdClaw Installer — AI Marketing Assistant
 
 Usage:
-  curl -fsSL https://get.adclaw.app/install.sh | bash
+  curl -fsSL https://get.adclaw.app | bash
   bash install.sh [OPTIONS]
 
 Options:
@@ -71,13 +71,13 @@ Environment variables:
 
 Examples:
   # Basic install
-  curl -fsSL https://get.adclaw.app/install.sh | bash
+  curl -fsSL https://get.adclaw.app | bash
 
   # With Telegram bot
-  curl -fsSL https://get.adclaw.app/install.sh | bash -s -- --telegram-token "123:ABC"
+  curl -fsSL https://get.adclaw.app | bash -s -- --telegram-token "123:ABC"
 
   # Update to latest
-  curl -fsSL https://get.adclaw.app/install.sh | bash -s -- --update
+  curl -fsSL https://get.adclaw.app | bash -s -- --update
 EOF
             exit 0 ;;
         *) die "Unknown option: $1 (try --help)" ;;
@@ -110,7 +110,7 @@ ensure_docker() {
         info "Docker installed."
     fi
 
-    if ! docker info &>/dev/null 2>&1; then
+    if ! docker info &>/dev/null; then
         # Try starting Docker daemon
         if command -v systemctl &>/dev/null; then
             warn "Docker daemon not running. Starting..."
@@ -158,30 +158,38 @@ do_update() {
     info "Pulling ${ADCLAW_IMAGE}..."
     docker pull "$ADCLAW_IMAGE"
 
-    if docker ps -a --format '{{.Names}}' | grep -q "^${ADCLAW_CONTAINER}$"; then
-        # Capture current port mapping
-        CURRENT_PORT=$(docker port "$ADCLAW_CONTAINER" 8088/tcp 2>/dev/null | head -1 | cut -d: -f2 || echo "$PORT")
-
-        docker rm -f "$ADCLAW_CONTAINER" >/dev/null 2>&1
-        info "Old container removed."
-
-        # Re-run with same config from inspect
-        # Simplified: just restart with known volumes
-        docker run -d \
-            --name "$ADCLAW_CONTAINER" \
-            --restart unless-stopped \
-            -p "${CURRENT_PORT:-$PORT}:8088" \
-            -v adclaw-data:/app/working \
-            -v adclaw-secret:/app/working.secret \
-            -e "ADCLAW_ENABLED_CHANNELS=$CHANNELS" \
-            -e "LOG_LEVEL=$LOG_LEVEL" \
-            "$ADCLAW_IMAGE" >/dev/null
-
-        info "Container restarted."
-    else
+    if ! docker ps -a --format '{{.Names}}' | grep -q "^${ADCLAW_CONTAINER}$"; then
         warn "No running container found. Run install first."
         exit 1
     fi
+
+    CURRENT_PORT=$(docker port "$ADCLAW_CONTAINER" 8088/tcp 2>/dev/null | head -1 | cut -d: -f2 || echo "$PORT")
+
+    # Preserve env vars from the running container
+    OLD_ENV=$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$ADCLAW_CONTAINER" 2>/dev/null || true)
+    ENV_ARGS=()
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        case "$line" in
+            ADCLAW_ENABLED_CHANNELS=*|CITEDY_API_KEY=*|TELEGRAM_BOT_TOKEN=*|\
+            GITHUB_TOKEN=*|TAVILY_API_KEY=*|LOG_LEVEL=*|AGENTHUB_API_KEY=*)
+                ENV_ARGS+=(-e "$line") ;;
+        esac
+    done <<< "$OLD_ENV"
+
+    docker rm -f "$ADCLAW_CONTAINER" >/dev/null 2>&1
+    info "Old container removed."
+
+    docker run -d \
+        --name "$ADCLAW_CONTAINER" \
+        --restart unless-stopped \
+        -p "${CURRENT_PORT:-$PORT}:8088" \
+        -v adclaw-data:/app/working \
+        -v adclaw-secret:/app/working.secret \
+        "${ENV_ARGS[@]}" \
+        "$ADCLAW_IMAGE" >/dev/null
+
+    info "Container restarted with preserved configuration."
 
     printf "\n${GREEN}${BOLD}AdClaw updated!${RESET}\n"
     printf "  Web UI: ${BOLD}http://localhost:${CURRENT_PORT:-$PORT}${RESET}\n\n"
@@ -198,28 +206,26 @@ esac
 ensure_docker
 
 # Check port availability
-if command -v ss &>/dev/null; then
-    if ss -tlnp 2>/dev/null | grep -q ":${PORT} "; then
-        EXISTING=$(docker ps --format '{{.Names}}' --filter "publish=${PORT}" 2>/dev/null | head -1)
-        if [ "$EXISTING" = "$ADCLAW_CONTAINER" ]; then
-            warn "AdClaw is already running on port ${PORT}."
-            printf "\n  Update:    ${BOLD}curl -fsSL https://get.adclaw.app/install.sh | bash -s -- --update${RESET}\n"
-            printf "  Uninstall: ${BOLD}curl -fsSL https://get.adclaw.app/install.sh | bash -s -- --uninstall${RESET}\n"
-            printf "  Web UI:    ${BOLD}http://localhost:${PORT}${RESET}\n\n"
-            exit 0
-        else
-            die "Port ${PORT} is already in use. Use --port to pick another: bash install.sh --port 9090"
-        fi
+port_in_use() {
+    if command -v ss &>/dev/null; then
+        ss -tlnp 2>/dev/null | grep -q ":${PORT} "
+    elif command -v lsof &>/dev/null; then
+        lsof -iTCP:"${PORT}" -sTCP:LISTEN &>/dev/null
+    else
+        return 1
     fi
-elif command -v lsof &>/dev/null; then
-    if lsof -iTCP:"${PORT}" -sTCP:LISTEN &>/dev/null 2>&1; then
-        EXISTING=$(docker ps --format '{{.Names}}' --filter "publish=${PORT}" 2>/dev/null | head -1)
-        if [ "$EXISTING" = "$ADCLAW_CONTAINER" ]; then
-            warn "AdClaw is already running on port ${PORT}."
-            exit 0
-        else
-            die "Port ${PORT} is already in use. Use --port to pick another."
-        fi
+}
+
+if port_in_use; then
+    EXISTING=$(docker ps --format '{{.Names}}' --filter "publish=${PORT}" 2>/dev/null | head -1)
+    if [ "$EXISTING" = "$ADCLAW_CONTAINER" ]; then
+        warn "AdClaw is already running on port ${PORT}."
+        printf "\n  Update:    ${BOLD}curl -fsSL https://get.adclaw.app | bash -s -- --update${RESET}\n"
+        printf "  Uninstall: ${BOLD}curl -fsSL https://get.adclaw.app | bash -s -- --uninstall${RESET}\n"
+        printf "  Web UI:    ${BOLD}http://localhost:${PORT}${RESET}\n\n"
+        exit 0
+    else
+        die "Port ${PORT} is already in use. Use --port to pick another: bash install.sh --port 9090"
     fi
 fi
 
@@ -256,17 +262,19 @@ docker run "${RUN_ARGS[@]}" "$ADCLAW_IMAGE" >/dev/null
 
 # Wait for container to be healthy
 info "Waiting for startup..."
+HAS_CURL=false
+command -v curl &>/dev/null && HAS_CURL=true
 for _ in $(seq 1 15); do
-    if docker ps --format '{{.Names}}' | grep -q "^${ADCLAW_CONTAINER}$"; then
-        # Check if the web server is responding
-        if command -v curl &>/dev/null && curl -sf "http://localhost:${PORT}/" >/dev/null 2>&1; then
-            break
-        fi
+    if ! docker ps --format '{{.Names}}' | grep -q "^${ADCLAW_CONTAINER}$"; then
+        sleep 1
+        continue
+    fi
+    if [ "$HAS_CURL" = false ] || curl -sf "http://localhost:${PORT}/" >/dev/null 2>&1; then
+        break
     fi
     sleep 1
 done
 
-# Verify running
 if ! docker ps --format '{{.Names}}' | grep -q "^${ADCLAW_CONTAINER}$"; then
     error "Container failed to start. Logs:"
     docker logs "$ADCLAW_CONTAINER" 2>&1 | tail -20
@@ -289,10 +297,10 @@ if [ -n "$TELEGRAM_TOKEN" ]; then
     printf "  ${BOLD}Telegram:${RESET}  Bot is active\n"
 fi
 printf "\n"
-printf "  ${DIM}Logs:${RESET}      docker logs -f adclaw\n"
-printf "  ${DIM}Stop:${RESET}      docker stop adclaw\n"
-printf "  ${DIM}Update:${RESET}    curl -fsSL https://get.adclaw.app/install.sh | bash -s -- --update\n"
-printf "  ${DIM}Uninstall:${RESET} curl -fsSL https://get.adclaw.app/install.sh | bash -s -- --uninstall\n"
+printf "  ${DIM}Logs:${RESET}      docker logs -f %s\n" "$ADCLAW_CONTAINER"
+printf "  ${DIM}Stop:${RESET}      docker stop %s\n" "$ADCLAW_CONTAINER"
+printf "  ${DIM}Update:${RESET}    curl -fsSL https://get.adclaw.app | bash -s -- --update\n"
+printf "  ${DIM}Uninstall:${RESET} curl -fsSL https://get.adclaw.app | bash -s -- --uninstall\n"
 printf "\n"
 printf "  ${CYAN}Next step:${RESET} Open the Web UI and configure your LLM provider.\n"
 printf "  ${CYAN}Docs:${RESET}      https://github.com/Citedy/adclaw#readme\n\n"

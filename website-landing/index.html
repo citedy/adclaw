@@ -443,7 +443,7 @@ adclaw app</code>
 
 <script>
 function copyCmd(el, cmd) {
-  navigator.clipboard.writeText(cmd || 'curl -fsSL https://get.adclaw.app | bash').then(() => {
+  navigator.clipboard.writeText(cmd).then(() => {
     const btn = el.querySelector('.copy');
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
     setTimeout(() => {

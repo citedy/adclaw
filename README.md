@@ -22,7 +22,7 @@
 - **@tag routing** in Telegram — `@researcher find AI trends` sends the message to the right agent
 - **Coordinator delegation** — one agent orchestrates the rest, delegating tasks automatically
 - **Shared memory** — agents read each other's output files for seamless collaboration
-- **117 built-in skills** — SEO, ads, content, social media, analytics, growth hacking
+- **118 built-in skills** — SEO, ads, content, social media, analytics, growth hacking
 - **52 marketing tools** via Citedy MCP server
 - **Instant file publishing** — upload any file to [here.now](https://here.now), get a shareable link, host static sites, use your own domain
 - **22 LLM providers, 100+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, Minimax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more. Add custom providers via API

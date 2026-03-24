@@ -1,6 +1,6 @@
 # Getting Started with AdClaw
 
-AdClaw is an AI marketing assistant powered by [Citedy](https://www.citedy.com). It comes with 96 built-in skills (SEO, ads, content, social media, analytics, and more), 52 MCP tools, and works out of the box via Telegram or web chat.
+AdClaw is an AI marketing assistant powered by [Citedy](https://www.citedy.com). It comes with 118 built-in skills (SEO, ads, content, social media, analytics, and more), 52 MCP tools, and works out of the box via Telegram or web chat.
 
 ## Quick Install
 
