@@ -256,7 +256,7 @@ docker run "${RUN_ARGS[@]}" "$ADCLAW_IMAGE" >/dev/null
 
 # Wait for container to be healthy
 info "Waiting for startup..."
-for i in $(seq 1 15); do
+for _ in $(seq 1 15); do
     if docker ps --format '{{.Names}}' | grep -q "^${ADCLAW_CONTAINER}$"; then
         # Check if the web server is responding
         if command -v curl &>/dev/null && curl -sf "http://localhost:${PORT}/" >/dev/null 2>&1; then
