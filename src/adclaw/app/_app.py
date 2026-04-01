@@ -91,7 +91,15 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
                 finally:
                     if orig_stream is not None:
                         model.stream = orig_stream
-                return resp.content if hasattr(resp, "content") else str(resp)
+                # Extract text from ChatResponse.content (list of {type, text} dicts)
+                content = resp.content if hasattr(resp, "content") else resp
+                if isinstance(content, list):
+                    parts = [
+                        item.get("text", "") if isinstance(item, dict) else str(item)
+                        for item in content
+                    ]
+                    return "".join(parts)
+                return str(content)
 
             aom_manager = AOMManager(
                 working_dir=_wd,
