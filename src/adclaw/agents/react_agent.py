@@ -21,7 +21,11 @@ from pydantic import BaseModel
 from .command_handler import CommandHandler
 from .hooks import BootstrapHook, MemoryCompactionHook
 from .model_factory import create_model_and_formatter
-from .prompt import build_system_prompt_from_working_dir
+from .prompt import (
+    CachedPromptBuilder,
+    DynamicContext,
+    PersonaPromptPool,
+)
 from .skills_manager import (
     ensure_skills_initialized,
     get_working_skills_dir,
@@ -115,6 +119,9 @@ class AdClawAgent(ReActAgent):
         self._persona = persona
         self._team_summary = team_summary
         self._heal_events: list = []
+
+        self._prompt_pool = PersonaPromptPool(working_dir=Path(WORKING_DIR))
+        self._prompt_builder = self._prompt_pool.get(persona)
         self._env_context = env_context
         self._max_input_length = max_input_length
         self._mcp_clients = mcp_clients or []
@@ -268,18 +275,19 @@ class AdClawAgent(ReActAgent):
                     )
 
     def _build_sys_prompt(self) -> str:
-        """Build system prompt from working dir files and env context.
+        """Build system prompt using CachedPromptBuilder (v2).
+
+        Static sections (AGENTS.md, SOUL.md, PROFILE.md) are cached via hash.
+        Dynamic sections (env context, team summary) are rebuilt per-call.
 
         Returns:
             Complete system prompt string
         """
-        sys_prompt = build_system_prompt_from_working_dir(
-            persona=self._persona,
-            team_summary=self._team_summary,
+        dynamic = DynamicContext(
+            env_context=self._env_context or "",
+            team_summary=self._team_summary or "",
         )
-        if self._env_context is not None:
-            sys_prompt = self._env_context + "\n\n" + sys_prompt
-        return sys_prompt
+        return self._prompt_builder.build(dynamic=dynamic)
 
     def _setup_memory_manager(
         self,
@@ -394,63 +402,18 @@ class AdClawAgent(ReActAgent):
             )
             logger.debug("Registered memory compaction hook")
 
-    # --- Frozen Memory Snapshots ---
-    # Cache the system prompt and only rebuild when source files change.
-    # This enables prompt caching on providers that support it
-    # (Anthropic 5-min TTL, OpenAI).
-    _frozen_prompt: str | None = None
-    _frozen_hash: str | None = None
-
-    def _prompt_source_hash(self) -> str:
-        """Hash the source files and persona config that feed into the system prompt."""
-        import hashlib
-
-        from ..constant import WORKING_DIR
-
-        h = hashlib.sha256()
-        for name in ("AGENTS.md", "SOUL.md", "PROFILE.md"):
-            p = Path(WORKING_DIR) / name
-            if p.exists():
-                try:
-                    h.update(p.read_bytes())
-                except OSError:
-                    pass
-        # Include persona and team_summary in hash so cache invalidates
-        # when a different persona is active or team changes.
-        if self._persona is not None:
-            h.update(self._persona.id.encode())
-            h.update(self._persona.soul_md.encode())
-        if self._team_summary:
-            h.update(self._team_summary.encode())
-        if self._env_context:
-            h.update(self._env_context.encode())
-        return h.hexdigest()
-
     def rebuild_sys_prompt(self) -> None:
-        """Rebuild the system prompt only if source files changed.
+        """Rebuild the system prompt using CachedPromptBuilder.
 
-        Uses a frozen snapshot: if the hash of AGENTS.md + SOUL.md +
-        PROFILE.md hasn't changed, the cached prompt is reused.
-        This enables prompt caching on providers that support it.
+        Static sections (AGENTS.md, SOUL.md, PROFILE.md) are cached --
+        only re-read when file content hash changes.
+        Dynamic sections (env context, team summary) are rebuilt every call.
         """
-        current_hash = self._prompt_source_hash()
-        if self._frozen_prompt is not None and current_hash == self._frozen_hash:
-            # Source files unchanged — reuse frozen prompt
-            self._sys_prompt = self._frozen_prompt
-            logger.debug(
-                "Frozen prompt HIT (hash=%s, len=%d)",
-                current_hash[:8], len(self._frozen_prompt),
-            )
-        else:
-            self._sys_prompt = self._build_sys_prompt()
-            old_hash = self._frozen_hash
-            self._frozen_prompt = self._sys_prompt
-            self._frozen_hash = current_hash
-            logger.info(
-                "Frozen prompt REBUILT (hash=%s→%s, len=%d)",
-                (old_hash or "none")[:8], current_hash[:8],
-                len(self._sys_prompt),
-            )
+        self._sys_prompt = self._build_sys_prompt()
+        logger.debug(
+            "Prompt rebuilt (len=%d)",
+            len(self._sys_prompt),
+        )
 
         for msg, _marks in self.memory.content:
             if msg.role == "system":
