@@ -106,6 +106,9 @@ class AOMManager:
             config=self.config,
         )
 
+        # Wire ingest → consolidation gate
+        self.ingest_agent._on_memory_inserted = self.consolidation_engine.notify_new_memory
+
         if self.config.consolidation_enabled:
             self._consolidation_scheduler = ConsolidationScheduler(
                 engine=self.consolidation_engine,

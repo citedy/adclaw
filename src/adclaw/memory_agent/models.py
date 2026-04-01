@@ -39,6 +39,8 @@ class Memory(BaseModel):
     updated_at: str = Field(default_factory=_utcnow)
     is_deleted: int = 0
     last_consolidated_at: Optional[str] = None
+    last_verified_at: Optional[str] = None
+    superseded_by: Optional[str] = None
 
     def compute_hash(self) -> str:
         return hashlib.sha256(self.content.encode()).hexdigest()
@@ -93,6 +95,14 @@ class AOMConfig(BaseModel):
     file_inbox_enabled: bool = False
     importance_threshold: float = 0.3
     max_memories: int = 100_000
+
+    # --- Consolidation v2: gate logic & contradiction detection ---
+    consolidation_min_interval_seconds: int = 300
+    consolidation_min_new_memories: int = 5
+    staleness_decay_rate: float = 0.02
+    staleness_min_weight: float = 0.5
+    stale_verification_days: int = 14
+    contradiction_detection_enabled: bool = True
 
     # --- Advanced multimodal mode ---
     # When multimodal_api_key is set, AOM can process images, audio, video, PDF

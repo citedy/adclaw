@@ -310,19 +310,32 @@ AdClaw features a dual-layer memory architecture: **ReMe** (per-agent file-based
 |-----------|-------------|
 | **MemoryStore** | SQLite + sqlite-vec + FTS5 — persistent storage with vector and keyword search |
 | **IngestAgent** | Sanitization (33 threat patterns) -> LLM extraction -> embedding -> storage |
-| **ConsolidationEngine** | Vector-neighbor clustering -> LLM insight generation (60-min cycle) |
+| **ConsolidationEngine** | Smart gate logic (event→time→count) + 4-phase pipeline (orient→gather→consolidate→prune) + contradiction detection |
 | **EmbeddingPipeline** | Configurable embedding models for semantic search |
+| **CachedPromptBuilder** | Static/dynamic prompt separation with hash-based caching and per-persona isolation |
 
-### Memory Optimization (R1-R4)
+### Memory Optimization (R1-R5)
 
-Four deterministic (zero-LLM-cost) optimization layers inspired by [claw-compactor](https://github.com/aeromomo/claw-compactor):
+Five optimization layers — four deterministic (zero-LLM-cost) inspired by [claw-compactor](https://github.com/aeromomo/claw-compactor), plus smart consolidation:
 
 | Layer | Module | What it does | Impact |
 |-------|--------|--------------|--------|
 | **R1** Pre-Compression | `compressor.py` | Rule-based markdown cleanup, line dedup, bullet merging + N-gram codebook with lossless $XX codes | 8-15% token savings before LLM summarization |
 | **R2** Tiered Context | `tiers.py` | Generates L0 (200 tok) / L1 (1000 tok) / L2 (3000 tok) progressive summaries by priority scoring | Load only the context depth you need |
 | **R3** Near-Dedup | `dedup.py` | Hybrid shingle-hash Jaccard + word-overlap similarity (threshold 0.6) with LRU shingle cache | 90% paraphrase detection rate in live tests |
-| **R4** Temporal Pruning | `consolidate.py` | Age-based cleanup: green (notes) >7d deleted, yellow (actions) >30d condensed, red (decisions) never | Prevents DB bloat over time |
+| **R4** Temporal Pruning | `consolidate.py` | Age-based cleanup: green (chat/manual) >7d deleted, yellow (file_inbox) >30d condensed, red (skill/mcp_tool) never | Prevents DB bloat over time |
+| **R5** Smart Consolidation | `consolidate.py` | 3-tier gate logic skips idle cycles, 4-phase pipeline (orient→gather→consolidate→prune), contradiction detection with LLM arbitration | Saves LLM tokens on empty cycles, resolves conflicting memories |
+
+### Prompt Caching
+
+Static/dynamic prompt separation based on patterns from [Claude Code](https://claude.ai/claude-code):
+
+| Component | Module | What it does |
+|-----------|--------|--------------|
+| **CachedSection** | `prompt.py` | Hash-based file caching with 2s check interval — AGENTS.md/SOUL.md only re-read when content changes |
+| **CachedPromptBuilder** | `prompt.py` | Splits prompt into cacheable static (identity files) and per-turn dynamic (AOM context, tools, team) |
+| **PersonaPromptPool** | `prompt.py` | Per-persona cache isolation — switching persona loads a different cache, not a full rebuild |
+| **select_memory_tier** | `prompt.py` | Picks the richest AOM memory tier (L2→L1→L0) that fits the remaining token budget |
 
 ### AOM REST API
 

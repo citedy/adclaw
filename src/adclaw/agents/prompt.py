@@ -5,8 +5,12 @@
 This module provides utilities for building system prompts from
 markdown configuration files in the working directory.
 """
+import hashlib
 import logging
+import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +234,227 @@ If the user explicitly says they want to skip the bootstrap or just want their q
 """
 
 
+# ---------------------------------------------------------------------------
+# v2: Cached prompt system (static/dynamic separation)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class CachedSection:
+    """Hash-based file cache for a single prompt section."""
+
+    path: Path
+    content: str = ""
+    content_hash: str = ""
+    last_checked: float = 0.0
+    CHECK_INTERVAL: ClassVar[float] = 2.0
+
+    def load(self, force: bool = False) -> str:
+        """Load file content, using cache if hash unchanged."""
+        now = time.monotonic()
+        if not force and self.content and (now - self.last_checked) < self.CHECK_INTERVAL:
+            return self.content
+
+        self.last_checked = now
+
+        if not self.path.exists():
+            self.content = ""
+            self.content_hash = ""
+            return ""
+
+        try:
+            raw = self.path.read_text(encoding="utf-8").strip()
+            # Strip YAML frontmatter
+            if raw.startswith("---"):
+                parts = raw.split("---", 2)
+                if len(parts) >= 3:
+                    raw = parts[2].strip()
+
+            new_hash = hashlib.sha256(raw.encode()).hexdigest()
+            if new_hash != self.content_hash:
+                self.content = raw
+                self.content_hash = new_hash
+            return self.content
+        except Exception as exc:
+            logger.warning("CachedSection: failed to read %s: %s", self.path, exc)
+            return self.content  # return stale content on error
+
+
+@dataclass
+class DynamicContext:
+    """Per-turn dynamic context injected after the static prompt."""
+
+    env_context: str = ""
+    aom_tier: str = ""
+    aom_tier_name: str = ""
+    active_tools: str = ""
+    team_summary: str = ""
+
+    def render(self) -> str:
+        """Render dynamic sections into formatted string."""
+        parts: list[str] = []
+        if self.env_context:
+            parts.append(self.env_context)
+        if self.aom_tier:
+            header = f"# Memory Context ({self.aom_tier_name})" if self.aom_tier_name else "# Memory Context"
+            parts.append(f"{header}\n\n{self.aom_tier}")
+        if self.active_tools:
+            parts.append(f"# Active Tools\n\n{self.active_tools}")
+        if self.team_summary:
+            parts.append(f"# Team Summary\n\n{self.team_summary}")
+        return "\n\n".join(parts)
+
+
+class CachedPromptBuilder:
+    """Prompt builder with static/dynamic separation and hash-based caching."""
+
+    def __init__(self, working_dir: Path, persona=None) -> None:
+        self._working_dir = working_dir
+        self._persona = persona
+        self._file_caches: Dict[str, CachedSection] = {}
+        self._static_prompt: str = ""
+        self._static_hash: str = ""
+
+        # Initialize caches for each file
+        for filename, _required in PromptConfig.FILE_ORDER:
+            self._file_caches[filename] = CachedSection(path=working_dir / filename)
+
+    def _build_static(self) -> str:
+        """Build the static portion from cached files."""
+        parts: list[str] = []
+        for filename, required in PromptConfig.FILE_ORDER:
+            # Persona soul_md override
+            if filename == "SOUL.md" and self._persona and getattr(self._persona, "soul_md", None):
+                if parts:  # Add separator before persona section
+                    parts.append("")
+                parts.append(f"# SOUL.md ({self._persona.name})")
+                parts.append("")
+                parts.append(self._persona.soul_md)
+                continue
+
+            section = self._file_caches.get(filename)
+            if section is None:
+                continue
+            content = section.load()
+            if content:
+                if parts:
+                    parts.append("")
+                parts.append(f"# {filename}")
+                parts.append("")
+                parts.append(content)
+            elif required:
+                return DEFAULT_SYS_PROMPT
+
+        return "\n\n".join(parts) if parts else DEFAULT_SYS_PROMPT
+
+    def _static_source_hash(self) -> str:
+        """Hash of all file content hashes + persona for cache invalidation."""
+        h = hashlib.sha256()
+        for filename, _ in PromptConfig.FILE_ORDER:
+            section = self._file_caches.get(filename)
+            if section:
+                section.load()  # ensure loaded
+                h.update(section.content_hash.encode())
+        if self._persona:
+            h.update(getattr(self._persona, "id", "").encode())
+            h.update(getattr(self._persona, "soul_md", "").encode())
+        return h.hexdigest()
+
+    @property
+    def static_prompt(self) -> str:
+        """Get cached static prompt, rebuilding only if files changed."""
+        current_hash = self._static_source_hash()
+        if current_hash != self._static_hash:
+            self._static_prompt = self._build_static()
+            self._static_hash = current_hash
+        return self._static_prompt
+
+    def build(self, dynamic: Optional[DynamicContext] = None) -> str:
+        """Return static + dynamic prompt."""
+        static = self.static_prompt
+        if dynamic is None:
+            return static
+        dynamic_text = dynamic.render()
+        if not dynamic_text:
+            return static
+        return f"{static}\n\n{dynamic_text}"
+
+    def set_persona(self, persona) -> None:
+        """Switch persona, invalidating the static cache."""
+        self._persona = persona
+        self._static_hash = ""  # force rebuild
+
+    def invalidate(self) -> None:
+        """Force rebuild on next access."""
+        self._static_hash = ""
+        for section in self._file_caches.values():
+            section.content_hash = ""
+            section.last_checked = 0.0
+
+
+class PersonaPromptPool:
+    """Maintains one CachedPromptBuilder per persona."""
+
+    _MAX_POOL_SIZE = 50
+
+    def __init__(self, working_dir: Path) -> None:
+        self._working_dir = working_dir
+        self._builders: Dict[str, CachedPromptBuilder] = {}
+
+    def get(self, persona=None) -> CachedPromptBuilder:
+        """Get or create a builder for the given persona."""
+        key = getattr(persona, "id", "__default__") if persona else "__default__"
+        if key not in self._builders:
+            # Evict oldest entry if pool is at capacity
+            if len(self._builders) >= self._MAX_POOL_SIZE:
+                oldest_key = next(iter(self._builders))
+                del self._builders[oldest_key]
+            self._builders[key] = CachedPromptBuilder(
+                working_dir=self._working_dir, persona=persona
+            )
+        return self._builders[key]
+
+    def invalidate_all(self) -> None:
+        """Clear all cached builders."""
+        self._builders.clear()
+
+    @property
+    def size(self) -> int:
+        return len(self._builders)
+
+
+def select_memory_tier(
+    tiers: Dict[str, str],
+    available_tokens: int,
+    static_tokens: int,
+) -> Tuple[str, str]:
+    """Select the richest AOM memory tier that fits the remaining budget.
+
+    Args:
+        tiers: Dict from generate_tiers() with keys L0, L1, L2
+        available_tokens: Total token budget for the prompt
+        static_tokens: Tokens already used by the static prompt
+
+    Returns:
+        (tier_name, tier_content) — e.g. ("L2", "full context text")
+    """
+    from ..memory_agent.tiers import estimate_tokens
+
+    remaining = available_tokens - static_tokens
+    # Try richest first
+    for tier_name in ("L2", "L1", "L0"):
+        content = tiers.get(tier_name, "")
+        if not content:
+            continue
+        tokens = estimate_tokens(content)
+        if tokens <= remaining:
+            return tier_name, content
+    # Budget exhausted — return empty rather than L0 that may not fit
+    l0 = tiers.get("L0", "")
+    if l0 and estimate_tokens(l0) > remaining:
+        return "L0", ""
+    return "L0", l0
+
+
 __all__ = [
     "build_system_prompt_from_working_dir",
     "build_bootstrap_guidance",
@@ -237,4 +462,10 @@ __all__ = [
     "PromptConfig",
     "DEFAULT_SYS_PROMPT",
     "SYS_PROMPT",  # Backward compatibility
+    # v2
+    "CachedSection",
+    "DynamicContext",
+    "CachedPromptBuilder",
+    "PersonaPromptPool",
+    "select_memory_tier",
 ]

@@ -60,7 +60,7 @@ class Section:
     token_estimate: int
 
 
-def _estimate_tokens(text: str) -> int:
+def estimate_tokens(text: str) -> int:
     """Rough token estimate: ~4 chars per token for English."""
     return max(1, len(text) // 4)
 
@@ -93,7 +93,7 @@ def split_into_sections(text: str) -> List[Section]:
             continue
         stype = _classify_section(raw)
         priority = SECTION_PRIORITIES.get(stype, 4)
-        tokens = _estimate_tokens(raw)
+        tokens = estimate_tokens(raw)
         sections.append(Section(
             content=raw,
             section_type=stype,
@@ -145,9 +145,9 @@ def generate_tiers(
 
     logger.debug(
         "Tiered context: L0=%d, L1=%d, L2=%d tokens (from %d sections)",
-        _estimate_tokens(tiers["L0"]),
-        _estimate_tokens(tiers["L1"]),
-        _estimate_tokens(tiers["L2"]),
+        estimate_tokens(tiers["L0"]),
+        estimate_tokens(tiers["L1"]),
+        estimate_tokens(tiers["L2"]),
         len(sections),
     )
 

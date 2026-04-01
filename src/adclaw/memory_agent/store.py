@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import struct
@@ -60,6 +61,7 @@ class MemoryStore:
             logger.warning("sqlite-vec unavailable (%s); vector search disabled", exc)
 
         await self._create_tables()
+        await self._migrate_v2()
         await self._db.commit()
 
     async def _create_tables(self) -> None:
@@ -133,6 +135,23 @@ class MemoryStore:
         except Exception as exc:
             logger.debug("vec0 table creation skipped: %s", exc)
 
+    async def _migrate_v2(self) -> None:
+        """Add v2 columns. Silently skips if column already exists; logs other errors."""
+        assert self._db is not None
+        for col, col_type in [
+            ("last_verified_at", "TEXT"),
+            ("superseded_by", "TEXT"),
+        ]:
+            try:
+                await self._db.execute(
+                    f"ALTER TABLE memories ADD COLUMN {col} {col_type}"
+                )
+            except Exception as exc:
+                if "duplicate column" in str(exc).lower():
+                    pass  # column already exists
+                else:
+                    logger.error("_migrate_v2: unexpected error adding column %s: %s", col, exc)
+
     async def close(self) -> None:
         if self._db:
             await self._db.close()
@@ -160,8 +179,9 @@ class MemoryStore:
             """INSERT INTO memories
                (id, content, content_hash, source_type, source_id,
                 entities, topics, importance, metadata,
-                created_at, updated_at, is_deleted, last_consolidated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                created_at, updated_at, is_deleted, last_consolidated_at,
+                last_verified_at, superseded_by)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 memory.id,
                 memory.content,
@@ -176,6 +196,8 @@ class MemoryStore:
                 memory.updated_at,
                 memory.is_deleted,
                 memory.last_consolidated_at,
+                memory.last_verified_at,
+                memory.superseded_by,
             ),
         )
 
@@ -261,7 +283,6 @@ class MemoryStore:
     ) -> bool:
         """Update memory content (used by temporal pruning condensation)."""
         assert self._db is not None
-        import hashlib
         content_hash = hashlib.sha256(content.encode()).hexdigest()
         cur = await self._db.execute(
             "UPDATE memories SET content = ?, content_hash = ?, updated_at = ? "
@@ -337,7 +358,7 @@ class MemoryStore:
             )
             return [(r[0], float(r[1])) for r in rows]
         except Exception as exc:
-            logger.debug("vector_search fallback (brute-force): %s", exc)
+            logger.warning("vector_search fallback (brute-force): %s", exc)
             return await self._brute_force_vector_search(query_vector, limit)
 
     async def _brute_force_vector_search(
@@ -388,7 +409,7 @@ class MemoryStore:
             )
             return [(r[0], float(r[1])) for r in rows]
         except Exception as exc:
-            logger.debug("FTS5 search failed: %s", exc)
+            logger.warning("FTS5 search failed, using LIKE fallback: %s", exc)
             return await self._fallback_keyword_search(query, limit)
 
     async def _fallback_keyword_search(
@@ -485,6 +506,55 @@ class MemoryStore:
         )
         await self._db.commit()
 
+    # ------ v2: consolidation gate helpers ------
+
+    async def count_memories(self, include_deleted: bool = False) -> int:
+        assert self._db is not None
+        q = "SELECT COUNT(*) FROM memories"
+        if not include_deleted:
+            q += " WHERE is_deleted = 0"
+        rows = await self._db.execute_fetchall(q)
+        return rows[0][0]
+
+    async def mark_verified(self, memory_ids: List[str]) -> None:
+        assert self._db is not None
+        now = _utcnow()
+        for mid in memory_ids:
+            await self._db.execute(
+                "UPDATE memories SET last_verified_at = ? WHERE id = ?",
+                (now, mid),
+            )
+        await self._db.commit()
+
+    async def mark_superseded(self, loser_id: str, winner_id: str) -> None:
+        assert self._db is not None
+        await self._db.execute(
+            "UPDATE memories SET superseded_by = ?, is_deleted = 1, updated_at = ? WHERE id = ?",
+            (winner_id, _utcnow(), loser_id),
+        )
+        await self._db.commit()
+
+    async def cleanup_orphan_consolidations(self) -> int:
+        """Delete consolidations where all source memories are soft-deleted."""
+        assert self._db is not None
+        cons = await self.list_consolidations(limit=500)
+        removed = 0
+        for c in cons:
+            all_deleted = True
+            for mid in c.memory_ids:
+                mem = await self.get_memory(mid)
+                if mem and mem.is_deleted == 0:
+                    all_deleted = False
+                    break
+            if all_deleted:
+                await self._db.execute(
+                    "DELETE FROM consolidations WHERE id = ?", (c.id,)
+                )
+                removed += 1
+        if removed:
+            await self._db.commit()
+        return removed
+
     # ------ helpers ------
 
     @staticmethod
@@ -503,4 +573,6 @@ class MemoryStore:
             updated_at=row[10],
             is_deleted=int(row[11]),
             last_consolidated_at=row[12],
+            last_verified_at=row[13] if len(row) > 13 else None,
+            superseded_by=row[14] if len(row) > 14 else None,
         )

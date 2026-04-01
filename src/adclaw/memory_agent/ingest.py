@@ -48,6 +48,7 @@ class IngestAgent:
         self.multimodal = multimodal
         self._sanitizer = MemorySanitizer(mode="block")
         self._shingle_cache = ShingleCache(max_size=200)
+        self._on_memory_inserted: Optional[Callable[[], None]] = None
 
     async def ingest(
         self,
@@ -137,7 +138,11 @@ class IngestAgent:
             logger.warning("Embedding failed: %s", exc)
             embedding = None
 
-        return await self.store.insert_memory(memory, embedding=embedding)
+        result = await self.store.insert_memory(memory, embedding=embedding)
+        # Only notify if this is a genuinely new memory (not a dedup hit)
+        if self._on_memory_inserted and result.id == memory.id:
+            self._on_memory_inserted()
+        return result
 
     async def ingest_file(
         self,

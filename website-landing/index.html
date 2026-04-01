@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AdClaw — AI Marketing Team in One Command</title>
-  <meta name="description" content="Multi-agent AI marketing team with 22 LLM providers, 100+ models, 118 skills, shared memory. pip install adclaw.">
+  <meta name="description" content="Multi-agent AI marketing team with 22 LLM providers, 100+ models, 118 skills, smart memory with contradiction detection, prompt caching. pip install adclaw.">
   <link rel="icon" href="/favicon.ico">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Geist+Mono&display=swap');
@@ -320,7 +320,7 @@ adclaw app</code>
       </div>
       <div class="feat">
         <h4>Shared memory (AOM)</h4>
-        <p>Vector search + full-text search + 4-layer optimization. Agents share knowledge across sessions automatically.</p>
+        <p>Vector + full-text search, 5-layer optimization, smart consolidation with contradiction detection, prompt caching (~70% token savings).</p>
       </div>
       <div class="feat">
         <h4>LLM auto-fallback</h4>
@@ -403,7 +403,8 @@ adclaw app</code>
         <tr><td>Web dashboard</td><td class="y">Yes</td><td>Basic</td><td class="n">No</td><td class="y">Yes</td><td class="y">Yes</td></tr>
         <tr><td>Per-persona chat tabs</td><td class="y">Yes</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Memory system</td><td><strong>ReMe + AOM</strong></td><td>ReMe</td><td>Short-term</td><td>RAG</td><td>—</td></tr>
-        <tr><td>Memory optimization (R1-R4)</td><td class="y"><strong>4 layers</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
+        <tr><td>Memory optimization (R1-R5)</td><td class="y"><strong>5 layers + contradictions</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
+        <tr><td>Prompt caching</td><td class="y"><strong>Static/dynamic split</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Security scanner</td><td><strong>208 patterns</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Self-healing skills</td><td class="y">Yes</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Distributed task network</td><td class="y"><strong>AgentHub</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
@@ -426,7 +427,7 @@ adclaw app</code>
 <section style="text-align: center; padding: 80px 0;">
   <div class="container">
     <h2 style="margin-bottom: 16px;">Open source. Apache 2.0.</h2>
-    <p style="color: var(--zinc-500); font-size: 15px; margin-bottom: 32px;">22 LLM providers, 100+ models, 118 skills, dual-layer memory, auto-fallback. Built by a solo founder as a rework of <a href="https://github.com/agentscope-ai/CoPaw" style="color: var(--zinc-500); text-decoration: underline;">CoPaw</a>.</p>
+    <p style="color: var(--zinc-500); font-size: 15px; margin-bottom: 32px;">22 LLM providers, 100+ models, 118 skills, dual-layer memory with smart consolidation, prompt caching, auto-fallback. Built by a solo founder as a rework of <a href="https://github.com/agentscope-ai/CoPaw" style="color: var(--zinc-500); text-decoration: underline;">CoPaw</a>.</p>
     <a href="https://github.com/Citedy/adclaw" class="cta-btn">View on GitHub</a>
   </div>
 </section>
