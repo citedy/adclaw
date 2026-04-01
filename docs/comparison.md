@@ -17,7 +17,7 @@ AdClaw is a fully reworked fork of [CoPaw](https://github.com/agentscope-ai/CoPa
 | **Memory** | Dual: ReMe + AOM (vector+FTS+smart consolidation, 4 typed categories) | Markdown files | 3-layer (episodic+semantic+procedural) | ReMe | Short-term | RAG |
 | **Memory Optimization** | R1-R5 (5 layers + contradictions) | None | LLM summarization | None | None | None |
 | **Self-Learning** | Partial (skill-creator + auto-heal) | No | Yes (auto skill creation) | No | No | No |
-| **Security Scanner** | 208 patterns + LLM audit | None (820+ malicious skills found) | Command approval + container isolation | None | None | None |
+| **Security Scanner** | 208 patterns + analysis-first LLM audit (8 categories) | None (820+ malicious skills found) | Command approval + container isolation | None | None | None |
 | **Self-Healing Skills** | Yes | No | Self-evolution (DSPy+GEPA) | No | No | No |
 | **Cron Scheduling** | Per-persona | Plugin-based | Yes | Basic | No | No |
 | **Distributed Tasks** | AgentHub (karma economy) | No | No | No | No | No |
@@ -52,7 +52,7 @@ AdClaw started as a CoPaw fork but was reworked extensively (~80% rewritten):
 - **Per-persona chat tabs** — isolated sessions with shared memory
 - **Always-On Memory (AOM)** — vector search, FTS5, 4 typed memory categories (user/feedback/project/reference), smart consolidation with contradiction detection, 5-layer optimization (R1-R5), prompt caching
 - **Memory sanitizer** — 33 threat patterns across 7 categories
-- **Skill security scanner** — 208 patterns, LLM audit, auto-heal
+- **Skill security scanner** — 208 patterns + analysis-first LLM audit with 8 category-specific criteria (SEO, browser, data...), critical short-circuit, block/warn/install flow, auto-heal
 - **AgentHub integration** — distributed tasks with karma economy
 - **here.now file publishing** — instant shareable links for any file
 - **Citedy MCP server** — 52 marketing tools (SEO, trends, competitor analysis, lead magnets)

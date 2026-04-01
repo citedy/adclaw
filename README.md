@@ -25,7 +25,7 @@
 - **118 built-in skills** — SEO, ads, content, social media, analytics, growth hacking
 - **52 marketing tools** via Citedy MCP server
 - **Instant file publishing** — upload any file to [here.now](https://here.now), get a shareable link, host static sites, use your own domain
-- **22 LLM providers, 100+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, Minimax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more. Add custom providers via API
+- **23 LLM providers, 100+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, Minimax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more. Add custom providers via API
 - **LLM auto-fallback** — if the primary model fails (timeout, rate limit, auth error), automatically switches to the next model in a configurable fallback chain
 - **Multi-channel** — Telegram, Discord, DingTalk, Feishu, QQ, Console
 - **Web UI** — dashboard, per-persona chat tabs, skills, models, and channels from the browser
@@ -69,7 +69,7 @@
 | Social Publishing | Adapt content for LinkedIn, X, Facebook, Reddit |
 | Scheduled Tasks | Each agent can run on its own cron schedule |
 | Self-Healing Skills | Broken skill YAML? Auto-fixed by your LLM — no manual intervention |
-| Security Scanning | Every skill gets a security score (0-100) from 208-pattern static analysis |
+| Security Scanning | Every skill gets a security score (0-100) from 208-pattern static analysis + LLM audit with analysis-first verification (ANALYSIS → FINDINGS → VERDICT) |
 | Security Badges | Visual badges on each skill card: pattern scan, LLM audit, auto-heal status |
 | LLM Auto-Fallback | Primary model down? Auto-switch to backup — configurable chain, timeout, priority |
 | File Publishing | Instantly publish any file to the web via [here.now](https://here.now) — share reports, host static sites, publish on your own domain |
@@ -315,6 +315,7 @@ AdClaw features a dual-layer memory architecture: **ReMe** (per-agent file-based
 | **EmbeddingPipeline** | Configurable embedding models for semantic search |
 | **CachedPromptBuilder** | Static/dynamic prompt separation with hash-based caching and per-persona isolation |
 | **Coordinator** | Synthesis-driven persona orchestration — reads AOM, LLM analyzes activity, emits TaskStrategy with specific delegations. Continue/pivot/abandon logic |
+| **SkillValidator** | Analysis-first LLM security audit — 8 category-specific criteria (SEO, browser, data...), critical short-circuit, merged static+LLM findings, block/warn/install flow |
 
 ### Memory Optimization (R1-R5)
 

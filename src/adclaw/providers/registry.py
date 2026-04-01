@@ -377,6 +377,22 @@ PROVIDER_MOONSHOT = ProviderDefinition(
     models=MOONSHOT_MODELS,
 )
 
+ZAI_MODELS: List[ModelInfo] = [
+    ModelInfo(id="glm-5", name="GLM-5"),
+    ModelInfo(id="glm-5-turbo", name="GLM-5 Turbo"),
+    ModelInfo(id="glm-4.7", name="GLM-4.7"),
+    ModelInfo(id="glm-4.6", name="GLM-4.6"),
+    ModelInfo(id="glm-4.5", name="GLM-4.5"),
+]
+
+PROVIDER_ZAI = ProviderDefinition(
+    id="zai",
+    name="Z.AI (Zhipu AI)",
+    default_base_url="https://api.z.ai/api/paas/v4",
+    api_key_prefix="",
+    models=ZAI_MODELS,
+)
+
 _BUILTIN_IDS: frozenset[str] = frozenset(
     [
         "modelscope",
@@ -401,6 +417,7 @@ _BUILTIN_IDS: frozenset[str] = frozenset(
         "minimax",
         "inception",
         "moonshot",
+        "zai",
     ],
 )
 
@@ -418,6 +435,7 @@ PROVIDERS: dict[str, ProviderDefinition] = {
     PROVIDER_MINIMAX.id: PROVIDER_MINIMAX,
     PROVIDER_INCEPTION.id: PROVIDER_INCEPTION,
     PROVIDER_MOONSHOT.id: PROVIDER_MOONSHOT,
+    PROVIDER_ZAI.id: PROVIDER_ZAI,
     PROVIDER_ALIYUN_INTL.id: PROVIDER_ALIYUN_INTL,
     PROVIDER_ALIYUN_CODINGPLAN.id: PROVIDER_ALIYUN_CODINGPLAN,
     PROVIDER_MODELSCOPE.id: PROVIDER_MODELSCOPE,
