@@ -149,12 +149,13 @@ class TestPhase1EndToEnd:
 
         # Should have results
         assert len(result.citations) > 0
-        # Feedback should be boosted (if it appears in results)
+        # Feedback should be boosted — ranked higher than non-feedback
         feedback_citations = [c for c in result.citations if c.memory.memory_type == "feedback"]
         if feedback_citations and len(result.citations) >= 2:
-            # Feedback should be ranked higher than user memories
             fb_idx = next(i for i, c in enumerate(result.citations) if c.memory.memory_type == "feedback")
-            assert fb_idx < len(result.citations)  # feedback found in results
+            non_fb_idxs = [i for i, c in enumerate(result.citations) if c.memory.memory_type != "feedback"]
+            if non_fb_idxs:
+                assert fb_idx < min(non_fb_idxs), "Feedback should be ranked higher than non-feedback"
 
         # ---- Step 7: Prompt caching ----
         (tmp_path / "AGENTS.md").write_text("Marketing agent instructions: write SEO content.")
@@ -195,11 +196,10 @@ class TestPhase1EndToEnd:
                 if mem:
                     types.add(mem.memory_type)
             # All memories in a consolidation should be the same type
-            # (or from memories not in working set, which is acceptable)
-            if len(types) > 1:
-                # Cross-type consolidation — this should NOT happen for
-                # memories that were both in the working set
-                pass  # Acceptable for neighbors outside working set
+            assert len(types) <= 1, (
+                f"Cross-type consolidation detected: types={types}, "
+                f"memory_ids={cons.memory_ids}"
+            )
 
     async def test_empty_store_graceful(self, store, embedder, config, tmp_path):
         """All Phase 1 components handle empty store gracefully."""
