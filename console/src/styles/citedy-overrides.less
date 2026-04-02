@@ -178,6 +178,17 @@
   overflow: hidden !important;
 }
 
+/* Select dropdown must scroll — override [class*="dropdown"] catching it */
+.adclaw-select-dropdown,
+[class*="select-dropdown"] {
+  overflow: auto !important;
+  max-height: none !important;
+}
+.adclaw-select-dropdown .rc-virtual-list,
+[class*="select-dropdown"] .rc-virtual-list {
+  overflow: auto !important;
+}
+
 /* UL menu list inside popup — also solid white */
 .adclaw-menu-submenu-popup > ul,
 .adclaw-menu-submenu-popup .adclaw-menu,

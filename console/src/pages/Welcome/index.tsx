@@ -58,16 +58,8 @@ interface SearchStatus {
 }
 
 // Recommended providers for the wizard (order matters)
-const WIZARD_PROVIDERS = [
-  "aliyun-intl",
-  "openrouter",
-  "openai",
-  "anthropic",
-  "zai",
-  "xai",
-  "aliyun-codingplan",
-  "ollama",
-];
+// Local-only providers excluded from wizard (need local setup)
+const WIZARD_EXCLUDED = ["ollama", "llamacpp", "mlx"];
 
 export default function WelcomePage() {
   const navigate = useNavigate();
@@ -134,7 +126,7 @@ export default function WelcomePage() {
   };
 
   const wizardProviders = providers.filter((p) =>
-    WIZARD_PROVIDERS.includes(p.id)
+    !WIZARD_EXCLUDED.includes(p.id)
   );
   const currentProvider = providers.find((p) => p.id === selectedProvider);
 
@@ -329,6 +321,11 @@ export default function WelcomePage() {
                   placeholder="Select LLM provider..."
                   style={{ width: "100%" }}
                   listHeight={300}
+                  virtual={false}
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.value ?? "").toLowerCase().includes(input.toLowerCase())
+                  }
                   value={selectedProvider || undefined}
                   onChange={(val) => {
                     setSelectedProvider(val);

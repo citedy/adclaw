@@ -296,22 +296,6 @@ app.include_router(
 if os.path.isdir(_CONSOLE_STATIC_DIR):
     _console_path = Path(_CONSOLE_STATIC_DIR)
 
-    @app.get("/logo.png")
-    def _console_logo():
-        f = _console_path / "logo.png"
-        if f.is_file():
-            return FileResponse(f, media_type="image/png")
-
-        raise HTTPException(status_code=404, detail="Not Found")
-
-    @app.get("/adclaw-symbol.svg")
-    def _console_icon():
-        f = _console_path / "adclaw-symbol.svg"
-        if f.is_file():
-            return FileResponse(f, media_type="image/svg+xml")
-
-        raise HTTPException(status_code=404, detail="Not Found")
-
     _assets_dir = _console_path / "assets"
     if _assets_dir.is_dir():
         app.mount(
@@ -322,6 +306,15 @@ if os.path.isdir(_CONSOLE_STATIC_DIR):
 
     @app.get("/{full_path:path}")
     def _console_spa(full_path: str):
+        # Serve static files from console root before SPA fallback
+        if full_path and not full_path.startswith("api/"):
+            static_file = _console_path / full_path
+            if (
+                static_file.is_file()
+                and _console_path in static_file.resolve().parents
+            ):
+                return FileResponse(static_file)
+
         if _CONSOLE_INDEX and _CONSOLE_INDEX.exists():
             return FileResponse(_CONSOLE_INDEX)
 
