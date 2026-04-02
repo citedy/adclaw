@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import traceback
 from pathlib import Path
 
 from agentscope.pipeline import stream_printing_messages
@@ -29,6 +30,38 @@ from ...constant import (
 
 logger = logging.getLogger(__name__)
 
+# Error types that indicate corrupt session state rather than infra failure.
+_SESSION_STATE_ERROR_TYPES = (
+    ValueError, KeyError, FileNotFoundError, TypeError, AttributeError,
+)
+
+# Traceback markers that confirm the error came from session/formatter path.
+_SESSION_STATE_TB_MARKERS = (
+    "formatter", "memory_compaction", "state_dict",
+    "_strip_missing", "_format", "load_state", "TemporaryMemory",
+    "_openai_formatter", "_to_openai_image_url",
+)
+
+
+def _clear_agent_memory(agent) -> None:
+    """Clear agent memory using whichever API is available."""
+    if hasattr(agent, "memory") and hasattr(agent.memory, "clear"):
+        agent.memory.clear()
+    elif hasattr(agent, "memory") and hasattr(agent.memory, "content"):
+        agent.memory.content.clear()
+
+
+def _is_session_state_error(exc: Exception) -> bool:
+    """Return True if the exception is likely caused by corrupt session state.
+
+    These errors can be fixed by clearing the agent's memory and retrying
+    with a fresh context window.
+    """
+    if not isinstance(exc, _SESSION_STATE_ERROR_TYPES):
+        return False
+    tb_text = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    return any(marker in tb_text for marker in _SESSION_STATE_TB_MARKERS)
+
 
 class AgentRunner(Runner):
     def __init__(self) -> None:
@@ -39,6 +72,7 @@ class AgentRunner(Runner):
         self._aom_manager = None  # Always-On Memory manager
 
         self.memory_manager: MemoryManager | None = None
+        self.error_tracker = None  # Set by _app.py after init
         self._session_persona_map: dict[str, str] = {}  # sticky persona routing
 
     def set_chat_manager(self, chat_manager):
@@ -149,6 +183,22 @@ class AgentRunner(Runner):
                 self._session_persona_map[request.session_id] = persona.id
                 session_id = f"{persona.id}::{session_id}"
 
+            # Check if this session is in a crash loop (after persona scoping
+            # so the session_id matches what record_failure/success use).
+            if self.error_tracker and self.error_tracker.is_tripped(session_id):
+                from agentscope.message import Msg
+                trip_msg = Msg(
+                    name="system",
+                    role="assistant",
+                    content=(
+                        "This conversation hit repeated errors. "
+                        "Send /new to start a fresh session, "
+                        "or wait 2 minutes for auto-retry."
+                    ),
+                )
+                yield trip_msg, True
+                return
+
             # Resolve timeout from fallback config
             from ...providers.store import get_fallback_config
             fallback_cfg = get_fallback_config()
@@ -228,14 +278,7 @@ class AgentRunner(Runner):
                             "clearing history and retrying: %s",
                             first_err,
                         )
-                        if hasattr(agent, "memory") and hasattr(
-                            agent.memory, "clear"
-                        ):
-                            agent.memory.clear()
-                        elif hasattr(agent, "memory") and hasattr(
-                            agent.memory, "content"
-                        ):
-                            agent.memory.content.clear()
+                        _clear_agent_memory(agent)
 
                         from agentscope.message import Msg
                         reset_msg = Msg(
@@ -357,11 +400,57 @@ class AgentRunner(Runner):
                 yield exhausted_msg, False
                 raise first_err
 
+            # If we reach here without exception, processing succeeded
+            if self.error_tracker:
+                self.error_tracker.record_success(session_id)
+
         except asyncio.CancelledError:
             if agent is not None:
                 await agent.interrupt()
             raise
         except Exception as e:
+            # --- Auto-recovery: retry with clean session for state errors ---
+            if (
+                session_state_loaded
+                and agent is not None
+                and _is_session_state_error(e)
+            ):
+                logger.warning(
+                    "Session state caused crash, clearing memory and retrying: %s",
+                    e,
+                )
+                try:
+                    _clear_agent_memory(agent)
+
+                    from agentscope.message import Msg
+                    heal_msg = Msg(
+                        name="system",
+                        role="assistant",
+                        content=(
+                            "Session history was corrupted and has been "
+                            "reset. Continuing with fresh context."
+                        ),
+                    )
+                    yield heal_msg, False
+
+                    async for msg, last in stream_printing_messages(
+                        agents=[agent],
+                        coroutine_task=agent(msgs),
+                    ):
+                        yield msg, last
+                    if self.error_tracker:
+                        self.error_tracker.record_success(session_id)
+                    return
+                except Exception as retry_err:
+                    logger.exception(
+                        "Retry after session reset also failed: %s",
+                        retry_err,
+                    )
+                    # Fall through to normal error handling
+
+            if self.error_tracker:
+                self.error_tracker.record_failure(session_id)
+
             debug_dump_path = write_query_error_dump(
                 request=request,
                 exc=e,

@@ -177,8 +177,14 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
     app.state.aom_manager = aom_manager
 
     # --- Agent watchdog (auto-restart on crash) ---
-    from .watchdog import AgentWatchdog
-    watchdog = AgentWatchdog(runner=runner, check_interval=60, max_restarts=5)
+    from .watchdog import AgentWatchdog, SessionErrorTracker
+    error_tracker = SessionErrorTracker(max_consecutive=3, cooldown_seconds=120)
+    watchdog = AgentWatchdog(
+        runner=runner, check_interval=60, max_restarts=5,
+        error_tracker=error_tracker,
+    )
+    runner.error_tracker = error_tracker
+    channel_manager.set_error_tracker(error_tracker)
     watchdog_task = asyncio.create_task(watchdog.start())
     app.state.watchdog = watchdog
 

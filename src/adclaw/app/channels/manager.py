@@ -136,6 +136,8 @@ class ChannelManager:
         self._processing_timeout: float = 120.0
         # Session storage reference for file deletion on force_clear
         self._session_dir: Optional[str] = None
+        # Error tracker for per-session circuit breaker
+        self._error_tracker = None
 
     @classmethod
     def from_env(
@@ -225,6 +227,10 @@ class ChannelManager:
         """Set session directory path for file deletion on force_clear."""
         self._session_dir = session_dir
 
+    def set_error_tracker(self, tracker) -> None:
+        """Set per-session error tracker for circuit-breaker resets."""
+        self._error_tracker = tracker
+
     async def force_clear_session(
         self, channel_id: str, debounce_key: str,
     ) -> bool:
@@ -255,6 +261,10 @@ class ChannelManager:
         # 3. Delete session files matching this key
         if self._session_dir and debounce_key:
             self._delete_session_files(debounce_key)
+
+        # 4. Reset error tracker for this session
+        if self._error_tracker:
+            self._error_tracker.reset(debounce_key)
 
         logger.info(
             "force_clear_session: channel=%s key=%s was_active=%s",

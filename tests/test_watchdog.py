@@ -22,7 +22,7 @@ async def test_watchdog_detects_healthy(mock_runner):
 @pytest.mark.asyncio
 async def test_watchdog_detects_unhealthy(mock_runner):
     from adclaw.app.watchdog import AgentWatchdog
-    mock_runner.memory_manager = None
+    mock_runner.session = None
     wd = AgentWatchdog(runner=mock_runner, check_interval=0.1)
     assert wd.is_healthy() is False
 
@@ -30,7 +30,7 @@ async def test_watchdog_detects_unhealthy(mock_runner):
 @pytest.mark.asyncio
 async def test_watchdog_auto_restarts(mock_runner):
     from adclaw.app.watchdog import AgentWatchdog
-    mock_runner.memory_manager = None
+    mock_runner.session = None
     wd = AgentWatchdog(runner=mock_runner, check_interval=0.05, max_restarts=1)
     task = asyncio.create_task(wd.start())
     await asyncio.sleep(0.2)
@@ -42,7 +42,7 @@ async def test_watchdog_auto_restarts(mock_runner):
 @pytest.mark.asyncio
 async def test_watchdog_respects_max_restarts(mock_runner):
     from adclaw.app.watchdog import AgentWatchdog
-    mock_runner.memory_manager = None
+    mock_runner.session = None
     mock_runner.init_handler = AsyncMock(side_effect=Exception("broken"))
     wd = AgentWatchdog(runner=mock_runner, check_interval=0.05, max_restarts=2)
     task = asyncio.create_task(wd.start())
@@ -55,10 +55,10 @@ async def test_watchdog_respects_max_restarts(mock_runner):
 @pytest.mark.asyncio
 async def test_watchdog_resets_count_on_success(mock_runner):
     from adclaw.app.watchdog import AgentWatchdog
-    mock_runner.memory_manager = None
+    mock_runner.session = None
 
     async def flaky_init():
-        mock_runner.memory_manager = MagicMock()
+        mock_runner.session = MagicMock()
 
     mock_runner.init_handler = AsyncMock(side_effect=flaky_init)
     wd = AgentWatchdog(runner=mock_runner, check_interval=0.05, max_restarts=3)

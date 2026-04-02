@@ -141,10 +141,29 @@ class SafeJSONSession(JSONSession):
                 )
             return
 
+        failed_modules = []
         for name, state_module in state_modules_mapping.items():
             if name in states:
-                state_module.load_state_dict(states[name])
-        logger.info(
-            "Loaded session state from %s successfully.",
-            save_path,
-        )
+                try:
+                    state_module.load_state_dict(states[name])
+                except Exception as load_err:
+                    failed_modules.append(name)
+                    logger.warning(
+                        "Failed to restore state for module '%s' in %s: %s. "
+                        "Module will start with fresh state.",
+                        name,
+                        save_path,
+                        load_err,
+                    )
+        if failed_modules:
+            logger.warning(
+                "Session %s loaded with %d module(s) reset: %s",
+                save_path,
+                len(failed_modules),
+                ", ".join(failed_modules),
+            )
+        else:
+            logger.info(
+                "Loaded session state from %s successfully.",
+                save_path,
+            )
