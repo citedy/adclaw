@@ -31,6 +31,37 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _strip_missing_images(msgs):
+    """Remove image content blocks that reference missing local files.
+
+    Agentscope's formatter crashes with ValueError when a local image
+    file no longer exists (e.g. Telegram photos cleaned up between
+    sessions). This strips those blocks so formatting can proceed.
+    """
+    for msg in msgs:
+        content = getattr(msg, "content", None)
+        if not isinstance(content, list):
+            continue
+        cleaned = []
+        for block in content:
+            if hasattr(block, "image_url"):
+                url = block.image_url or ""
+                raw = url.removeprefix("file://")
+                if raw and not raw.startswith(("http://", "https://", "data:")) and not os.path.isfile(raw):
+                    logger.warning("Dropping missing image from message: %s", url)
+                    continue
+            elif isinstance(block, dict) and block.get("type") == "image":
+                url = block.get("source", {}).get("url", "") or block.get("image_url", "")
+                raw = url.removeprefix("file://")
+                if raw and not raw.startswith(("http://", "https://", "data:")) and not os.path.isfile(raw):
+                    logger.warning("Dropping missing image from message: %s", url)
+                    continue
+            cleaned.append(block)
+        if len(cleaned) != len(content):
+            msg.content = cleaned if cleaned else (msg.get_text_content() or "[image removed]")
+    return msgs
+
+
 # Mapping from chat model class to formatter class
 _CHAT_MODEL_FORMATTER_MAP: dict[Type[ChatModelBase], Type[FormatterBase]] = {
     OpenAIChatModel: OpenAIChatFormatter,
@@ -76,9 +107,10 @@ def _create_file_block_support_formatter(
             """Override to sanitize tool messages before formatting.
 
             This prevents OpenAI API errors from improperly paired
-            tool messages.
+            tool messages and removes references to missing local images.
             """
             msgs = _sanitize_tool_messages(msgs)
+            msgs = _strip_missing_images(msgs)
             messages = await super()._format(msgs)
             return _strip_top_level_message_name(messages)
 
