@@ -293,6 +293,8 @@ class AgentRunner(Runner):
                             coroutine_task=agent(msgs),
                         ):
                             yield msg, last
+                        if self.error_tracker:
+                            self.error_tracker.record_success(session_id)
                         return  # done, no fallback needed
 
                 # --- Fallback chain logic ---
@@ -371,6 +373,8 @@ class AgentRunner(Runner):
                             coroutine_task=fb_agent(msgs),
                         ):
                             yield msg, last
+                        if self.error_tracker:
+                            self.error_tracker.record_success(session_id)
                         return  # success
                     except (
                         _OAITimeout, _OAIRateLimit, _OAIAuthErr, _OAIConnErr,
@@ -448,7 +452,7 @@ class AgentRunner(Runner):
                     )
                     # Fall through to normal error handling
 
-            if self.error_tracker:
+            if self.error_tracker and session_state_loaded:
                 self.error_tracker.record_failure(session_id)
 
             debug_dump_path = write_query_error_dump(
