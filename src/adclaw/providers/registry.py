@@ -382,6 +382,8 @@ PROVIDER_MOONSHOT = ProviderDefinition(
 )
 
 ZAI_MODELS: List[ModelInfo] = [
+    ModelInfo(id="glm-5.1", name="GLM-5.1"),
+    ModelInfo(id="glm-5v-turbo", name="GLM-5V Turbo"),
     ModelInfo(id="glm-5", name="GLM-5"),
     ModelInfo(id="glm-5-turbo", name="GLM-5 Turbo"),
     ModelInfo(id="glm-4.7", name="GLM-4.7"),
