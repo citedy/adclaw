@@ -26,9 +26,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/nttylock/AdClaw"
-Repository = "https://github.com/nttylock/AdClaw"
-Issues = "https://github.com/nttylock/AdClaw/issues"
+Homepage = "https://github.com/Citedy/adclaw"
+Repository = "https://github.com/Citedy/adclaw"
+Issues = "https://github.com/Citedy/adclaw/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "adclaw.__version__.__version__"}

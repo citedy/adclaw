@@ -6,7 +6,7 @@ If you believe you've found a security issue in AdClaw, please report it private
 
 Report vulnerabilities of the AdClaw repository:
 
-If you discover a security issue in AdClaw, please report it to **security@citedy.com** or via [GitHub Security Advisories](https://github.com/nttylock/AdClaw/security/advisories) on this repository.
+If you discover a security issue in AdClaw, please report it to **security@citedy.com** or via [GitHub Security Advisories](https://github.com/Citedy/adclaw/security/advisories) on this repository.
 
 ### Required in Reports
 
@@ -149,7 +149,7 @@ Skills are loaded and run **in-process** (or under the same trust boundary) as t
 - **Model**: Use a capable model when the agent has tools or handles untrusted input.
 - **Review**: Review your config and skills regularly.
 
-For more operational and hardening guidance, see the [documentation](https://github.com/nttylock/AdClaw) and any security-related docs linked from the repo.
+For more operational and hardening guidance, see the [documentation](https://github.com/Citedy/adclaw) and any security-related docs linked from the repo.
 
 ## Runtime Requirements
 

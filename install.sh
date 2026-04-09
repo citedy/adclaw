@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # AdClaw — AI Marketing Assistant
-# Quick install: curl -sSL https://raw.githubusercontent.com/nttylock/AdClaw/main/install.sh | bash
+# Quick install: curl -sSL https://raw.githubusercontent.com/Citedy/adclaw/main/install.sh | bash
 
 ADCLAW_IMAGE="nttylock/adclaw:latest"
 ADCLAW_PORT="${ADCLAW_PORT:-8088}"
