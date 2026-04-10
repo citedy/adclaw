@@ -1,0 +1,6 @@
+{
+  "name": "ads-shared",
+  "description": "Shared reference data for ads-* skills: benchmarks, audit checklists, scoring, compliance, creative specs (23 files, 3600+ lines)",
+  "hidden": true,
+  "tags": ["ads", "reference", "data"]
+}

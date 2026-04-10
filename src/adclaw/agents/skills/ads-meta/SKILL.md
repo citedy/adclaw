@@ -1,11 +1,6 @@
 ---
 name: ads-meta
-description: >
-  Meta Ads deep analysis covering Facebook and Instagram advertising.
-  Evaluates 46 checks across Pixel/CAPI health, creative diversity and fatigue,
-  account structure, and audience targeting. Includes Advantage+ assessment.
-  Use when user says "Meta Ads", "Facebook Ads", "Instagram Ads", "Advantage+",
-  or "Meta campaign".
+description: "Meta Ads deep analysis covering Facebook and Instagram advertising. Evaluates 46 checks across Pixel/CAPI health, creative diversity and fatigue, account structure, and audience targeting. Includes Advantage+ assessment. Use when user says Meta Ads, Facebook Ads, Instagram Ads, Advantage+, or Meta campaign."
 ---
 
 # Meta Ads Deep Analysis
@@ -13,9 +8,9 @@ description: >
 ## Process
 
 1. Collect Meta Ads data (Ads Manager export, Events Manager screenshot, EMQ scores)
-2. Read `ads/references/meta-audit.md` for full 46-check audit
-3. Read `ads/references/benchmarks.md` for Meta-specific benchmarks
-4. Read `ads/references/scoring-system.md` for weighted scoring
+2. Read `ads-shared/references/meta-audit.md` for full 46-check audit
+3. Read `ads-shared/references/benchmarks.md` for Meta-specific benchmarks
+4. Read `ads-shared/references/scoring-system.md` for weighted scoring
 5. Evaluate all applicable checks as PASS, WARNING, or FAIL
 6. Calculate Meta Ads Health Score (0-100)
 7. Generate findings report with action plan
@@ -79,7 +74,7 @@ If ads are in restricted categories:
 - Special Ad Category declared before campaign creation
 - Targeting restrictions verified (no ZIP, age 18-65+ only, no Lookalike)
 - Creative compliance with category-specific policies
-- Read `ads/references/compliance.md` for full requirements
+- Read `ads-shared/references/compliance.md` for full requirements
 
 ## EMQ Optimization Guide
 
@@ -91,11 +86,11 @@ If ads are in restricted categories:
 | <4.0 | Poor | Critical: CAPI + Enhanced Matching required |
 
 Key parameters to maximize EMQ:
-- `em` (email) — highest match rate signal
-- `ph` (phone) — second highest match signal
-- `fn`, `ln` (first/last name) — improves match accuracy
-- `ct`, `st`, `zp` (city, state, zip) — geographic matching
-- `external_id` — CRM/user ID for cross-device matching
+- `em` (email): highest match rate signal
+- `ph` (phone): second highest match signal
+- `fn`, `ln` (first/last name): improves match accuracy
+- `ct`, `st`, `zp` (city, state, zip): geographic matching
+- `external_id`: CRM/user ID for cross-device matching
 
 ## Key Thresholds
 
@@ -123,7 +118,7 @@ Audience:            XX/100  █████░░░░░  (20%)
 ```
 
 ### Deliverables
-- `META-ADS-REPORT.md` — Full 46-check findings with pass/warning/fail
+- `META-ADS-REPORT.md`: Full 46-check findings with pass/warning/fail
 - EMQ improvement roadmap
 - Creative fatigue alerts (any creative with CTR declining >20%)
 - Quick Wins sorted by impact

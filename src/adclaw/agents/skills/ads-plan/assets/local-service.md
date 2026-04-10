@@ -5,7 +5,7 @@
 
 - Geographic-focused with tight radius targeting (5-30 miles)
 - Phone calls are the primary conversion (60%+ of leads)
-- High intent — emergency/urgent service needs drive immediate action
+- High intent; emergency/urgent service needs drive immediate action
 - Reviews and trust signals heavily influence decisions
 - Mobile-first user behavior (82.9% of local searches on mobile)
 - Seasonal demand patterns (HVAC, plumbing, roofing, landscaping)
@@ -23,9 +23,9 @@
 ## Campaign Architecture
 
 ```
-Account — Google
+Account; Google
 ├── LSA (Local Services Ads)
-│   └── Google Guaranteed — all services listed
+│   └── Google Guaranteed; all services listed
 ├── Brand Search
 │   └── Brand name + brand + city terms
 ├── Service-Specific Campaigns
@@ -40,7 +40,7 @@ Account — Google
 └── Seasonal/Promotional
     └── Seasonal offers, maintenance specials
 
-Account — Meta
+Account; Meta
 ├── Local Awareness
 │   └── 10-20 mile radius, age 25-65
 ├── Retargeting
@@ -128,7 +128,7 @@ Account — Meta
 | Google | <15 | Maximize Clicks (cap CPC) |
 | Google | 15-29 | Maximize Conversions |
 | Google | 30+ | Target CPA (recommended for local) |
-| LSA | N/A | Pay-per-lead (no bidding strategy — set max CPL) |
+| LSA | N/A | Pay-per-lead (no bidding strategy: set max CPL) |
 | Meta | Default | Lowest Cost |
 | Meta | Efficiency priority | Cost Cap at target CPL |
 
@@ -154,11 +154,11 @@ Account — Meta
 
 ## Common Pitfalls
 
-- Under-investing in LSA — should be 40-50% of budget (cheapest leads for local services)
+- Under-investing in LSA; should be 40-50% of budget (cheapest leads for local services)
 - Targeting too wide a radius (30+ miles when you serve 15 miles)
-- No call tracking — can't measure true lead volume or quality
+- No call tracking; can't measure true lead volume or quality
 - Running ads outside business hours without after-hours answering
 - Same bid for emergency keywords and non-emergency (emergency CPC tolerance is higher)
 - Not linking Google Business Profile to Google Ads (location extensions, LSA)
-- Ignoring seasonality — flat budget year-round instead of scaling with demand
+- Ignoring seasonality; flat budget year-round instead of scaling with demand
 - Sending Meta traffic to homepage instead of dedicated landing page with phone number

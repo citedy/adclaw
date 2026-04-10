@@ -28,11 +28,11 @@ Answer these to determine the right platform mix:
 Account
 ├── Brand Campaign (always-on)
 │   └── Brand name, branded terms, common misspellings
-├── Prospecting — High Intent
+├── Prospecting; High Intent
 │   ├── Ad Group/Set: [Product/service] + commercial intent
 │   ├── Ad Group/Set: [Category] + buying keywords
 │   └── Ad Group/Set: Competitor terms (if strategic)
-├── Prospecting — Mid Intent
+├── Prospecting; Mid Intent
 │   ├── Ad Group/Set: Problem-aware searches
 │   └── Ad Group/Set: Category research queries
 ├── Retargeting
@@ -152,27 +152,27 @@ utm_term=[keyword] (search only)
 
 ## Implementation Roadmap
 
-### Phase 1 — Foundation (Weeks 1-2)
+### Phase 1: Foundation (Weeks 1-2)
 - Install tracking (pixels, tags, server-side)
 - Set up conversion events and goals
 - Build campaign structure and audiences
 - Produce first batch of creative
 - Launch on primary platform
 
-### Phase 2 — Learn (Weeks 3-6)
+### Phase 2: Learn (Weeks 3-6)
 - Gather data with conservative budgets
 - Identify top-performing campaigns, ads, audiences
 - Add negative keywords (search)
 - Test 2-3 creative variations
 
-### Phase 3 — Optimize (Weeks 7-12)
+### Phase 3: Optimize (Weeks 7-12)
 - Kill underperformers (3x Kill Rule)
 - Scale winners (20% rule)
 - Launch secondary platform
 - A/B test landing pages
 - Upgrade bidding strategy (if conversion threshold met)
 
-### Phase 4 — Scale (Months 4-6)
+### Phase 4: Scale (Months 4-6)
 - Increase budget on proven campaigns
 - Expand to testing platforms (10% budget)
 - Implement advanced features (PMax, Advantage+, TLA)
@@ -195,8 +195,8 @@ utm_term=[keyword] (search only)
 - Optimizing for vanity metrics (clicks, impressions) instead of conversions
 - Changing too many variables at once (can't identify what worked)
 - Pausing campaigns during learning phase (resets the algorithm)
-- No negative keywords (Google/Microsoft) — paying for irrelevant searches
+- No negative keywords (Google/Microsoft); paying for irrelevant searches
 - Not refreshing creative (fatigue kills performance on all platforms)
 - Ignoring mobile experience (82.9% of ad clicks come from mobile devices)
 - Measuring platform-reported ROAS without blended MER check
-- No retargeting — missing the easiest, highest-converting audience
+- No retargeting; missing the easiest, highest-converting audience

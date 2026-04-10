@@ -6,9 +6,9 @@
 - Impulse-buy potential for low-ticket ($7-$97) products
 - Webinar/VSL funnels dominate for high-ticket ($500-$5,000+)
 - Creator/founder personal brand is the biggest asset
-- Emotional decision making — transformation promises drive sales
+- Emotional decision making; transformation promises drive sales
 - High margins (80-95%) allow aggressive ad spend
-- Retargeting is critical — multi-touchpoint journeys
+- Retargeting is critical; multi-touchpoint journeys
 - Seasonal peaks around New Year (resolution buying) and September (back-to-learning)
 
 ## Recommended Platform Mix
@@ -24,17 +24,17 @@
 ## Campaign Architecture
 
 ```
-Account — Meta
-├── Cold Traffic — Prospecting
+Account; Meta
+├── Cold Traffic; Prospecting
 │   ├── Ad Set: Interest stacks (3-5 related interests)
 │   ├── Ad Set: Lookalike 1% of purchasers
 │   ├── Ad Set: Lookalike 1% of email list
 │   └── Ad Set: Broad (no targeting, creative-driven)
-├── Warm Traffic — Lead Nurture
+├── Warm Traffic; Lead Nurture
 │   ├── Ad Set: Lead magnet downloaders (not yet purchased)
 │   ├── Ad Set: Webinar registrants (not yet attended)
 │   └── Ad Set: Email subscribers (no purchase)
-├── Hot Traffic — Retargeting
+├── Hot Traffic; Retargeting
 │   ├── Ad Set: Sales page visitors (3 days)
 │   ├── Ad Set: Cart abandoners
 │   ├── Ad Set: Webinar attendees (didn't buy)
@@ -44,7 +44,7 @@ Account — Meta
 │   └── Ad Set: Cross-sell related products
 └── Advantage+ Shopping (if product catalog)
 
-Account — YouTube
+Account; YouTube
 ├── Brand
 │   └── Brand terms + course name
 ├── Discovery
@@ -157,10 +157,10 @@ Account — YouTube
 ## Common Pitfalls
 
 - Spending big on cold traffic to sales page without a lead magnet/webinar warm-up
-- Not tracking backend revenue (upsells, email sales) — front-end ROAS looks terrible
+- Not tracking backend revenue (upsells, email sales); front-end ROAS looks terrible
 - Same creative running for 60+ days (Meta fatigue sets in at 2-4 weeks)
-- YouTube ads without strong hooks — skip rate kills you in the first 5 seconds
+- YouTube ads without strong hooks; skip rate kills you in the first 5 seconds
 - Broad targeting too early (need 50+ conversions/week for Broad to work on Meta)
 - Not testing price points before scaling ad spend
-- Ignoring email nurture — ads drive leads, email closes sales
-- Over-promising in ad copy — leads to refund requests and policy violations
+- Ignoring email nurture; ads drive leads, email closes sales
+- Over-promising in ad copy; leads to refund requests and policy violations

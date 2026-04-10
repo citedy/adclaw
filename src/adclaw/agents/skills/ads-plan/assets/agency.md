@@ -3,12 +3,12 @@
 
 ## Industry Characteristics
 
-- Multi-client management — each client has different goals, budgets, and industries
+- Multi-client management; each client has different goals, budgets, and industries
 - White-label reporting and branding requirements
 - Standardized processes needed for scalable delivery
 - Client retention depends on measurable results (ROAS, CPA, pipeline)
 - Platform expertise across Google, Meta, LinkedIn, TikTok, Microsoft required
-- Agency margin pressure — efficiency and automation are critical
+- Agency margin pressure; efficiency and automation are critical
 - Client onboarding is a make-or-break phase (first 90 days)
 - Continuous education required (platform updates happen weekly)
 
@@ -165,11 +165,11 @@ Apply across all clients:
 
 ## Common Pitfalls
 
-- No standardized onboarding — every client setup is different (causes errors)
-- Not using industry templates — reinventing strategy for every client
+- No standardized onboarding; every client setup is different (causes errors)
+- Not using industry templates; reinventing strategy for every client
 - Reporting vanity metrics (impressions, clicks) instead of business outcomes
 - Not having a creative production pipeline (creative dies → performance dies)
 - Over-promising in sales process (unrealistic ROAS/CPA targets)
-- Not tracking MER — per-platform ROAS masks true efficiency
-- Skipping the QA checklist — one wrong decimal in budget = client trust destroyed
-- Not documenting what works — tribal knowledge leaves with departing team members
+- Not tracking MER; per-platform ROAS masks true efficiency
+- Skipping the QA checklist; one wrong decimal in budget = client trust destroyed
+- Not documenting what works; tribal knowledge leaves with departing team members

@@ -7,7 +7,7 @@
 - Multiple decision makers per deal (6-10 stakeholders average)
 - High deal values justify very high CPA ($200-$1,000+)
 - Account-based marketing (ABM) is the dominant strategy
-- Content consumption heavy — whitepapers, webinars, case studies
+- Content consumption heavy; whitepapers, webinars, case studies
 - LinkedIn is the primary social platform for B2B decision makers
 - Pipeline and revenue metrics matter more than lead volume
 
@@ -24,8 +24,8 @@
 ## Campaign Architecture
 
 ```
-Account — LinkedIn
-├── ABM — Target Account List
+Account; LinkedIn
+├── ABM; Target Account List
 │   ├── Tier 1 Accounts (named accounts, highest spend)
 │   ├── Tier 2 Accounts (ICP match, moderate spend)
 │   └── Tier 3 Accounts (broader ICP, lower spend)
@@ -43,7 +43,7 @@ Account — LinkedIn
 └── Always-On Brand
     └── Company page content promotion
 
-Account — Google
+Account; Google
 ├── Brand Search
 ├── High-Intent Category
 │   ├── [Solution category] + software/platform/solution
@@ -64,7 +64,7 @@ Account — Google
 - **Industry research**: original data and insights (gated as lead magnet)
 - **Product demos**: 60-90s focused on enterprise-grade capabilities
 - **Webinar promotion**: live events with industry experts
-- **Document Ads (LinkedIn)**: gated content preview — native PDF viewer
+- **Document Ads (LinkedIn)**: gated content preview; native PDF viewer
 
 ### Content by Buyer Stage
 | Stage | Content Type | Platform |
@@ -158,10 +158,10 @@ Account — Google
 ## Common Pitfalls
 
 - Optimizing for MQL volume instead of pipeline/revenue (MQL farming)
-- LinkedIn targeting too narrow (<50K audience) — algorithm can't optimize
-- Not using Thought Leader Ads — paying 3-5x more for standard Sponsored Content
+- LinkedIn targeting too narrow (<50K audience); algorithm can't optimize
+- Not using Thought Leader Ads; paying 3-5x more for standard Sponsored Content
 - Same content for all buyer stages (one-size-fits-all nurture)
-- Ignoring the buying committee — targeting only one persona
-- No CRM integration — can't measure true pipeline impact
+- Ignoring the buying committee; targeting only one persona
+- No CRM integration; can't measure true pipeline impact
 - Running ABM without a sales alignment plan (marketing generates, sales ignores)
 - Short attribution windows (7-day) for 6-month sales cycles (undercounts everything)

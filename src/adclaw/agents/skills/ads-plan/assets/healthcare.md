@@ -6,7 +6,7 @@
 - **HIPAA compliance** governs all marketing involving patient data
 - Restricted ad policies on all major platforms (health conditions, treatments)
 - LegitScript certification required for addiction treatment and pharmacy ads
-- Trust and credibility are paramount — patients research extensively
+- Trust and credibility are paramount; patients research extensively
 - High CPCs ($40+ for competitive medical terms)
 - Phone calls are a primary conversion (appointment booking)
 - Local focus for practices, national for health systems and telehealth
@@ -48,7 +48,7 @@
 ## Campaign Architecture
 
 ```
-Account — Google
+Account; Google
 ├── Brand
 │   └── [Practice/hospital name], [doctor names]
 ├── Service-Specific
@@ -69,7 +69,7 @@ Account — Google
 └── YouTube
     └── Doctor introductions, patient education
 
-Account — Meta
+Account; Meta
 ├── Awareness
 │   ├── Doctor/provider introduction videos
 │   ├── Patient success stories (with consent)
@@ -125,7 +125,7 @@ Account — Meta
 
 ### Call Tracking
 - Dedicated tracking numbers per campaign
-- Call recording (check state consent laws — one-party vs two-party)
+- Call recording (check state consent laws; one-party vs two-party)
 - Minimum call duration for qualified lead (30+ seconds)
 - Track call → appointment → patient acquisition
 
@@ -177,8 +177,8 @@ Account — Meta
 - Not obtaining LegitScript certification for addiction/pharmacy (ads rejected)
 - Running health condition ads with restricted targeting (policy violations)
 - Sending ad traffic to generic homepage instead of condition-specific landing page
-- No call tracking — can't measure patient acquisition from ads
+- No call tracking; can't measure patient acquisition from ads
 - Promising specific medical outcomes in ad copy (policy and legal risk)
-- Ignoring after-hours calls — patients searching for urgent care won't wait
-- Not tracking appointment show rate — high no-show rates inflate true CPA
+- Ignoring after-hours calls; patients searching for urgent care won't wait
+- Not tracking appointment show rate; high no-show rates inflate true CPA
 - Patient testimonials without proper HIPAA authorization (legal liability)

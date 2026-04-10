@@ -1,29 +1,26 @@
 ---
 name: ads-audit
-description: >
-  Full multi-platform paid advertising audit with parallel subagent delegation.
-  Analyzes Google Ads, Meta Ads, LinkedIn Ads, TikTok Ads, and Microsoft Ads
-  accounts. Generates health score per platform and aggregate score. Use when
-  user says "audit", "full ad check", "analyze my ads", "account health check",
-  or "PPC audit".
+description: "Full multi-platform paid advertising audit with parallel subagent delegation. Analyzes Google Ads, Meta Ads, LinkedIn Ads, TikTok Ads, and Microsoft Ads accounts. Generates health score per platform and aggregate score. Use when user says audit, full ad check, analyze my ads, account health check, or PPC audit."
 ---
 
 # Full Multi-Platform Ads Audit
 
 ## Process
 
-1. **Collect account data** — request exports, screenshots, or API access
-2. **Detect business type** — analyze account signals per ads orchestrator
-3. **Identify active platforms** — determine which platforms are in use
-4. **Delegate to subagents** (if available, otherwise run inline sequentially):
-   - `audit-google` — Conversion tracking, wasted spend, structure, keywords, ads, settings (G01-G74)
-   - `audit-meta` — Pixel/CAPI health, creative fatigue, structure, audience (M01-M46)
-   - `audit-creative` — LinkedIn, TikTok, Microsoft creative checks + cross-platform synthesis
-   - `audit-tracking` — LinkedIn, TikTok, Microsoft tracking + cross-platform tracking health
-   - `audit-budget` — LinkedIn, TikTok, Microsoft budget/bidding + cross-platform allocation
-   - `audit-compliance` — All-platform compliance, settings, performance benchmarks
-5. **Score** — calculate per-platform and aggregate Ads Health Score (0-100)
-6. **Report** — generate prioritized action plan with Quick Wins
+1. **Collect account data**: request exports, screenshots, or API access
+2. **Validate**: confirm at least one platform's data is available before proceeding
+3. **Detect business type**: analyze account signals per ads orchestrator
+4. **Identify active platforms**: determine which platforms are in use
+5. **Delegate to subagents** (if available, otherwise run inline sequentially):
+   - `audit-google`: Conversion tracking, wasted spend, structure, keywords, ads, settings (G01-G74)
+   - `audit-meta`: Pixel/CAPI health, creative fatigue, structure, audience (M01-M46)
+   - `audit-creative`: LinkedIn, TikTok, Microsoft creative checks + cross-platform synthesis
+   - `audit-tracking`: LinkedIn, TikTok, Microsoft tracking + cross-platform tracking health
+   - `audit-budget`: LinkedIn, TikTok, Microsoft budget/bidding + cross-platform allocation
+   - `audit-compliance`: All-platform compliance, settings, performance benchmarks
+6. **Validate**: verify each subagent returned valid scores with required fields before aggregating
+7. **Score**: calculate per-platform and aggregate Ads Health Score (0-100)
+8. **Report**: generate prioritized action plan with Quick Wins
 
 ## Data Collection
 
@@ -38,7 +35,7 @@ If no exports available, audit from screenshots or manual data entry.
 
 ## Scoring
 
-Read `ads/references/scoring-system.md` for full algorithm.
+Read `ads-shared/references/scoring-system.md` for full algorithm.
 
 ### Per-Platform Weights
 
@@ -59,9 +56,9 @@ Grade: A (90-100), B (75-89), C (60-74), D (40-59), F (<40)
 
 ## Output Files
 
-- `ADS-AUDIT-REPORT.md` — Comprehensive multi-platform findings
-- `ADS-ACTION-PLAN.md` — Prioritized recommendations (Critical > High > Medium > Low)
-- `ADS-QUICK-WINS.md` — Items fixable in <15 minutes with high impact
+- `ADS-AUDIT-REPORT.md`: Comprehensive multi-platform findings
+- `ADS-ACTION-PLAN.md`: Prioritized recommendations (Critical > High > Medium > Low)
+- `ADS-QUICK-WINS.md`: Items fixable in <15 minutes with high impact
 
 ## Report Structure
 

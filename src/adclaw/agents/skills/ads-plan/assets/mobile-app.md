@@ -5,10 +5,10 @@
 
 - App install is the primary conversion event
 - Post-install events (registration, purchase, subscription) determine true value
-- LTV (lifetime value) optimization is critical — not all installs are equal
+- LTV (lifetime value) optimization is critical; not all installs are equal
 - App store optimization (ASO) and paid acquisition work together
 - Deep linking required for seamless ad-to-app experience
-- Attribution complexity — SKAdNetwork (iOS) and Privacy Sandbox (Android)
+- Attribution complexity; SKAdNetwork (iOS) and Privacy Sandbox (Android)
 - High install volume needed for algorithm optimization (especially Google UAC)
 
 ## Recommended Platform Mix
@@ -23,14 +23,14 @@
 ## Campaign Architecture
 
 ```
-Account — Meta
+Account; Meta
 ├── Advantage+ App Campaigns (AAC)
 │   └── Auto-optimized for app events
-├── App Install — Prospecting
+├── App Install; Prospecting
 │   ├── Ad Set: Lookalike 1% of high-LTV users
 │   ├── Ad Set: Interest-based (app category relevant)
 │   └── Ad Set: Broad (creative-driven, at scale)
-├── App Install — Value Optimization
+├── App Install; Value Optimization
 │   └── Optimize for purchase/subscription (not just install)
 ├── Re-engagement
 │   ├── Ad Set: Lapsed users (30-60 days inactive)
@@ -39,16 +39,16 @@ Account — Meta
 └── Testing
     └── New creative, new audiences, new events
 
-Account — Google
-├── UAC — Install Volume
+Account; Google
+├── UAC; Install Volume
 │   └── Maximize conversions (install)
-├── UAC — In-App Action
+├── UAC; In-App Action
 │   └── Optimize for registration/purchase/subscription
-├── UAC — Value
+├── UAC; Value
 │   └── Target ROAS on in-app purchases
-└── UAC — Pre-Registration (if applicable)
+└── UAC; Pre-Registration (if applicable)
 
-Account — Apple Search Ads
+Account; Apple Search Ads
 ├── Brand
 │   └── Exact match on app name
 ├── Category
@@ -59,7 +59,7 @@ Account — Apple Search Ads
 └── Discovery
     └── Broad match, search match for keyword research
 
-Account — TikTok
+Account; TikTok
 ├── App Install
 │   ├── Spark Ads (organic content boosted)
 │   └── In-Feed (demo/tutorial style)
@@ -175,11 +175,11 @@ Account — TikTok
 ## Common Pitfalls
 
 - Optimizing for installs instead of post-install events (low-quality users)
-- Not using an MMP (Mobile Measurement Partner) — no cross-platform attribution
-- Ignoring organic ASO — paid and organic should work together
+- Not using an MMP (Mobile Measurement Partner); no cross-platform attribution
+- Ignoring organic ASO; paid and organic should work together
 - Same creative for iOS and Android (different user behaviors and store layouts)
 - Not setting up Custom Product Pages (Apple) / Custom Store Listings (Google Play)
-- Deep linking not configured — users land on App Store instead of specific content
+- Deep linking not configured; users land on App Store instead of specific content
 - Budget too low for Google UAC (<$50/day, algorithm can't learn)
-- Not tracking Day 7+ LTV — overspending on low-retention user segments
+- Not tracking Day 7+ LTV; overspending on low-retention user segments
 - Ignoring SKAdNetwork postback configuration (iOS attribution data lost)

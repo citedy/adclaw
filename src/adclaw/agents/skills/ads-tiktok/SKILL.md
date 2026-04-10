@@ -1,11 +1,6 @@
 ---
 name: ads-tiktok
-description: >
-  TikTok Ads deep analysis covering creative quality, tracking, bidding,
-  campaign structure, and TikTok Shop. Evaluates 25 checks with emphasis on
-  creative-first strategy, safe zone compliance, and Smart+ campaigns. Use
-  when user says "TikTok Ads", "TikTok marketing", "TikTok Shop", "Spark Ads",
-  "Smart+", or "TikTok campaign".
+description: "TikTok Ads deep analysis covering creative quality, tracking, bidding, campaign structure, and TikTok Shop. Evaluates 25 checks with emphasis on creative-first strategy, safe zone compliance, and Smart+ campaigns. Use when user says TikTok Ads, TikTok marketing, TikTok Shop, Spark Ads, Smart+, or TikTok campaign."
 ---
 
 # TikTok Ads Deep Analysis
@@ -13,10 +8,10 @@ description: >
 ## Process
 
 1. Collect TikTok Ads data (Ads Manager export, Pixel/Events API status)
-2. Read `ads/references/tiktok-audit.md` for full 25-check audit
-3. Read `ads/references/benchmarks.md` for TikTok-specific benchmarks
-4. Read `ads/references/platform-specs.md` for creative specifications
-5. Read `ads/references/scoring-system.md` for weighted scoring algorithm
+2. Read `ads-shared/references/tiktok-audit.md` for full 25-check audit
+3. Read `ads-shared/references/benchmarks.md` for TikTok-specific benchmarks
+4. Read `ads-shared/references/platform-specs.md` for creative specifications
+5. Read `ads-shared/references/scoring-system.md` for weighted scoring algorithm
 6. Evaluate all applicable checks as PASS, WARNING, or FAIL
 7. Calculate TikTok Ads Health Score (0-100)
 8. Generate findings report with action plan
@@ -24,8 +19,8 @@ description: >
 ## What to Analyze
 
 ### Creative Quality (30% weight)
-- ≥6 creatives per ad group (T05) — Critical
-- All video 9:16 vertical 1080x1920 (T06) — Critical
+- ≥6 creatives per ad group (T05) [Critical]
+- All video 9:16 vertical 1080x1920 (T06) [Critical]
 - Native-looking content, not corporate/polished (T07)
 - Hook in first 1-2 seconds (T08)
 - No creative active >7 days with declining CTR (T09)
@@ -155,7 +150,7 @@ Performance:       XX/100  ████████░░  (10%)
 ```
 
 ### Deliverables
-- `TIKTOK-ADS-REPORT.md` — Full 25-check findings with pass/warning/fail
+- `TIKTOK-ADS-REPORT.md`: Full 25-check findings with pass/warning/fail
 - Creative scorecard per ad (hook quality, safe zone, native feel)
 - Smart+ vs manual performance comparison
 - TikTok Shop readiness assessment (if e-commerce)

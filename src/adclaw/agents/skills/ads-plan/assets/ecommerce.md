@@ -24,22 +24,22 @@
 ## Campaign Architecture
 
 ```
-Account — Google
+Account; Google
 ├── Brand Search (always-on)
-├── PMax — Core Products
+├── PMax; Core Products
 │   ├── Asset Group: Best Sellers
 │   ├── Asset Group: New Arrivals
 │   └── Asset Group: Sale Items
-├── PMax — Categories
+├── PMax; Categories
 │   ├── Asset Group: Category A
 │   └── Asset Group: Category B
 ├── Standard Shopping (price-sensitive categories)
-└── Search — Non-Brand (category terms)
+└── Search; Non-Brand (category terms)
 
-Account — Meta
+Account; Meta
 ├── Advantage+ Shopping Campaign (ASC)
 │   └── 150+ creatives (image + video + UGC mix)
-├── Prospecting — Interest/Lookalike
+├── Prospecting; Interest/Lookalike
 │   ├── Ad Set: Top Performers lookalike
 │   └── Ad Set: Interest stacks
 ├── Retargeting
@@ -49,7 +49,7 @@ Account — Meta
 └── Testing
     └── New creatives, audiences, formats
 
-Account — TikTok
+Account; TikTok
 ├── TikTok Shop (if eligible)
 ├── Smart+ Campaigns
 ├── Spark Ads (creator content)
@@ -151,8 +151,8 @@ Account — TikTok
 - Running PMax without a well-optimized product feed (garbage in, garbage out)
 - Not segmenting products by margin tier (bidding same for 10% and 60% margin)
 - Ignoring new vs returning customer tracking (ROAS looks great on repeat buyers)
-- Creative fatigue on Meta — not refreshing every 2-4 weeks
+- Creative fatigue on Meta; not refreshing every 2-4 weeks
 - TikTok Shop eligibility: only available in 11 countries (US, UK, Southeast Asia)
 - Q4 panic: starting holiday campaigns in November instead of October (learning phase)
-- Not running brand campaigns — letting competitors steal your branded traffic
+- Not running brand campaigns; letting competitors steal your branded traffic
 - Measuring platform-reported ROAS without blended MER check (double-counting)

@@ -1,11 +1,6 @@
 ---
 name: ads-creative
-description: >
-  Cross-platform creative quality audit covering ad copy, video, image, and
-  format diversity across all platforms. Detects creative fatigue, evaluates
-  platform-native compliance, and provides production priorities. Use when
-  user says "creative audit", "ad creative", "creative fatigue", "ad copy",
-  "ad design", or "creative review".
+description: "Cross-platform creative quality audit covering ad copy, video, image, and format diversity across all platforms. Detects creative fatigue, evaluates platform-native compliance, and provides production priorities. Use when user says creative audit, ad creative, creative fatigue, ad copy, ad design, or creative review."
 ---
 
 # Cross-Platform Creative Quality Audit
@@ -13,12 +8,14 @@ description: >
 ## Process
 
 1. Collect creative assets or performance data from active platforms
-2. Read `ads/references/platform-specs.md` for creative specifications
-3. Read `ads/references/benchmarks.md` for CTR/engagement benchmarks
-4. Read `ads/references/scoring-system.md` for weighted scoring algorithm
-5. Evaluate creative quality per platform
-6. Assess cross-platform creative consistency
-7. Generate production priority recommendations
+2. Read `ads-shared/references/platform-specs.md` for creative specifications
+3. Read `ads-shared/references/benchmarks.md` for CTR/engagement benchmarks
+4. Read `ads-shared/references/scoring-system.md` for weighted scoring algorithm
+5. **Validate**: confirm at least one platform has creative data (assets or performance metrics) before proceeding
+6. Evaluate creative quality per platform
+7. Assess cross-platform creative consistency
+8. **Validate**: verify fatigue signals reference actual performance trends, not assumptions
+9. Generate production priority recommendations
 
 ## Per-Platform Assessment
 
@@ -133,7 +130,7 @@ Microsoft:  ████████░░  X/X checks passing
 ```
 
 ### Deliverables
-- `CREATIVE-AUDIT-REPORT.md` — Per-platform creative assessment
+- `CREATIVE-AUDIT-REPORT.md`: Per-platform creative assessment
 - Fatigue alerts (any creative past refresh cadence)
 - Format diversity gaps per platform
 - Production priority list (most impactful creative to produce next)

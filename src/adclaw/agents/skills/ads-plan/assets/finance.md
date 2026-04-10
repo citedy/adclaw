@@ -5,12 +5,12 @@
 
 - **Special Ad Category**: credit, lending, and insurance ads have targeting restrictions
 - Heavy regulatory compliance (FINRA, SEC, state regulations, UDAAP)
-- Trust and credibility are essential — consumers are risk-averse with finances
+- Trust and credibility are essential; consumers are risk-averse with finances
 - High CPCs but high customer lifetime value justifies aggressive bidding
 - Complex products require education-first marketing
 - Compliance review slows creative production cycles
 - Interest rate / market conditions heavily influence demand
-- Insurance, lending, investing, banking — each sub-vertical has different rules
+- Insurance, lending, investing, banking; each sub-vertical has different rules
 
 ## Compliance Requirements
 
@@ -54,7 +54,7 @@
 ## Campaign Architecture
 
 ```
-Account — Google
+Account; Google
 ├── Brand
 │   └── [Company name], [product names]
 ├── Product Campaigns
@@ -75,7 +75,7 @@ Account — Google
 └── Retargeting (RLSA)
     └── Rate checker visitors, application starters
 
-Account — Meta (Special Ad Category: Credit — if applicable)
+Account; Meta (Special Ad Category: Credit; if applicable)
 ├── Awareness / Education
 │   ├── Financial literacy content
 │   ├── Product explainer videos
@@ -91,7 +91,7 @@ Account — Meta (Special Ad Category: Credit — if applicable)
 └── Trust Building
     └── Awards, ratings, security certifications
 
-Account — LinkedIn (B2B Financial Products)
+Account; LinkedIn (B2B Financial Products)
 ├── Commercial Banking / Corporate Solutions
 ├── Wealth Management (high-net-worth targeting)
 ├── Insurance (B2B, group plans)
@@ -121,7 +121,7 @@ Account — LinkedIn (B2B Financial Products)
 ### Ad Copy Framework
 - **Headline**: [Product] + [Key Benefit] + [Rate/Offer]
 - **Description**: [Value prop] + [Trust signal] + [Disclosure] + [CTA]
-- **Example**: "Personal Loans from 6.99% APR | No Origination Fees | Check Your Rate in 2 Minutes — No Credit Impact. FDIC Insured. NMLS #123456"
+- **Example**: "Personal Loans from 6.99% APR | No Origination Fees | Check Your Rate in 2 Minutes: No Credit Impact. FDIC Insured. NMLS #123456"
 
 ## Targeting Strategy
 
@@ -194,8 +194,8 @@ Account — LinkedIn (B2B Financial Products)
 ## Common Pitfalls
 
 - Not declaring Special Ad Category for credit products on Meta (account ban)
-- Missing required disclosures (APR, fees, NMLS) — ad disapproval and legal risk
-- Compliance review bottleneck — not maintaining pre-approved ad copy library
+- Missing required disclosures (APR, fees, NMLS); ad disapproval and legal risk
+- Compliance review bottleneck; not maintaining pre-approved ad copy library
 - Promising guaranteed returns or specific outcomes (regulatory violation)
 - Running Google Ads for crypto/CFDs without proper certification
 - Ignoring state-specific licensing requirements in ad targeting

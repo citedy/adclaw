@@ -1,11 +1,6 @@
 ---
 name: ads-plan
-description: >
-  Strategic paid advertising planning with industry-specific templates.
-  Covers platform selection, campaign architecture, budget planning,
-  creative strategy, and phased implementation roadmap. Use when user says
-  "ad plan", "ad strategy", "campaign planning", "media plan", "PPC strategy",
-  or "advertising plan".
+description: "Strategic paid advertising planning with industry-specific templates. Covers platform selection, campaign architecture, budget planning, creative strategy, and phased implementation roadmap. Use when user says ad plan, ad strategy, campaign planning, media plan, PPC strategy, or advertising plan."
 ---
 
 # Strategic Paid Advertising Plan
@@ -30,8 +25,8 @@ description: >
 ### 3. Platform Selection
 - Load industry template from `assets/` directory
 - Match business type to recommended platform mix
-- Read `ads/references/budget-allocation.md` for platform selection matrix
-- Read `ads/references/conversion-tracking.md` for tracking setup requirements
+- Read `ads-shared/references/budget-allocation.md` for platform selection matrix
+- Read `ads-shared/references/conversion-tracking.md` for tracking setup requirements
 - Assess platform fit based on:
   - Target audience demographics per platform
   - Product/service type suitability
@@ -72,7 +67,7 @@ Account
 ### 5. Budget Planning
 
 #### Monthly Budget Distribution
-Read `ads/references/budget-allocation.md` for the 70/20/10 framework.
+Read `ads-shared/references/budget-allocation.md` for the 70/20/10 framework.
 
 | Tier | Allocation | Purpose |
 |------|-----------|---------|
@@ -118,27 +113,27 @@ Before launching any ads, ensure tracking is configured:
 
 ### 8. Implementation Roadmap
 
-#### Phase 1 — Foundation (Weeks 1-2)
+#### Phase 1: Foundation (Weeks 1-2)
 - Install all tracking pixels and server-side tracking
 - Set up conversion events and goals
 - Create campaign structure and naming conventions
 - Build initial audiences (custom, lookalike/predictive)
 - Produce first batch of creative assets
 
-#### Phase 2 — Launch (Weeks 3-4)
+#### Phase 2: Launch (Weeks 3-4)
 - Launch campaigns on primary platform(s) first
 - Set conservative budgets and bidding (Maximize Clicks / Lowest Cost)
 - Monitor daily for the first 7 days
 - Verify conversion tracking is firing correctly
 
-#### Phase 3 — Optimize (Weeks 5-8)
+#### Phase 3: Optimize (Weeks 5-8)
 - Analyze initial data (minimum 2 weeks of data)
 - Adjust bidding strategies based on conversion volume
 - Kill underperforming ad groups/creatives (3x Kill Rule)
 - Launch secondary platforms
 - Begin A/B testing (creative, landing pages, audiences)
 
-#### Phase 4 — Scale (Weeks 9-12)
+#### Phase 4: Scale (Weeks 9-12)
 - Scale winning campaigns (20% rule)
 - Expand to testing platforms (10% budget)
 - Implement advanced strategies (ABM, Shopping feeds, Smart+)
@@ -147,27 +142,27 @@ Before launching any ads, ensure tracking is configured:
 ## Industry Templates
 
 Load from `assets/` directory based on detected or specified business type:
-- `saas.md` — SaaS companies
-- `ecommerce.md` — E-commerce stores
-- `local-service.md` — Local service businesses
-- `b2b-enterprise.md` — B2B enterprise
-- `info-products.md` — Info products and courses
-- `mobile-app.md` — Mobile app companies
-- `real-estate.md` — Real estate
-- `healthcare.md` — Healthcare
-- `finance.md` — Financial services
-- `agency.md` — Marketing agencies
-- `generic.md` — General business template
+- `saas.md`: SaaS companies
+- `ecommerce.md`: E-commerce stores
+- `local-service.md`: Local service businesses
+- `b2b-enterprise.md`: B2B enterprise
+- `info-products.md`: Info products and courses
+- `mobile-app.md`: Mobile app companies
+- `real-estate.md`: Real estate
+- `healthcare.md`: Healthcare
+- `finance.md`: Financial services
+- `agency.md`: Marketing agencies
+- `generic.md`: General business template
 
 ## Output
 
 ### Deliverables
-- `ADS-STRATEGY.md` — Complete strategic advertising plan
-- `CAMPAIGN-ARCHITECTURE.md` — Campaign structure with naming conventions
-- `BUDGET-PLAN.md` — Budget allocation with monthly pacing
-- `CREATIVE-BRIEF.md` — Creative production plan with specifications
-- `TRACKING-SETUP.md` — Tracking implementation checklist
-- `IMPLEMENTATION-ROADMAP.md` — Phased rollout timeline
+- `ADS-STRATEGY.md`: Complete strategic advertising plan
+- `CAMPAIGN-ARCHITECTURE.md`: Campaign structure with naming conventions
+- `BUDGET-PLAN.md`: Budget allocation with monthly pacing
+- `CREATIVE-BRIEF.md`: Creative production plan with specifications
+- `TRACKING-SETUP.md`: Tracking implementation checklist
+- `IMPLEMENTATION-ROADMAP.md`: Phased rollout timeline
 
 ### KPI Targets
 | Metric | Month 1 | Month 3 | Month 6 | Month 12 |

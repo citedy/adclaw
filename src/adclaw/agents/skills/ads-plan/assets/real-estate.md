@@ -5,8 +5,8 @@
 
 - **Special Ad Category**: housing ads require Fair Housing compliance (Meta, Google)
 - Geographic hyper-targeting essential (neighborhoods, ZIP codes, school districts)
-- Visual-first — high-quality property photos and video tours drive engagement
-- Lead generation focus — phone calls, form fills, showing requests
+- Visual-first; high-quality property photos and video tours drive engagement
+- Lead generation focus; phone calls, form fills, showing requests
 - Seasonal patterns: spring/summer peak, winter slowdown
 - Dual audience: buyers and sellers require different campaigns
 - Agent personal brand often matters as much as brokerage brand
@@ -14,14 +14,14 @@
 
 ## Special Ad Category Requirements
 
-### Meta — Special Ad Category: Housing
+### Meta: Special Ad Category: Housing
 - **Must declare** housing category for all real estate ads
 - **Restricted targeting**: no age, gender, ZIP code, or detailed demographics
 - **Minimum radius**: 15 miles (cannot target tighter)
 - **Lookalike unavailable**: use Special Ad Audiences instead
 - **Interest exclusions limited**: cannot exclude based on demographics
 
-### Google — Fair Housing Compliance
+### Google: Fair Housing Compliance
 - Housing/real estate ads subject to personalized ad policies
 - Cannot target based on protected characteristics
 - Location targeting allowed but cannot exclude specific demographics
@@ -39,7 +39,7 @@
 ## Campaign Architecture
 
 ```
-Account — Google
+Account; Google
 ├── Brand
 │   └── [Brokerage name], [agent name]
 ├── Buyer Intent
@@ -62,7 +62,7 @@ Account — Google
 └── YouTube
     └── Property tour videos, neighborhood guides
 
-Account — Meta (Special Ad Category: Housing)
+Account; Meta (Special Ad Category: Housing)
 ├── Listing Promotion
 │   ├── Carousel: featured listings (auto-updated)
 │   └── Video: property tour/walkthrough
@@ -109,7 +109,7 @@ Account — Meta (Special Ad Category: Housing)
 ### Meta (Special Ad Category Restrictions Apply)
 - **Radius**: 15+ miles around target area (minimum enforced)
 - **Special Ad Audiences**: based on purchaser data or website visitors
-- **Interests**: limited options — home improvement, real estate related
+- **Interests**: limited options; home improvement, real estate related
 - **Retargeting**: website visitors, video viewers, lead form openers
 - **Cannot use**: age, gender, ZIP code, income, family status targeting
 
@@ -165,8 +165,8 @@ Account — Meta (Special Ad Category: Housing)
 - Not declaring Special Ad Category on Meta (account suspension risk)
 - Running same campaigns for buyers and sellers (different intent, different creative)
 - Listing ads for properties already under contract (stale data)
-- Ignoring seller leads — focusing only on buyer acquisition
-- No IDX/MLS integration — sending traffic to generic website
+- Ignoring seller leads; focusing only on buyer acquisition
+- No IDX/MLS integration; sending traffic to generic website
 - Geographic targeting too broad (city-wide when you serve specific neighborhoods)
 - Not tracking lead → showing → closing pipeline (can't calculate true ROI)
 - Video tours without agent on-camera (missed personal branding opportunity)

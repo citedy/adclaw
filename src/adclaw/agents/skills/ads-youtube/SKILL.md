@@ -1,11 +1,6 @@
 ---
 name: ads-youtube
-description: >
-  YouTube Ads specific analysis covering campaign types, creative quality,
-  audience targeting, and measurement. Evaluates video ad performance across
-  skippable, non-skippable, bumper, Shorts, and Demand Gen formats. Use when
-  user says "YouTube Ads", "video ads", "pre-roll", "bumper ads", "YouTube
-  campaign", or "Shorts ads".
+description: "YouTube Ads specific analysis covering campaign types, creative quality, audience targeting, and measurement. Evaluates video ad performance across skippable, non-skippable, bumper, Shorts, and Demand Gen formats. Use when user says YouTube Ads, video ads, pre-roll, bumper ads, YouTube campaign, or Shorts ads."
 ---
 
 # YouTube Ads Analysis
@@ -13,12 +8,14 @@ description: >
 ## Process
 
 1. Collect YouTube Ads data (Google Ads export filtered to Video campaigns)
-2. Read `ads/references/google-audit.md` for YouTube-relevant checks
-3. Read `ads/references/platform-specs.md` for video specifications
-4. Read `ads/references/benchmarks.md` for YouTube benchmarks
-5. Read `ads/references/scoring-system.md` for health score algorithm
-6. Evaluate campaign setup, creative quality, targeting, and measurement
-7. Generate YouTube-specific findings report with health score
+2. Read `ads-shared/references/google-audit.md` for YouTube-relevant checks
+3. Read `ads-shared/references/platform-specs.md` for video specifications
+4. Read `ads-shared/references/benchmarks.md` for YouTube benchmarks
+5. Read `ads-shared/references/scoring-system.md` for health score algorithm
+6. **Validate**: confirm at least one active video campaign exists before proceeding
+7. Evaluate campaign setup, creative quality, targeting, and measurement
+8. **Validate**: verify all campaign types identified before generating report
+9. Generate YouTube-specific findings report with health score
 
 ## Campaign Types Assessment
 
@@ -101,7 +98,7 @@ description: >
 | Brand Lift | Measurable | Requires Google Brand Lift Study |
 
 ### Attribution Considerations
-- YouTube is upper/mid-funnel — don't judge by last-click alone
+- YouTube is upper/mid-funnel; don't judge by last-click alone
 - Use data-driven attribution in Google Ads
 - Track view-through conversions (important for video)
 - Consider Brand Lift Studies for awareness campaigns
@@ -111,7 +108,7 @@ description: >
 
 ### YouTube Ads Health Score (0-100)
 
-Weighted assessment from `ads/references/scoring-system.md`:
+Weighted assessment from `ads-shared/references/scoring-system.md`:
 
 ```
 Category Weights:
@@ -137,7 +134,7 @@ Measurement:        █████░░░░░  Attribution and tracking
 ```
 
 ### Deliverables
-- `YOUTUBE-ADS-REPORT.md` — Campaign-by-campaign analysis
+- `YOUTUBE-ADS-REPORT.md`: Campaign-by-campaign analysis
 - Creative quality scorecard per video
 - Audience strategy recommendations
 - Measurement gap analysis

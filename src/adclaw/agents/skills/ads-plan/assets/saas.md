@@ -6,7 +6,7 @@
 - Long sales cycles with multiple touchpoints (30-90+ days)
 - Free trial or demo request as primary conversion event
 - High customer lifetime value justifies high CPA ($100-$200+)
-- Heavy comparison shopping — competitor keyword bidding critical
+- Heavy comparison shopping; competitor keyword bidding critical
 - Integration and ecosystem considerations influence decisions
 - Self-serve (low-touch) vs sales-assisted (high-touch) paths differ significantly
 
@@ -26,11 +26,11 @@
 Account
 ├── Brand Defense
 │   └── Brand terms + competitor "vs" terms
-├── Non-Brand — High Intent
+├── Non-Brand; High Intent
 │   ├── [Product Category] + software/tool/platform
 │   ├── Competitor alternatives (best [competitor] alternative)
 │   └── Pricing/comparison queries
-├── Non-Brand — Mid Intent
+├── Non-Brand; Mid Intent
 │   ├── Problem-aware searches (how to [solve problem])
 │   └── Category research (best [category] tools 2026)
 ├── Retargeting
