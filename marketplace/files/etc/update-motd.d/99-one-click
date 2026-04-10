@@ -8,7 +8,7 @@ cat <<EOF
 
   Welcome to DigitalOcean's 1-Click AdClaw Droplet.
 
-  AdClaw is an AI marketing agent team with 118 built-in skills,
+  AdClaw is an AI marketing agent team with 130+ built-in skills,
   multi-agent personas, and multi-channel support.
 
   To keep this Droplet secure, the UFW firewall is enabled.

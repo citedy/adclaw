@@ -33,13 +33,13 @@ All fields for the Vendor Portal form at https://cloud.digitalocean.com/vendorpo
 
 ## Application Summary
 
-> AI marketing agent team with 118 built-in skills, multi-agent personas, 23 LLM providers, and web dashboard. Deploy in 60 seconds.
+> AI marketing agent team with 130+ built-in skills, multi-agent personas, 23 LLM providers, and web dashboard. Deploy in 60 seconds.
 
 ---
 
 ## Application Description
 
-AdClaw is an open-source AI marketing agent platform that gives you a team of specialized AI personas — researcher, writer, SEO specialist, ads manager — all working together. It ships with 118 built-in skills covering SEO, content creation, ads, social media, analytics, and AI video generation, plus 52 marketing tools via the Citedy MCP server. Connect any of 23 LLM providers (OpenAI, Anthropic, Gemini, DeepSeek, Groq, and more) with automatic failover, and manage everything through a web dashboard or Telegram bot. Open the Web UI, enter your API key, and start chatting with your AI marketing team.
+AdClaw is an open-source AI marketing agent platform that gives you a team of specialized AI personas — researcher, writer, SEO specialist, ads manager — all working together. It ships with 130+ built-in skills covering SEO, content creation, ads, social media, analytics, and AI video generation, plus 52 marketing tools via the Citedy MCP server. Connect any of 23 LLM providers (OpenAI, Anthropic, Gemini, DeepSeek, Groq, and more) with automatic failover, and manage everything through a web dashboard or Telegram bot. Open the Web UI, enter your API key, and start chatting with your AI marketing team.
 
 ---
 
@@ -115,5 +115,5 @@ To connect a Telegram bot: add TELEGRAM_BOT_TOKEN to /etc/adclaw/env and run adc
 |---|------|-----|-------------|
 | 1 | Documentation | https://github.com/Citedy/adclaw | Source code and full documentation |
 | 2 | Getting Started | https://github.com/Citedy/adclaw/blob/main/docs/getting-started.md | Installation and setup guide |
-| 3 | Skills Library | https://github.com/Citedy/adclaw/blob/main/docs/skills.md | 118 built-in marketing skills |
+| 3 | Skills Library | https://github.com/Citedy/adclaw/blob/main/docs/skills.md | 130+ built-in marketing skills |
 | 4 | Multi-Agent Guide | https://github.com/Citedy/adclaw/blob/main/docs/personas.md | Create specialized AI personas |

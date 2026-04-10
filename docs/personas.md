@@ -535,7 +535,7 @@ field is a hint — add them after configuring the MCP client in Settings.
   |   +-- coordinator/
   |       +-- summary.md
   |
-  +-- skills/                  <-- installed skills (96 built-in)
+  +-- skills/                  <-- installed skills (130+ built-in)
   +-- sessions/                <-- chat sessions
 ```
 
