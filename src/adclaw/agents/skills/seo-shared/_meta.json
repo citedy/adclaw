@@ -1,0 +1,6 @@
+{
+  "name": "seo-shared",
+  "description": "Shared reference data for seo-* skills: CWV, E-E-A-T, schema, local SEO, Google APIs, backlinks (30 files)",
+  "hidden": true,
+  "tags": ["seo", "reference", "data"]
+}

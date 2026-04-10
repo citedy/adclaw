@@ -5,6 +5,13 @@ description: >
   common mistakes, validates language/region codes, and generates correct
   hreflang implementations. Use when user says "hreflang", "i18n SEO",
   "international SEO", "multi-language", "multi-region", or "language tags".
+user-invokable: true
+argument-hint: "[url]"
+license: MIT
+metadata:
+  author: AgriciDaniel
+  version: "1.8.2"
+  category: seo
 ---
 
 # Hreflang & International SEO
@@ -37,14 +44,14 @@ XML sitemap implementations.
 - Common errors:
   - `eng` instead of `en` (ISO 639-2, not valid for hreflang)
   - `jp` instead of `ja` (incorrect code for Japanese)
-  - `zh` without region qualifier (ambiguous — use `zh-Hans` or `zh-Hant`)
+  - `zh` without region qualifier (ambiguous; use `zh-Hans` or `zh-Hant`)
 
 ### 5. Region Code Validation
 - Optional region qualifier uses ISO 3166-1 Alpha-2 (e.g., `en-US`, `en-GB`, `pt-BR`)
 - Format: `language-REGION` (lowercase language, uppercase region)
 - Common errors:
   - `en-uk` instead of `en-GB` (UK is not a valid ISO 3166-1 code)
-  - `es-LA` (Latin America is not a country — use specific countries)
+  - `es-LA` (Latin America is not a country; use specific countries)
   - Region without language prefix
 
 ### 6. Canonical URL Alignment
@@ -76,7 +83,7 @@ XML sitemap implementations.
 | Hreflang on non-canonical URL | High | Move hreflang to canonical URL only |
 | HTTP/HTTPS mismatch in URLs | Medium | Standardize all URLs to HTTPS |
 | Trailing slash inconsistency | Medium | Match canonical URL format exactly |
-| Hreflang in both HTML and sitemap | Low | Choose one method — sitemap preferred for large sites |
+| Hreflang in both HTML and sitemap | Low | Choose one method (sitemap preferred for large sites) |
 | Language without region when needed | Low | Add region qualifier for geo-targeted content |
 
 ## Implementation Methods
@@ -181,4 +188,12 @@ Key rules:
 ### Recommendations
 - Missing implementations to add
 - Incorrect codes to fix
-- Method migration suggestions (e.g., HTML → sitemap for scale)
+- Method migration suggestions (e.g., HTML to sitemap for scale)
+
+## Error Handling
+
+| Scenario | Action |
+|----------|--------|
+| URL unreachable (DNS failure, connection refused) | Report the error clearly. Do not guess site structure. Suggest the user verify the URL and try again. |
+| No hreflang tags found | Report the absence. Check for other internationalization signals (subdirectories, subdomains, ccTLDs) and recommend the appropriate hreflang implementation method. |
+| Invalid language/region codes detected | List each invalid code with the correct replacement. Provide a corrected hreflang tag set ready to implement. |
