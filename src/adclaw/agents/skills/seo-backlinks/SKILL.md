@@ -229,12 +229,12 @@ Before presenting any backlink analysis to the user, run this checklist internal
 Do NOT skip this step. Fix any issues found before showing the report.
 
 ### Fact-Check Every Claim
-- [ ] **Schema claims**: Did parse_html return `@type` for each block? If any `@type` is missing,
-      re-check — it may use `@graph` wrapper (valid JSON-LD, not malformed).
+- [ ] **Referring domain counts**: Is each count sourced from a specific API/tool? Never present
+      an unsourced domain authority metric.
 - [ ] **"link_removed" findings**: Is the page JS-rendered? If `unverifiable_js`, say so — never
       report a JS-rendered page as "link removed" (that's a false negative).
-- [ ] **H1 findings**: Are any H1s in the `h1_suspicious` list? If so, note they are likely
-      counters/stats, not semantic headings.
+- [ ] **Anchor text distribution**: Do percentages sum to ~100%? Flag if branded anchors exceed
+      70% or exact-match anchors exceed 15% (potential over-optimization).
 - [ ] **Reciprocal links**: If site A links to site B AND B links back to A, flag it as a
       reciprocal link pattern. Check outbound links against verified inbound sources.
 - [ ] **Health score**: Are 4+ of 7 factors scored? If not, report INSUFFICIENT DATA — never

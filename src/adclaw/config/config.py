@@ -144,7 +144,7 @@ class AOMConfig(BaseModel):
     consolidation_enabled: bool = True
     auto_capture_mcp: bool = True
     auto_capture_skills: bool = True
-    auto_capture_chat: bool = False
+    auto_capture_chat: bool = True
     file_inbox_enabled: bool = False
     importance_threshold: float = 0.3
     max_memories: int = 100_000

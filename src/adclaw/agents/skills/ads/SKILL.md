@@ -110,9 +110,9 @@ Hard rules (never violate these):
 
 Load these on-demand as needed; do NOT load all at startup.
 
-**Path resolution:** All references are installed at `~/.claude/skills/ads-shared/references/`.
+**Path resolution:** All references are installed at `ads-shared/references/`.
 When sub-skills or agents reference `ads-shared/references/*.md`, resolve to
-`~/.claude/skills/ads-shared/references/*.md`.
+`ads-shared/references/*.md`.
 
 - `references/scoring-system.md`: Weighted scoring algorithm and grading thresholds
 - `references/benchmarks.md`: Industry benchmarks by platform (CPC, CTR, CVR, ROAS)

@@ -44,13 +44,13 @@ When multiple axes combine, their descriptors merge into a cohesive style string
 | Mid       | 4-6   | Contemporary layouts, balanced modern and classic cues  |
 | High      | 7-10  | Futuristic gradients, 3D renders, neon accents, glass   |
 
-### 5. friendly_authoritative
+### 5. expert_accessible
 
 | Range     | Score | Visual Descriptors                                      |
 |-----------|-------|---------------------------------------------------------|
-| Low       | 1-3   | Rounded shapes, illustration style, bright accents      |
+| Low       | 1-3   | Editorial photography, dark backgrounds, gold accents   |
 | Mid       | 4-6   | Mixed photography and illustration, approachable layout |
-| High      | 7-10  | Editorial photography, dark backgrounds, gold accents   |
+| High      | 7-10  | Rounded shapes, illustration style, bright accents      |
 
 ### 6. playful_serious
 

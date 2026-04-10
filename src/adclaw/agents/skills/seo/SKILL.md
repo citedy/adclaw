@@ -72,7 +72,7 @@ Detect business type from homepage signals:
 
 ## Quality Gates
 
-Read `references/quality-gates.md` for thin content thresholds per page type.
+Read `seo-shared/references/quality-gates.md` for thin content thresholds per page type.
 Hard rules:
 - WARNING at 30+ location pages (enforce 60%+ unique content)
 - HARD STOP at 50+ location pages (require user justification)
@@ -83,15 +83,15 @@ Hard rules:
 ## Reference Files
 
 Load these on-demand as needed (do NOT load all at startup):
-- `references/cwv-thresholds.md`: Current Core Web Vitals thresholds and measurement details
-- `references/schema-types.md`: All supported schema types with deprecation status
-- `references/eeat-framework.md`: E-E-A-T evaluation criteria (Sept 2025 QRG update)
-- `references/quality-gates.md`: Content length minimums, uniqueness thresholds
-- `references/local-seo-signals.md`: Local ranking factors, review benchmarks, citation tiers, GBP status
-- `references/local-schema-types.md`: LocalBusiness subtypes, industry-specific schema and citation sources
+- `seo-shared/references/cwv-thresholds.md`: Current Core Web Vitals thresholds and measurement details
+- `seo-shared/references/schema-types.md`: All supported schema types with deprecation status
+- `seo-shared/references/eeat-framework.md`: E-E-A-T evaluation criteria (Sept 2025 QRG update)
+- `seo-shared/references/quality-gates.md`: Content length minimums, uniqueness thresholds
+- `seo-shared/references/local-seo-signals.md`: Local ranking factors, review benchmarks, citation tiers, GBP status
+- `seo-shared/references/local-schema-types.md`: LocalBusiness subtypes, industry-specific schema and citation sources
 
 Maps-specific references (loaded by seo-maps skill, not at startup):
-- `references/maps-geo-grid.md`, `references/maps-gbp-checklist.md`, `references/maps-api-endpoints.md`, `references/maps-free-apis.md`
+- `seo-shared/references/maps-geo-grid.md`, `seo-shared/references/maps-gbp-checklist.md`, `seo-shared/references/maps-api-endpoints.md`, `seo-shared/references/maps-free-apis.md`
 
 ## Scoring Methodology
 

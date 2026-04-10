@@ -263,10 +263,12 @@ class AgentRunner(Runner):
             except Exception as first_err:
                 from openai import (
                     APIConnectionError as _OAIConnErr,
+                    APIError as _OAIAPIError,
                     APITimeoutError as _OAITimeout,
                     AuthenticationError as _OAIAuthErr,
                     BadRequestError as _OAIBadRequest,
                     RateLimitError as _OAIRateLimit,
+                    UnprocessableEntityError as _OAIUnprocessable,
                 )
 
                 # --- Retry on stale-session BadRequestError ---
@@ -288,21 +290,34 @@ class AgentRunner(Runner):
                         )
                         yield reset_msg, False
 
-                        async for msg, last in stream_printing_messages(
-                            agents=[agent],
-                            coroutine_task=agent(msgs),
-                        ):
-                            yield msg, last
-                        if self.error_tracker:
-                            self.error_tracker.record_success(session_id)
-                        return  # done, no fallback needed
+                        try:
+                            async for msg, last in stream_printing_messages(
+                                agents=[agent],
+                                coroutine_task=agent(msgs),
+                            ):
+                                yield msg, last
+                            if self.error_tracker:
+                                self.error_tracker.record_success(session_id)
+                            return  # done, no fallback needed
+                        except _OAIAPIError as retry_err:
+                            logger.warning(
+                                "Stale-session retry also failed: %s, "
+                                "falling through to fallback chain",
+                                retry_err,
+                            )
+                            first_err = retry_err
+                            # Fall through to fallback logic below
 
                 # --- Fallback chain logic ---
-                _fallback_errors = (
-                    _OAITimeout, _OAIRateLimit, _OAIAuthErr, _OAIConnErr,
-                )
-                if not isinstance(first_err, _fallback_errors):
-                    raise
+                # Fallback on any OpenAI API error (500, 429, timeout,
+                # auth, connection) EXCEPT BadRequest (broken request,
+                # not provider issue). Non-API errors (TypeError,
+                # KeyError etc.) propagate immediately — they indicate
+                # code bugs, not provider failures.
+                if not isinstance(first_err, _OAIAPIError):
+                    raise first_err  # not a provider error — propagate
+                if isinstance(first_err, (_OAIBadRequest, _OAIUnprocessable)):
+                    raise first_err  # request itself is broken
 
                 from ...providers.store import (
                     get_fallback_config,
@@ -376,19 +391,17 @@ class AgentRunner(Runner):
                         if self.error_tracker:
                             self.error_tracker.record_success(session_id)
                         return  # success
-                    except (
-                        _OAITimeout, _OAIRateLimit, _OAIAuthErr, _OAIConnErr,
-                    ) as fb_err:
+                    except (_OAIBadRequest, _OAIUnprocessable) as fb_err:
+                        # Request is broken — no point trying more providers
                         logger.warning(
-                            "Fallback model %s failed with LLM error: %s",
+                            "Fallback model %s: request error: %s",
                             fb_cfg.model, fb_err,
                         )
-                        continue
-                    except Exception as fb_err:
-                        logger.error(
-                            "Fallback model %s failed with unexpected error: %s",
+                        raise
+                    except _OAIAPIError as fb_err:
+                        logger.warning(
+                            "Fallback model %s failed with API error: %s",
                             fb_cfg.model, fb_err,
-                            exc_info=True,
                         )
                         continue
 
@@ -535,12 +548,17 @@ class AgentRunner(Runner):
             await self.memory_manager.start()
         except Exception as e:
             logger.exception(f"MemoryManager start failed: {e}")
+            # Null out so query_handler knows memory is unavailable
+            self.memory_manager = None
 
     async def shutdown_handler(self, *args, **kwargs):
         """
         Shutdown handler.
         """
         try:
-            await self.memory_manager.close()
+            if self.memory_manager is not None:
+                await self.memory_manager.close()
         except Exception as e:
-            logger.warning(f"MemoryManager stop failed: {e}")
+            logger.error(
+                "MemoryManager stop failed: %s", e, exc_info=True,
+            )

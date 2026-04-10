@@ -24,7 +24,7 @@ If the user hasn't provided a URL, ask:
 
 ### Step 2: Fetch Pages
 
-Use the **WebFetch tool** to retrieve each page. For each URL, use this fetch prompt:
+Use the **browser tool** (agent_browser or curl) to retrieve each page. For each URL, extract:
 > "Return all visible text content, the full contents of any `<style>` blocks, inline
 > `style=` attributes, `<meta>` tags, Google Fonts `@import` URLs, and any `og:image`
 > values found on this page."
@@ -47,23 +47,13 @@ Pomelli uses to anchor ad images to the actual brand aesthetic.
 
 Capture the following:
 
-1. **Homepage hero section** (above the fold):
-```bash
-python ~/.claude/skills/ads/scripts/capture_screenshot.py [url]
-```
-Saves: `./brand-screenshots/{domain}_homepage.png`
+1. **Homepage hero section** (above the fold) — use browser MCP tool to navigate and screenshot
+2. **Product or services page** — navigate to /products and screenshot
+3. **About page** (brand personality) — navigate to /about and screenshot
 
-2. **Product or services page**:
-```bash
-python ~/.claude/skills/ads/scripts/capture_screenshot.py [url]/products
-```
-Saves: `./brand-screenshots/{domain}_product.png`
-
-3. **About page** (brand personality):
-```bash
-python ~/.claude/skills/ads/scripts/capture_screenshot.py [url]/about
-```
-Saves: `./brand-screenshots/{domain}_about.png`
+Save screenshots to `./brand-screenshots/{domain}_{page}.png`.
+Use the `agent_browser` MCP or Playwright MCP for screenshots.
+If no browser MCP is available, skip screenshot capture and rely on text extraction.
 
 If a page is not found or returns an error, skip it gracefully and continue
 with the remaining pages.
@@ -118,7 +108,7 @@ Score each axis 1-10 using these heuristics:
 
 ### Step 4: Build brand-profile.json
 
-Read `~/.claude/skills/ads-shared/references/brand-dna-template.md` for the exact schema.
+Read `ads-shared/references/brand-dna-template.md` for the exact schema.
 
 Construct the JSON object following the schema precisely. Use `null` for any
 field that cannot be confidently extracted; do not guess.

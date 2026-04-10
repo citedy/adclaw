@@ -180,7 +180,7 @@ Track results. If a generation fails, retry once with a simplified prompt.
   Cost: see ~/.banana/costs.json for total spend
 
   Best for:
-  • Meta Feed → Studio (4:5) or Lifestyle (4:5)
+  • Meta Feed → Studio (1:1) or Lifestyle (1:1)
   • TikTok/Reels → Floating (9:16) or In Use (9:16)
   • LinkedIn → Studio (1:1) or Lifestyle (1:1)
   • Google PMax → Studio (1:1); crop to 1.91:1 after
@@ -207,7 +207,7 @@ Before generating, show:
 
 ## Reference Files
 
-- `~/.claude/skills/ads-shared/references/image-providers.md`: API setup and pricing
-- `~/.claude/skills/ads-shared/references/brand-dna-template.md`: Brand injection schema
-- `~/.claude/skills/ads-shared/references/meta-creative-specs.md`: Safe zone for 9:16
-- `~/.claude/skills/ads-shared/references/tiktok-creative-specs.md`: Safe zone constraints
+- `ads-shared/references/image-providers.md`: API setup and pricing
+- `ads-shared/references/brand-dna-template.md`: Brand injection schema
+- `ads-shared/references/meta-creative-specs.md`: Safe zone for 9:16
+- `ads-shared/references/tiktok-creative-specs.md`: Safe zone constraints

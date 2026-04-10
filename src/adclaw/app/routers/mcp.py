@@ -3,15 +3,27 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Dict, List, Optional, Literal
 
-from fastapi import APIRouter, Body, HTTPException, Path
+import logging
+
+# Hot-reload timeout: cap connect attempts so API doesn't hang
+_HOT_RELOAD_TIMEOUT = 10.0  # seconds
+
+from fastapi import APIRouter, Body, HTTPException, Path, Request
 from pydantic import BaseModel, Field
 
 from ...config import load_config, save_config
 from ...config.config import MCPClientConfig
 
 router = APIRouter(prefix="/mcp", tags=["mcp"])
+logger = logging.getLogger(__name__)
+
+
+def _get_mcp_manager(request: Request):
+    """Get MCPClientManager from app state (may be None)."""
+    return getattr(request.app.state, "mcp_manager", None)
 
 
 class MCPClientInfo(BaseModel):
@@ -21,6 +33,10 @@ class MCPClientInfo(BaseModel):
     name: str = Field(..., description="Client display name")
     description: str = Field(default="", description="Client description")
     enabled: bool = Field(..., description="Whether the client is enabled")
+    connection_warning: Optional[str] = Field(
+        default=None,
+        description="Warning if hot-reload/disconnect failed",
+    )
     transport: Literal["stdio", "streamable_http", "sse"] = Field(
         ...,
         description="MCP transport type",
@@ -189,6 +205,83 @@ def _build_client_info(key: str, client: MCPClientConfig) -> MCPClientInfo:
     )
 
 
+async def _hot_reload_client(
+    request: Request,
+    client_key: str,
+    client_config: MCPClientConfig,
+) -> Optional[str]:
+    """Connect or reconnect an MCP client immediately after config change.
+
+    Returns None on success, warning string on failure.
+    """
+    if not client_config.enabled:
+        return None
+    manager = _get_mcp_manager(request)
+    if manager is None:
+        return None
+    try:
+        await asyncio.wait_for(
+            manager.replace_client(client_key, client_config),
+            timeout=_HOT_RELOAD_TIMEOUT,
+        )
+        logger.info("MCP client '%s' hot-reloaded successfully", client_key)
+        return None
+    except asyncio.TimeoutError:
+        logger.warning(
+            "MCP client '%s' hot-reload timed out after %.0fs "
+            "(will retry via watcher)",
+            client_key, _HOT_RELOAD_TIMEOUT,
+        )
+        # Clean up any partially-connected client to avoid resource leak
+        try:
+            await manager.remove_client(client_key)
+        except Exception:
+            pass
+        return (
+            f"Connection timed out after {_HOT_RELOAD_TIMEOUT:.0f}s; "
+            "client will retry via background watcher"
+        )
+    except Exception:
+        logger.warning(
+            "MCP client '%s' hot-reload failed (will retry via watcher)",
+            client_key,
+            exc_info=True,
+        )
+        return "Connection failed; client will retry via background watcher"
+
+
+async def _hot_remove_client(
+    request: Request,
+    client_key: str,
+) -> Optional[str]:
+    """Disconnect an MCP client immediately after disable/delete.
+
+    Returns None on success, warning string on failure.
+    """
+    manager = _get_mcp_manager(request)
+    if manager is None:
+        return None
+    try:
+        await asyncio.wait_for(
+            manager.remove_client(client_key),
+            timeout=_HOT_RELOAD_TIMEOUT,
+        )
+        logger.info("MCP client '%s' disconnected", client_key)
+        return None
+    except asyncio.TimeoutError:
+        logger.warning(
+            "MCP client '%s' disconnect timed out", client_key,
+        )
+        return "Disconnect timed out; client may remain active until restart"
+    except Exception:
+        logger.warning(
+            "MCP client '%s' disconnect failed",
+            client_key,
+            exc_info=True,
+        )
+        return "Disconnect failed; client may remain active until restart"
+
+
 @router.get(
     "",
     response_model=List[MCPClientInfo],
@@ -224,6 +317,7 @@ async def get_mcp_client(client_key: str = Path(...)) -> MCPClientInfo:
     status_code=201,
 )
 async def create_mcp_client(
+    request: Request,
     client_key: str = Body(..., embed=True),
     client: MCPClientCreateRequest = Body(..., embed=True),
 ) -> MCPClientInfo:
@@ -256,7 +350,12 @@ async def create_mcp_client(
     config.mcp.clients[client_key] = new_client
     save_config(config)
 
-    return _build_client_info(client_key, new_client)
+    # Hot-reload: connect client immediately if enabled
+    warning = await _hot_reload_client(request, client_key, new_client)
+
+    info = _build_client_info(client_key, new_client)
+    info.connection_warning = warning
+    return info
 
 
 @router.put(
@@ -265,6 +364,7 @@ async def create_mcp_client(
     summary="Update an MCP client",
 )
 async def update_mcp_client(
+    request: Request,
     client_key: str = Path(...),
     updates: MCPClientUpdateRequest = Body(...),
 ) -> MCPClientInfo:
@@ -293,7 +393,15 @@ async def update_mcp_client(
     # Save updated config
     save_config(config)
 
-    return _build_client_info(client_key, updated_client)
+    # Hot-reload: connect or disconnect based on enabled state
+    if updated_client.enabled:
+        warning = await _hot_reload_client(request, client_key, updated_client)
+    else:
+        warning = await _hot_remove_client(request, client_key)
+
+    info = _build_client_info(client_key, updated_client)
+    info.connection_warning = warning
+    return info
 
 
 @router.patch(
@@ -302,6 +410,7 @@ async def update_mcp_client(
     summary="Toggle MCP client enabled status",
 )
 async def toggle_mcp_client(
+    request: Request,
     client_key: str = Path(...),
 ) -> MCPClientInfo:
     """Toggle the enabled status of an MCP client."""
@@ -315,7 +424,15 @@ async def toggle_mcp_client(
     client.enabled = not client.enabled
     save_config(config)
 
-    return _build_client_info(client_key, client)
+    # Hot-reload: connect or disconnect based on new state
+    if client.enabled:
+        warning = await _hot_reload_client(request, client_key, client)
+    else:
+        warning = await _hot_remove_client(request, client_key)
+
+    info = _build_client_info(client_key, client)
+    info.connection_warning = warning
+    return info
 
 
 @router.delete(
@@ -324,6 +441,7 @@ async def toggle_mcp_client(
     summary="Delete an MCP client",
 )
 async def delete_mcp_client(
+    request: Request,
     client_key: str = Path(...),
 ) -> Dict[str, str]:
     """Delete an MCP client configuration."""
@@ -336,4 +454,10 @@ async def delete_mcp_client(
     del config.mcp.clients[client_key]
     save_config(config)
 
-    return {"message": f"MCP client '{client_key}' deleted successfully"}
+    # Hot-reload: disconnect client immediately
+    warning = await _hot_remove_client(request, client_key)
+
+    result = {"message": f"MCP client '{client_key}' deleted successfully"}
+    if warning:
+        result["connection_warning"] = warning
+    return result

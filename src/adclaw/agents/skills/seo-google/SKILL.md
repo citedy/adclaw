@@ -20,6 +20,10 @@ metadata:
 
 # Google SEO APIs
 
+> **Note**: This skill references helper scripts (`scripts/google_auth.py`, etc.)
+> from the upstream claude-seo project. In AdClaw, use the Google APIs directly
+> via `curl`/`httpx` with the reference docs in `seo-shared/references/google/`.
+
 Direct access to Google's own SEO data. Bridges the gap between crawl-based
 analysis (existing claude-seo skills) and Google's real-time field data: actual
 Chrome user metrics, real indexation status, search performance, and organic traffic.
@@ -44,7 +48,7 @@ Config file: `~/.config/claude-seo/google-api.json`
 }
 ```
 
-If missing, read `references/auth-setup.md` and walk the user through setup.
+If missing, read `seo-shared/references/google/auth-setup.md` and walk the user through setup.
 
 ### Credential Tiers
 
@@ -92,7 +96,7 @@ Always communicate the detected tier before running commands.
 Combined Lighthouse lab data + CrUX field data.
 
 **Script:** `python scripts/pagespeed_check.py <url> --json`
-**Reference:** `references/pagespeed-crux-api.md`
+**Reference:** `seo-shared/references/google/pagespeed-crux-api.md`
 **Default:** Both mobile + desktop strategies, all Lighthouse categories.
 
 Output merges lab scores (point-in-time Lighthouse) with field data (28-day
@@ -109,7 +113,7 @@ CrUX field data only (no Lighthouse run). Faster.
 25-week CrUX History trends. Shows whether CWV metrics are improving, stable, or degrading.
 
 **Script:** `python scripts/crux_history.py <url> --json`
-**Reference:** `references/pagespeed-crux-api.md`
+**Reference:** `seo-shared/references/google/pagespeed-crux-api.md`
 
 Output includes per-metric trend direction, percentage change, and weekly p75 values.
 
@@ -122,7 +126,7 @@ Output includes per-metric trend direction, percentage change, and weekly p75 va
 Search Analytics: clicks, impressions, CTR, position for last 28 days.
 
 **Script:** `python scripts/gsc_query.py --property <property> --json`
-**Reference:** `references/search-console-api.md`
+**Reference:** `seo-shared/references/google/search-console-api.md`
 **Default:** 28 days, dimensions=query,page, type=web, limit=1000.
 
 Includes quick-win detection: queries at position 4-10 with high impressions.
@@ -157,7 +161,7 @@ List submitted sitemaps with status, errors, warnings.
 Notify Google of a URL update.
 
 **Script:** `python scripts/indexing_notify.py <url> --json`
-**Reference:** `references/indexing-api.md`
+**Reference:** `seo-shared/references/google/indexing-api.md`
 
 The Indexing API is officially for JobPosting and BroadcastEvent/VideoObject pages.
 Always inform the user of this restriction. Daily quota: 200 publish requests.
@@ -177,7 +181,7 @@ Batch submit URLs from a file. Tracks quota usage.
 Organic traffic report: daily sessions, users, pageviews, bounce rate, engagement.
 
 **Script:** `python scripts/ga4_report.py --property <id> --json`
-**Reference:** `references/ga4-data-api.md`
+**Reference:** `seo-shared/references/google/ga4-data-api.md`
 **Default:** 28 days, filtered to Organic Search channel group.
 
 ### `/seo google ga4-pages [property-id]`
@@ -197,7 +201,7 @@ YouTube mentions have the strongest AI visibility correlation (0.737). Free, API
 Search YouTube for videos. Returns title, channel, views, likes, duration.
 
 **Script:** `python scripts/youtube_search.py search "<query>" --json`
-**Reference:** `references/youtube-api.md`
+**Reference:** `seo-shared/references/google/youtube-api.md`
 **Quota:** 100 units per search (10,000 units/day free).
 
 ### `/seo google youtube-video <video_id>`
@@ -218,7 +222,7 @@ Google's own entity/sentiment analysis. Enhances E-E-A-T scoring.
 Full NLP analysis: entities, sentiment, content classification.
 
 **Script:** `python scripts/nlp_analyze.py --url <url> --json` or `--text "..."`
-**Reference:** `references/nlp-api.md`
+**Reference:** `seo-shared/references/google/nlp-api.md`
 **Free tier:** 5,000 units/month. Requires billing enabled on GCP project.
 
 ### `/seo google entities <url-or-text>`
@@ -238,7 +242,7 @@ Gold-standard keyword volume data. Requires Google Ads account.
 Generate keyword ideas from seed terms.
 
 **Script:** `python scripts/keyword_planner.py ideas "<seed>" --json`
-**Reference:** `references/keyword-planner-api.md`
+**Reference:** `seo-shared/references/google/keyword-planner-api.md`
 **Requires:** Ads developer token + customer ID in config (Tier 3).
 
 ### `/seo google volume <keywords>`
@@ -255,18 +259,18 @@ Search volume for specific keywords (comma-separated).
 
 Knowledge Graph entity check. Verifies brand presence.
 
-**Reference:** `references/supplementary-apis.md`
+**Reference:** `seo-shared/references/google/supplementary-apis.md`
 Uses Knowledge Graph Search API with API key.
 
 ### `/seo google safety <url>`
 
 Web Risk API check for malware/social engineering flags.
 
-**Reference:** `references/supplementary-apis.md`
+**Reference:** `seo-shared/references/google/supplementary-apis.md`
 
 ### `/seo google quotas`
 
-Display rate limits table. Read `references/rate-limits-quotas.md`.
+Display rate limits table. Read `seo-shared/references/google/rate-limits-quotas.md`.
 
 ---
 

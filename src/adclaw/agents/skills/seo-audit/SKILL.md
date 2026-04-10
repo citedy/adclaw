@@ -1,6 +1,6 @@
 ---
 name: seo-audit
-description: "Full website SEO audit with parallel subagent delegation. Crawls up to 500 pages, detects business type, delegates to 10 specialists (7 core + 3 conditional), generates health score. Use when user says audit, full SEO check, analyze my site, or website health check."
+description: "Full website SEO audit with parallel subagent delegation. Crawls up to 500 pages, detects business type, delegates to 11 specialists (7 core + 4 conditional), generates health score. Use when user says audit, full SEO check, analyze my site, or website health check."
 user-invokable: true
 argument-hint: "[url]"
 license: MIT
