@@ -23,7 +23,7 @@
 - **Coordinator delegation** — one agent orchestrates the rest, delegating tasks automatically
 - **Shared memory** — agents read each other's output files for seamless collaboration
 - **118 built-in skills** — SEO, ads, content, social media, analytics, growth hacking
-- **24 built-in MCP servers** — browser automation, AI search, SEO, ads, social media, email marketing, CRM, disposable email inboxes, and more. Enable what you need from the Web UI
+- **25 built-in MCP servers** — browser automation, AI search, SEO, ads, social media, email marketing, CRM, disposable email inboxes, multimodal generation (image/video/speech/music), and more. Enable what you need from the Web UI
 - **52 marketing tools** via Citedy MCP server
 - **Instant file publishing** — upload any file to [here.now](https://here.now), get a shareable link, host static sites, use your own domain
 - **23 LLM providers, 100+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, Minimax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more. Add custom providers via API
@@ -75,6 +75,7 @@
 | LLM Auto-Fallback | Primary model down? Auto-switch to backup — configurable chain, timeout, priority |
 | File Publishing | Instantly publish any file to the web via [here.now](https://here.now) — share reports, host static sites, publish on your own domain |
 | Disposable Email | Agents create temp inboxes, receive verification emails, auto-click confirmation links — no API key needed |
+| Multimodal Generation | Generate images, videos, speech, and music via MiniMax — agents can create visual and audio content |
 | Clawsy Tasks | Browse, join, and complete distributed tasks from [Clawsy](https://www.clawsy.app) — earn karma for quality work |
 
 ---

@@ -560,6 +560,19 @@ class MCPConfig(BaseModel):
                 command="npx",
                 args=["-y", "gsd-agent-inbox"],
             ),
+            # --- Multimodal (Image/Video/Speech/Music) ---
+            "minimax": MCPClientConfig(
+                name="minimax_mcp",
+                description="MiniMax: image, video, speech, music generation (official)",
+                enabled=bool(os.getenv("MINIMAX_API_KEY")),
+                command="npx",
+                args=["-y", "minimax-mcp-js"],
+                env={
+                    "MINIMAX_API_KEY": os.getenv("MINIMAX_API_KEY", ""),
+                    "MINIMAX_API_HOST": os.getenv("MINIMAX_API_HOST", "https://api.minimaxi.chat"),
+                    "MINIMAX_RESOURCE_MODE": "url",
+                },
+            ),
         },
     )
 
