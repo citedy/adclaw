@@ -1,0 +1,71 @@
+{
+  "variables": {
+    "do_token": "{{env `DIGITALOCEAN_TOKEN`}}",
+    "image_name": "adclaw-24-04-snapshot-{{timestamp}}",
+    "apt_packages": "docker.io docker-compose-v2 ufw fail2ban curl ca-certificates",
+    "application_name": "AdClaw",
+    "application_version": "2.0.0"
+  },
+  "sensitive-variables": ["do_token"],
+  "builders": [
+    {
+      "type": "digitalocean",
+      "api_token": "{{user `do_token`}}",
+      "image": "ubuntu-24-04-x64",
+      "region": "ams3",
+      "size": "s-2vcpu-4gb",
+      "ssh_username": "root",
+      "snapshot_name": "{{user `image_name`}}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "cloud-init status --wait"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "files/etc/",
+      "destination": "/etc/"
+    },
+    {
+      "type": "file",
+      "source": "files/var/",
+      "destination": "/var/"
+    },
+    {
+      "type": "shell",
+      "environment_vars": [
+        "DEBIAN_FRONTEND=noninteractive",
+        "LC_ALL=C",
+        "LANG=en_US.UTF-8",
+        "LC_CTYPE=en_US.UTF-8"
+      ],
+      "inline": [
+        "apt -qqy update",
+        "apt -qqy -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' full-upgrade",
+        "apt -qqy -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install {{user `apt_packages`}}",
+        "apt-get -qqy clean"
+      ]
+    },
+    {
+      "type": "shell",
+      "environment_vars": [
+        "application_name={{user `application_name`}}",
+        "application_version={{user `application_version`}}",
+        "DEBIAN_FRONTEND=noninteractive",
+        "LC_ALL=C",
+        "LANG=en_US.UTF-8",
+        "LC_CTYPE=en_US.UTF-8"
+      ],
+      "scripts": [
+        "scripts/01-adclaw.sh",
+        "scripts/02-ufw.sh",
+        "scripts/90-cleanup.sh",
+        "scripts/99-img-check.sh"
+      ]
+    }
+  ]
+}

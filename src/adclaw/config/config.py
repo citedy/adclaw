@@ -552,6 +552,14 @@ class MCPConfig(BaseModel):
                     "HUBSPOT_ACCESS_TOKEN": os.getenv("HUBSPOT_ACCESS_TOKEN", ""),
                 },
             ),
+            # --- Utilities ---
+            "agent_inbox": MCPClientConfig(
+                name="agent_inbox_mcp",
+                description="Disposable email inboxes for agents (GSD)",
+                enabled=False,
+                command="npx",
+                args=["-y", "gsd-agent-inbox"],
+            ),
         },
     )
 

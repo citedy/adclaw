@@ -1,0 +1,34 @@
+#!/bin/bash
+set -euo pipefail
+
+# AdClaw 1-Click — first-boot script
+# Runs once on the first boot of a new Droplet
+
+myip=$(hostname -I | awk '{print$1}')
+
+# Generate a random admin password for future use
+admin_pass=$(openssl rand -hex 16)
+cat > /root/.digitalocean_password <<EOM
+adclaw_admin_password="${admin_pass}"
+EOM
+chmod 600 /root/.digitalocean_password
+
+# Start AdClaw service
+systemctl start adclaw
+
+# Wait for AdClaw to be ready (up to 60 seconds)
+echo "Waiting for AdClaw to start..."
+for i in $(seq 1 12); do
+  if docker exec adclaw wget -qO- http://127.0.0.1:8088/ >/dev/null 2>&1; then
+    echo "AdClaw is ready at http://${myip}:8088"
+    break
+  fi
+  sleep 5
+done
+
+# Remove the SSH force-logout command if present
+sed -e '/Match User root/d' \
+    -e '/.*ForceCommand.*droplet.*/d' \
+    -i /etc/ssh/sshd_config
+
+systemctl restart ssh

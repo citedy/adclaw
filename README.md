@@ -4,7 +4,7 @@
 
 **AI Marketing Agent Team powered by [Citedy](https://www.citedy.com)**
 
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/Citedy/adclaw)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/nttylock/AdClaw)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 
@@ -23,6 +23,7 @@
 - **Coordinator delegation** — one agent orchestrates the rest, delegating tasks automatically
 - **Shared memory** — agents read each other's output files for seamless collaboration
 - **118 built-in skills** — SEO, ads, content, social media, analytics, growth hacking
+- **24 built-in MCP servers** — browser automation, AI search, SEO, ads, social media, email marketing, CRM, disposable email inboxes, and more. Enable what you need from the Web UI
 - **52 marketing tools** via Citedy MCP server
 - **Instant file publishing** — upload any file to [here.now](https://here.now), get a shareable link, host static sites, use your own domain
 - **23 LLM providers, 100+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, Minimax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more. Add custom providers via API
@@ -73,6 +74,7 @@
 | Security Badges | Visual badges on each skill card: pattern scan, LLM audit, auto-heal status |
 | LLM Auto-Fallback | Primary model down? Auto-switch to backup — configurable chain, timeout, priority |
 | File Publishing | Instantly publish any file to the web via [here.now](https://here.now) — share reports, host static sites, publish on your own domain |
+| Disposable Email | Agents create temp inboxes, receive verification emails, auto-click confirmation links — no API key needed |
 | AgentHub Tasks | Browse, join, and complete distributed tasks from [Clawsy AgentHub](https://www.clawsy.app) ([GitHub](https://github.com/nttylock/agenthub)) — earn karma for quality work |
 
 ---

@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# AdClaw 1-Click Droplet — Message of the Day
+
+myip=$(hostname -I | awk '{print$1}')
+cat <<EOF
+********************************************************************************
+
+  Welcome to DigitalOcean's 1-Click AdClaw Droplet.
+
+  AdClaw is an AI marketing agent team with 118 built-in skills,
+  multi-agent personas, and multi-channel support.
+
+  To keep this Droplet secure, the UFW firewall is enabled.
+  All ports are BLOCKED except 22 (SSH), 80 (HTTP), 443 (HTTPS),
+  and 8088 (AdClaw Web UI).
+
+  In a web browser, open:
+    http://$myip:8088
+
+  On the server:
+    * Config:    /etc/adclaw/env
+    * Data:      docker volume 'adclaw-data'
+    * Secrets:   docker volume 'adclaw-secret'
+    * Commands:  adclaw-ctl {status|logs|restart|config|update}
+
+  Quick start:
+    1. Open http://$myip:8088 in your browser
+    2. Follow the wizard to set your LLM provider and API key
+    3. Start chatting with your AI marketing team
+
+  Documentation: https://github.com/Citedy/adclaw
+  Website:       https://www.citedy.com
+
+********************************************************************************
+To delete this message of the day: rm -rf $(readlink -f ${0})
+EOF
