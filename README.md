@@ -8,8 +8,6 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 
-*Fork of [CoPaw](https://github.com/agentscope-ai/CoPaw) by AgentScope (Apache 2.0)*
-
 </div>
 
 ---
@@ -371,26 +369,7 @@ python3 scripts/test_memory_live.py --cleanup
 
 ---
 
-## Credits & Pricing
-
-Citedy uses a credit-based system (1 credit = $0.01 USD):
-
-| Operation | Credits |
-|-----------|---------|
-| Turbo article (500 words) | 2 |
-| Standard article (2,500 words) | 20 |
-| Pillar article (8,000 words) | 48 |
-| X/Twitter scout | 35-70 |
-| Reddit scout | 30 |
-| Lead magnet | 30-100 |
-| AI video short | 60-185 |
-
-Free registration includes 100 credits. [Top up here](https://www.citedy.com/dashboard/billing).
-
----
-
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).
-
-Original project: [CoPaw](https://github.com/agentscope-ai/CoPaw) by AgentScope.
+Refactored and upgraded: [CoPaw](https://github.com/agentscope-ai/CoPaw) by AgentScope.
