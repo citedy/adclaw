@@ -8,6 +8,7 @@ import asyncio
 from typing import Any, Optional
 
 import aiohttp
+import discord  # type: ignore  # requires: pip install adclaw[discord]
 from agentscope_runtime.engine.schemas.agent_schemas import (
     TextContent,
     ImageContent,
@@ -55,8 +56,6 @@ class DiscordChannel(BaseChannel):
         self._client = None
 
         if self.enabled:
-            import discord  # type: ignore
-
             intents = discord.Intents.default()
             intents.message_content = True
             intents.dm_messages = True

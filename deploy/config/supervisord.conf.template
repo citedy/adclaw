@@ -4,13 +4,6 @@ logfile=/var/log/supervisord.log
 pidfile=/var/log/supervisord.pid
 nodaemon=true
 
-[program:dbus]
-command=/bin/sh -c "rm -f /run/dbus/pid; mkdir -p /run/dbus; exec /usr/bin/dbus-daemon --system --nofork"
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/dbus.err.log
-stdout_logfile=/var/log/dbus.out.log
-
 [program:app]
 command=adclaw app --host 0.0.0.0 --port ${ADCLAW_PORT}
 user=adclaw
@@ -20,31 +13,3 @@ priority=30
 stderr_logfile=/var/log/app.err.log
 stdout_logfile=/var/log/app.out.log
 environment=DISPLAY=":1",PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="/usr/bin/chromium",ADCLAW_RUNNING_IN_CONTAINER="1",HOME="/home/adclaw"
-
-[program:pinchtab]
-command=/bin/sh -c "sleep 2; exec /usr/local/bin/pinchtab-bin"
-user=adclaw
-autostart=true
-autorestart=true
-priority=25
-stderr_logfile=/var/log/pinchtab.err.log
-stdout_logfile=/var/log/pinchtab.out.log
-environment=DISPLAY=":1",HOME="/home/adclaw"
-
-[program:xvfb]
-command=/bin/sh -c "rm -f /tmp/.X1-lock /tmp/.X11-unix/X1; mkdir -p /tmp/.X11-unix; exec /usr/bin/Xvfb :1 -screen 0 1280x800x24"
-autostart=true
-autorestart=true
-priority=10
-stderr_logfile=/var/log/xvfb.err.log
-stdout_logfile=/var/log/xvfb.out.log
-environment=DISPLAY=":1"
-
-[program:xfce4]
-command=/bin/sh -c 'export DISPLAY=:1; for i in $(seq 1 200); do [ -S /tmp/.X11-unix/X1 ] && break; sleep 0.1; done; exec dbus-run-session startxfce4'
-autostart=true
-autorestart=true
-priority=20
-stderr_logfile=/var/log/xfce4.err.log
-stdout_logfile=/var/log/xfce4.out.log
-environment=DISPLAY=":1"

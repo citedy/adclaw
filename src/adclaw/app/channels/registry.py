@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Channel registry: built-in + custom channels from working dir."""
+"""Channel registry: built-in + custom channels from working dir.
+
+Optional channels (discord, dingtalk, feishu) gracefully degrade when the
+corresponding SDK is not installed. This keeps the core image lean while
+still allowing users to install extras later (``pip install adclaw[discord]``).
+"""
 from __future__ import annotations
 
 import importlib
@@ -10,9 +15,6 @@ from typing import TYPE_CHECKING
 from ...constant import CUSTOM_CHANNELS_DIR
 from .base import BaseChannel
 from .console import ConsoleChannel
-from .dingtalk import DingTalkChannel
-from .discord_ import DiscordChannel
-from .feishu import FeishuChannel
 from .imessage import IMessageChannel
 from .qq import QQChannel
 from .telegram import TelegramChannel
@@ -24,13 +26,32 @@ logger = logging.getLogger(__name__)
 
 _BUILTIN: dict[str, type[BaseChannel]] = {
     "imessage": IMessageChannel,
-    "discord": DiscordChannel,
-    "dingtalk": DingTalkChannel,
-    "feishu": FeishuChannel,
     "qq": QQChannel,
     "telegram": TelegramChannel,
     "console": ConsoleChannel,
 }
+
+# Optional channels that require extras: adclaw[discord], adclaw[dingtalk], adclaw[feishu]
+_OPTIONAL_CHANNELS: dict[str, tuple[str, str]] = {
+    "discord": (".discord_", "DiscordChannel"),
+    "dingtalk": (".dingtalk", "DingTalkChannel"),
+    "feishu": (".feishu", "FeishuChannel"),
+}
+
+# Track which optional channels are not installed (so manager.from_config
+# can log a clear warning when user enables one without the SDK).
+_MISSING_OPTIONAL_CHANNELS: set[str] = set()
+
+for _key, (_module, _cls) in _OPTIONAL_CHANNELS.items():
+    try:
+        _mod = importlib.import_module(_module, package=__package__)
+        _BUILTIN[_key] = getattr(_mod, _cls)
+    except ImportError as exc:
+        _MISSING_OPTIONAL_CHANNELS.add(_key)
+        logger.info(
+            "Optional channel %s not available (install with: pip install adclaw[%s]): %s",
+            _key, _key, exc,
+        )
 
 
 def _discover_custom_channels() -> dict[str, type[BaseChannel]]:
@@ -68,7 +89,15 @@ def _discover_custom_channels() -> dict[str, type[BaseChannel]]:
     return out
 
 
-BUILTIN_CHANNEL_KEYS = frozenset(_BUILTIN.keys())
+# Logical set of built-in channel keys — always includes optional channels
+# regardless of whether their SDKs are installed. This is used by the CLI
+# (`adclaw channels install/remove`) to correctly classify built-in vs custom.
+# Without this, installing "discord" on a core image would write a stub to
+# custom_channels/discord.py that would later shadow the real built-in class
+# when `pip install adclaw[discord]` is run.
+BUILTIN_CHANNEL_KEYS: frozenset[str] = frozenset(
+    set(_BUILTIN.keys()) | set(_OPTIONAL_CHANNELS.keys())
+)
 
 
 def get_channel_registry() -> dict[str, type[BaseChannel]]:

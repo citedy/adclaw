@@ -123,7 +123,18 @@ else:
 mkdir -p /app/logs 2>/dev/null || true
 chown -R adclaw:adclaw "${ADCLAW_WORKING_DIR:-/app/working}" "${ADCLAW_WORKING_DIR:-/app/working}.secret" /app/logs 2>/dev/null || true
 
+# Generate supervisord.conf from templates based on ADCLAW_VARIANT.
+# core → base template only (supervisord + app).
+# browser/full → base + browser template (adds dbus, xvfb, xfce4, pinchtab).
+ADCLAW_VARIANT="${ADCLAW_VARIANT:-full}"
+SUPERVISORD_CONF="/etc/supervisor/conf.d/supervisord.conf"
 envsubst '${ADCLAW_PORT}' \
   < /etc/supervisor/conf.d/supervisord.conf.template \
-  > /etc/supervisor/conf.d/supervisord.conf
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+  > "$SUPERVISORD_CONF"
+if [ "$ADCLAW_VARIANT" != "core" ] && [ -f /etc/supervisor/conf.d/supervisord.browser.conf.template ]; then
+  cat /etc/supervisor/conf.d/supervisord.browser.conf.template >> "$SUPERVISORD_CONF"
+  echo "entrypoint: supervisord configured with browser programs (variant=${ADCLAW_VARIANT})"
+else
+  echo "entrypoint: supervisord configured without browser (variant=${ADCLAW_VARIANT})"
+fi
+exec /usr/bin/supervisord -c "$SUPERVISORD_CONF"

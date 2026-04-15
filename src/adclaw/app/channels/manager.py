@@ -174,8 +174,21 @@ class ChannelManager:
         show_tool_details = getattr(config, "show_tool_details", False)
         extra = getattr(ch, "__pydantic_extra__", None) or {}
 
+        # Warn when user enabled an optional channel whose SDK isn't installed
+        # (e.g. enabled discord in config.json on a core image build).
+        from .registry import _MISSING_OPTIONAL_CHANNELS
+        registry = get_channel_registry()
+        for missing_key in _MISSING_OPTIONAL_CHANNELS:
+            ch_cfg = getattr(ch, missing_key, None)
+            if ch_cfg is not None and getattr(ch_cfg, "enabled", False):
+                logger.warning(
+                    "Channel '%s' is enabled in config but its SDK is not installed. "
+                    "Install with: pip install adclaw[%s] (and restart AdClaw)",
+                    missing_key, missing_key,
+                )
+
         channels: list[BaseChannel] = []
-        for key, ch_cls in get_channel_registry().items():
+        for key, ch_cls in registry.items():
             if key not in available:
                 continue
             ch_cfg = getattr(ch, key, None)

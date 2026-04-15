@@ -156,6 +156,29 @@
       white-space: pre;
       overflow-x: auto;
     }
+    .path .label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .path .label-row .label {
+      margin-bottom: 0;
+    }
+    .variant-select {
+      font-family: 'Geist Mono', ui-monospace, monospace;
+      font-size: 11px;
+      padding: 4px 8px;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--zinc-200);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .variant-select:hover,
+    .variant-select:focus { border-color: var(--zinc-400); }
 
     /* Section */
     section { border-top: 1px solid var(--zinc-200); padding: 64px 0; }
@@ -285,16 +308,23 @@
       <div class="path">
         <div class="label">pip</div>
         <h3>Lightweight</h3>
-        <p class="desc">No Docker needed. Add browser automation skills later.</p>
+        <p class="desc">No Docker needed. Local install for development and testing.</p>
         <code>pip install adclaw
 adclaw init
 adclaw app</code>
       </div>
       <div class="path">
-        <div class="label">docker</div>
-        <h3>All-inclusive</h3>
-        <p class="desc">Includes 6 browser skills (Playwright, Chromium, screenshots).</p>
-        <code>docker run -d --name adclaw \
+        <div class="label-row">
+          <div class="label">docker</div>
+          <select class="variant-select" id="variant-select" aria-label="Docker image variant">
+            <option value="full" selected>full &mdash; 4.2 GB &#x2B50;</option>
+            <option value="browser">browser &mdash; 4.1 GB</option>
+            <option value="core">core &mdash; 2.7 GB</option>
+          </select>
+        </div>
+        <h3 id="variant-title">Everything included</h3>
+        <p class="desc" id="variant-desc">113 skills, Chromium, Playwright, all messaging channels (Telegram, Discord, Feishu, DingTalk).</p>
+        <code id="variant-code">docker run -d --name adclaw \
   -p 8088:8088 \
   nttylock/adclaw:latest</code>
       </div>
@@ -451,6 +481,43 @@ function copyCmd(el, cmd) {
       btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
     }, 2000);
   });
+}
+
+// Docker variant switcher — updates title, description and docker run command
+// based on the selected image variant.
+const VARIANTS = {
+  full: {
+    title: 'Everything included',
+    desc: '113 skills, Chromium, Playwright, all messaging channels (Telegram, Discord, Feishu, DingTalk, QQ).',
+    tag: ':latest'
+  },
+  browser: {
+    title: 'Core + browser automation',
+    desc: 'Chromium, Playwright and PinchTab for web scraping and screenshots. Telegram only (no optional channels).',
+    tag: ':browser'
+  },
+  core: {
+    title: 'Minimal footprint',
+    desc: 'Telegram + 113 marketing skills. No Chromium, no optional channels. Smallest image for LLM-only workloads.',
+    tag: ':core'
+  }
+};
+
+const variantSelect = document.getElementById('variant-select');
+const variantTitle = document.getElementById('variant-title');
+const variantDesc = document.getElementById('variant-desc');
+const variantCode = document.getElementById('variant-code');
+
+function updateVariant() {
+  const v = VARIANTS[variantSelect.value] || VARIANTS.full;
+  variantTitle.textContent = v.title;
+  variantDesc.textContent = v.desc;
+  variantCode.textContent = 'docker run -d --name adclaw \\\n  -p 8088:8088 \\\n  nttylock/adclaw' + v.tag;
+}
+
+if (variantSelect) {
+  variantSelect.addEventListener('change', updateVariant);
+  updateVariant();
 }
 </script>
 

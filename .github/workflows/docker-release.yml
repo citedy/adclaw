@@ -1,5 +1,11 @@
-# Build AdClaw Docker image and push to Docker Hub on release or version tag.
-# Tags: <version>, latest
+# Build AdClaw Docker images (core/browser/full) and push to Docker Hub on release.
+#
+# Tags pushed per release:
+#   - <version>-full, <version>-browser, <version>-core  (e.g. 1.0.0-full)
+#   - full, browser, core                                (moving tags)
+#   - latest                                             (points to full, for DO Marketplace compat)
+#
+# For DO Marketplace backwards compatibility, `latest` tracks the `full` variant.
 name: Docker Build and Push
 
 on:
@@ -24,6 +30,14 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Dockerfile picks extras based on ADCLAW_VARIANT:
+        #   core    → [local]
+        #   browser → [browser,local]
+        #   full    → [all,local]
+        variant: [full, browser, core]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,16 +65,32 @@ jobs:
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build and push
+      - name: Compute variant tags
+        id: tags
+        run: |
+          VER="${{ steps.version.outputs.tag }}"
+          VARIANT="${{ matrix.variant }}"
+          # Strip leading 'v' from tag (e.g. v1.0.0 → 1.0.0)
+          VER_CLEAN="${VER#v}"
+          TAGS="docker.io/${{ env.IMAGE }}:${VER_CLEAN}-${VARIANT}"
+          TAGS="${TAGS},docker.io/${{ env.IMAGE }}:${VARIANT}"
+          # `latest` tracks `full` variant for DO Marketplace backwards compat
+          if [ "$VARIANT" = "full" ]; then
+            TAGS="${TAGS},docker.io/${{ env.IMAGE }}:${VER_CLEAN}"
+            TAGS="${TAGS},docker.io/${{ env.IMAGE }}:latest"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "Tags: ${TAGS}"
+
+      - name: Build and push ${{ matrix.variant }}
         uses: docker/build-push-action@v7
         with:
           context: .
           file: deploy/Dockerfile
           push: true
-          tags: |
-            docker.io/${{ env.IMAGE }}:${{ steps.version.outputs.tag }}
-            docker.io/${{ env.IMAGE }}:latest
+          tags: ${{ steps.tags.outputs.tags }}
           build-args: |
+            ADCLAW_VARIANT=${{ matrix.variant }}
             ADCLAW_ENABLED_CHANNELS=discord,dingtalk,feishu,qq,console,telegram
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.variant }}

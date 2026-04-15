@@ -8,18 +8,13 @@ license = {text = "Apache-2.0"}
 dependencies = [
     "agentscope==1.0.18",
     "agentscope-runtime==1.1.3",
-    "discord-py>=2.3",
-    "dingtalk-stream>=0.24.3",
     "uvicorn>=0.40.0",
     "apscheduler>=3.11.2,<4",
     "questionary>=2.1.1",
-    "mss>=9.0.0",
     "reme-ai==0.3.0.5",
-    "transformers>=4.30.0",
     "python-dotenv>=1.0.0",
     "python-socks>=2.5.3",
     "onnxruntime<1.24",
-    "lark-oapi>=1.5.3",
     "python-telegram-bot>=20.0",
     "aiosqlite>=0.19.0",
     "sqlite-vec>=0.1.1",
@@ -77,6 +72,26 @@ ollama = [
 ]
 browser = [
     "playwright>=1.49.0",
+]
+feishu = [
+    "lark-oapi>=1.5.3",
+]
+discord = [
+    "discord-py>=2.3",
+]
+dingtalk = [
+    "dingtalk-stream>=0.24.3",
+]
+desktop = [
+    "mss>=9.0.0",
+]
+# Meta: all optional messaging channels
+channels = [
+    "adclaw[feishu,discord,dingtalk]",
+]
+# Meta: full install — everything
+all = [
+    "adclaw[browser,channels,desktop]",
 ]
 
 [tool.pytest.ini_options]
