@@ -21,7 +21,7 @@
     "@agentscope-ai/icons": "^1.0.60",
     "@ant-design/x-markdown": "^2.2.2",
     "ahooks": "^3.9.6",
-    "antd": "^5.29.1",
+    "antd": "^6.3.7",
     "antd-style": "^3.7.1",
     "i18next": "^25.8.4",
     "lucide-react": "^0.562.0",
