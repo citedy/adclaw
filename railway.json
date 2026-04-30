@@ -7,7 +7,7 @@
   "deploy": {
     "startCommand": "/entrypoint.sh",
     "healthcheckPath": "/api/diagnostics/health",
-    "healthcheckTimeout": 60,
+    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
