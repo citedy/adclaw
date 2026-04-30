@@ -9,10 +9,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 from pathlib import Path
 from typing import Callable, Optional, TYPE_CHECKING, Dict
 
 from .manager import MCPClientManager
+
+# BaseExceptionGroup is a builtin in 3.11+; on 3.10 we use the
+# `exceptiongroup` backport (declared in pyproject.toml only for 3.10).
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup  # noqa: F401
 
 if TYPE_CHECKING:
     from ...config.config import MCPConfig
@@ -278,7 +284,10 @@ class MCPConfigWatcher:
                 key,
             )
             self._client_failures.pop(key, None)
-        except Exception:
+        except (Exception, BaseExceptionGroup):
+            # replace_client re-raises BaseExceptionGroup from anyio
+            # TaskGroup teardown (e.g. HTTP 401); without it here the
+            # watcher loop dies on a single bad client config.
             self._track_client_failure(key, client_hash)
 
     def _should_skip_client(self, key: str, client_hash: int) -> bool:

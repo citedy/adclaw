@@ -169,12 +169,8 @@ function MCPPage() {
     <div style={{ padding: 24 }}>
       <div className="citedy-page-header">
         <div>
-          <h1 className="citedy-page-title">
-            {t("mcp.title")}
-          </h1>
-          <p className="citedy-page-description">
-            {t("mcp.description")}
-          </p>
+          <h1 className="citedy-page-title">{t("mcp.title")}</h1>
+          <p className="citedy-page-description">{t("mcp.description")}</p>
         </div>
         <Button type="primary" onClick={() => setCreateModalOpen(true)}>
           {t("mcp.create")}
@@ -183,7 +179,9 @@ function MCPPage() {
 
       {citedyStatus && (
         <Card
-          className={`citedy-promo-card ${citedyStatus.configured ? "configured" : "unconfigured"}`}
+          className={`citedy-promo-card ${
+            citedyStatus.configured ? "configured" : "unconfigured"
+          }`}
         >
           <div
             style={{

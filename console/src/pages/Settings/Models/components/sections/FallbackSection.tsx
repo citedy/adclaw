@@ -44,7 +44,9 @@ export function FallbackSection({ providers }: Props) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!msg.includes("404")) {
         console.error("Failed to load fallback config:", err);
-        message.warning("Could not load fallback configuration. Using defaults.");
+        message.warning(
+          "Could not load fallback configuration. Using defaults.",
+        );
       }
     } finally {
       setLoading(false);

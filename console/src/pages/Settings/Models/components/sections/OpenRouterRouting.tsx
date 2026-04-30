@@ -71,7 +71,8 @@ export function OpenRouterRouting({
     if (result) onChange(result);
   };
 
-  const needsModelPicker = mode === "nitro" || mode === "floor" || mode === "manual";
+  const needsModelPicker =
+    mode === "nitro" || mode === "floor" || mode === "manual";
 
   // Filter out meta-models from the picker
   const pickableModels = models.filter(

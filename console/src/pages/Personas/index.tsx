@@ -92,9 +92,7 @@ function PersonasPage() {
           <span className={styles.loadingText}>{t("common.loading")}</span>
         </div>
       ) : personas.length === 0 ? (
-        <div className={styles.emptyState}>
-          {t("personas.emptyState")}
-        </div>
+        <div className={styles.emptyState}>{t("personas.emptyState")}</div>
       ) : (
         <div className={styles.personasGrid}>
           {personas

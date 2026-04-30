@@ -47,17 +47,18 @@ function EnvironmentsPage() {
   const [importing, setImporting] = useState(false);
 
   useEffect(() => {
-    api.listKeyRefs().then(setKeyRefs).catch(() => {});
+    api
+      .listKeyRefs()
+      .then(setKeyRefs)
+      .catch(() => {});
   }, [envVars]);
 
   const bulkLineCount = useMemo(() => {
     if (!bulkText.trim()) return 0;
-    return bulkText
-      .split("\n")
-      .filter((l: string) => {
-        const s = l.trim();
-        return s && !s.startsWith("#") && s.includes("=");
-      }).length;
+    return bulkText.split("\n").filter((l: string) => {
+      const s = l.trim();
+      return s && !s.startsWith("#") && s.includes("=");
+    }).length;
   }, [bulkText]);
 
   const handleBulkImport = useCallback(async () => {

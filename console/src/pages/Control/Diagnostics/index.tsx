@@ -154,7 +154,13 @@ export default function DiagnosticsPage() {
     <div style={{ padding: 24 }}>
       {/* Overall status banner */}
       <Alert
-        type={statusCfg.color === "success" ? "success" : statusCfg.color === "warning" ? "warning" : "error"}
+        type={
+          statusCfg.color === "success"
+            ? "success"
+            : statusCfg.color === "warning"
+            ? "warning"
+            : "error"
+        }
         showIcon
         icon={<Heart size={18} />}
         message={
@@ -208,7 +214,8 @@ export default function DiagnosticsPage() {
         >
           {Object.entries(health.subsystems).map(
             ([name, sub]: [string, SubsystemStatus]) => {
-              const cfg = SUB_STATUS_CONFIG[sub.status] || SUB_STATUS_CONFIG.error;
+              const cfg =
+                SUB_STATUS_CONFIG[sub.status] || SUB_STATUS_CONFIG.error;
               return (
                 <Card
                   key={name}
@@ -227,7 +234,12 @@ export default function DiagnosticsPage() {
                     <Tag
                       color={cfg.color}
                       icon={cfg.icon}
-                      style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 4 }}
+                      style={{
+                        margin: 0,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
                     >
                       {sub.status}
                     </Tag>
@@ -236,22 +248,24 @@ export default function DiagnosticsPage() {
                     {typeof sub.detail === "string"
                       ? sub.detail
                       : typeof sub.detail === "object" && sub.detail !== null
-                        ? Object.entries(sub.detail).map(([k, v]) => (
-                            <span key={k} style={{ marginRight: 12 }}>
-                              <strong>{k}:</strong>{" "}
-                              {Array.isArray(v) ? v.join(", ") : String(v)}
-                            </span>
-                          ))
-                        : JSON.stringify(sub.detail)}
+                      ? Object.entries(sub.detail).map(([k, v]) => (
+                          <span key={k} style={{ marginRight: 12 }}>
+                            <strong>{k}:</strong>{" "}
+                            {Array.isArray(v) ? v.join(", ") : String(v)}
+                          </span>
+                        ))
+                      : JSON.stringify(sub.detail)}
                   </div>
                   {sub.count != null && (
-                    <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
+                    <div
+                      style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}
+                    >
                       Count: {sub.count}
                     </div>
                   )}
                 </Card>
               );
-            }
+            },
           )}
         </div>
       )}
@@ -259,7 +273,10 @@ export default function DiagnosticsPage() {
       {/* Error log table */}
       <Card title="Recent Errors" size="small">
         <Table
-          dataSource={[...errors].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())}
+          dataSource={[...errors].sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+          )}
           columns={columns}
           rowKey={(record, index) => `${record.timestamp}-${index}`}
           size="small"

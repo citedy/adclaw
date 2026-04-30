@@ -20,15 +20,21 @@ export const personaApi = {
     }),
 
   deletePersona: (id: string) =>
-    request<{ deleted: boolean }>(`/agents/personas/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    }),
+    request<{ deleted: boolean }>(
+      `/agents/personas/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+      },
+    ),
 
   listPersonaTemplates: () =>
     request<PersonaTemplate[]>("/agents/personas/templates"),
 
   createPersonaFromTemplate: (templateId: string) =>
-    request<Persona>(`/agents/personas/templates/${encodeURIComponent(templateId)}`, {
-      method: "POST",
-    }),
+    request<Persona>(
+      `/agents/personas/templates/${encodeURIComponent(templateId)}`,
+      {
+        method: "POST",
+      },
+    ),
 };

@@ -70,7 +70,8 @@ export default function WelcomePage() {
 
   // LLM state
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<string>("aliyun-intl");
+  const [selectedProvider, setSelectedProvider] =
+    useState<string>("aliyun-intl");
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [llmApiKey, setLlmApiKey] = useState("");
   const [savingLlm, setSavingLlm] = useState(false);
@@ -125,8 +126,8 @@ export default function WelcomePage() {
     }
   };
 
-  const wizardProviders = providers.filter((p) =>
-    !WIZARD_EXCLUDED.includes(p.id)
+  const wizardProviders = providers.filter(
+    (p) => !WIZARD_EXCLUDED.includes(p.id),
   );
   const currentProvider = providers.find((p) => p.id === selectedProvider);
 
@@ -135,7 +136,11 @@ export default function WelcomePage() {
       message.warning("Please select a provider and model");
       return;
     }
-    if (!currentProvider?.is_local && !llmApiKey.trim() && !currentProvider?.current_api_key) {
+    if (
+      !currentProvider?.is_local &&
+      !llmApiKey.trim() &&
+      !currentProvider?.current_api_key
+    ) {
       message.warning("Please enter an API key for this provider");
       return;
     }
@@ -197,15 +202,42 @@ export default function WelcomePage() {
   };
 
   const providerHints: Record<string, React.ReactNode> = {
-    openrouter: "One key for all models — Claude, GPT, Gemini, Llama, etc. Get key at openrouter.ai",
-    openai: "Direct access to GPT-5.4, Codex, o3, o4-mini, GPT-4o. Get key at platform.openai.com",
-    anthropic: "Claude Opus 4.6, Sonnet 4.6, Haiku 4.5. Get key at console.anthropic.com",
+    openrouter:
+      "One key for all models — Claude, GPT, Gemini, Llama, etc. Get key at openrouter.ai",
+    openai:
+      "Direct access to GPT-5.4, Codex, o3, o4-mini, GPT-4o. Get key at platform.openai.com",
+    anthropic:
+      "Claude Opus 4.6, Sonnet 4.6, Haiku 4.5. Get key at console.anthropic.com",
     xai: "Grok 4.1 Fast — $0.20/1M input. Get key at console.x.ai",
-    "aliyun-intl": <>qwen3.5-plus, kimi-k2.5, glm-5, MiniMax-M2.5, qwen3-max, qwen3-coder-next, qwen3-coder-plus. <a href="https://www.alibabacloud.com/campaign/benefits?referral_code=A9EXYQ" target="_blank" rel="noopener">Join for $3-10 &rarr;</a></>,
+    "aliyun-intl": (
+      <>
+        qwen3.5-plus, kimi-k2.5, glm-5, MiniMax-M2.5, qwen3-max,
+        qwen3-coder-next, qwen3-coder-plus.{" "}
+        <a
+          href="https://www.alibabacloud.com/campaign/benefits?referral_code=A9EXYQ"
+          target="_blank"
+          rel="noopener"
+        >
+          Join for $3-10 &rarr;
+        </a>
+      </>
+    ),
     "aliyun-codingplan": "Same models as Aliyun Intl but China endpoint.",
     ollama: "Run models locally. No API key needed. Install at ollama.com",
-    zai: <>GLM-5, GLM-5 Turbo, GLM-4.7, GLM-4.6, GLM-4.5 — direct from Z.AI. <a href="https://z.ai/subscribe?ic=DXX7MK5MJT" target="_blank" rel="noopener">$10/month &rarr;</a></>,
-    moonshot: "Kimi K2.5, K2 Thinking, Moonshot V1. Get key at platform.moonshot.ai",
+    zai: (
+      <>
+        GLM-5, GLM-5 Turbo, GLM-4.7, GLM-4.6, GLM-4.5 — direct from Z.AI.{" "}
+        <a
+          href="https://z.ai/subscribe?ic=DXX7MK5MJT"
+          target="_blank"
+          rel="noopener"
+        >
+          $10/month &rarr;
+        </a>
+      </>
+    ),
+    moonshot:
+      "Kimi K2.5, K2 Thinking, Moonshot V1. Get key at platform.moonshot.ai",
   };
 
   const searchConfigured =
@@ -219,7 +251,12 @@ export default function WelcomePage() {
             <img
               src="/adclaw-icon.webp"
               alt=""
-              style={{ width: 28, height: 28, verticalAlign: -6, marginRight: 8 }}
+              style={{
+                width: 28,
+                height: 28,
+                verticalAlign: -6,
+                marginRight: 8,
+              }}
             />
             <strong>Welcome to AdClaw</strong>
           </Paragraph>
@@ -250,7 +287,11 @@ export default function WelcomePage() {
                 AdClaw uses Citedy for SEO tools, content generation, and
                 marketing automation. You need a free API key to get started.
               </Paragraph>
-              <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+              <Space
+                direction="vertical"
+                size="middle"
+                style={{ width: "100%" }}
+              >
                 <Button
                   type="primary"
                   size="large"
@@ -259,7 +300,7 @@ export default function WelcomePage() {
                     window.open(
                       citedyStatus?.developer_url ||
                         "https://www.citedy.com/developer",
-                      "_blank"
+                      "_blank",
                     )
                   }
                 >
@@ -306,7 +347,9 @@ export default function WelcomePage() {
                       Citedy API key configured
                       {citedyStatus.balance && (
                         <Text type="secondary">
-                          {" — "}{citedyStatus.balance.credits.toLocaleString()} credits
+                          {" — "}
+                          {citedyStatus.balance.credits.toLocaleString()}{" "}
+                          credits
                         </Text>
                       )}
                     </>
@@ -315,7 +358,11 @@ export default function WelcomePage() {
                 />
               )}
 
-              <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+              <Space
+                direction="vertical"
+                size="middle"
+                style={{ width: "100%" }}
+              >
                 <Select
                   size="large"
                   placeholder="Select LLM provider..."
@@ -324,7 +371,9 @@ export default function WelcomePage() {
                   virtual={false}
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.value ?? "").toLowerCase().includes(input.toLowerCase())
+                    (option?.value ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   value={selectedProvider || undefined}
                   onChange={(val) => {
@@ -338,7 +387,10 @@ export default function WelcomePage() {
                       <span>
                         <strong>{p.name}</strong>
                         {p.id === "aliyun-intl" && (
-                          <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                          <Text
+                            type="secondary"
+                            style={{ marginLeft: 8, fontSize: 12 }}
+                          >
                             Recommended
                           </Text>
                         )}
@@ -391,10 +443,7 @@ export default function WelcomePage() {
                   <Button size="large" onClick={() => setCurrentStep(2)}>
                     Skip
                   </Button>
-                  <Button
-                    type="link"
-                    onClick={() => navigate("/models")}
-                  >
+                  <Button type="link" onClick={() => navigate("/models")}>
                     Advanced settings
                   </Button>
                 </Space>
@@ -406,9 +455,9 @@ export default function WelcomePage() {
             <Card className={styles.stepCard}>
               <Title level={4}>Step 3: Enable Web Search</Title>
               <Paragraph>
-                Without search, your AI agent is blind to the internet.
-                Add at least one search key so AdClaw can find real-time
-                information, research competitors, and discover trends.
+                Without search, your AI agent is blind to the internet. Add at
+                least one search key so AdClaw can find real-time information,
+                research competitors, and discover trends.
               </Paragraph>
 
               {llmConfigured && (
@@ -421,10 +470,17 @@ export default function WelcomePage() {
                 />
               )}
 
-              <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+              <Space
+                direction="vertical"
+                size="middle"
+                style={{ width: "100%" }}
+              >
                 <div>
                   <Text strong>Exa Search</Text>
-                  <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                  <Text
+                    type="secondary"
+                    style={{ marginLeft: 8, fontSize: 12 }}
+                  >
                     AI-powered web, code & people search
                   </Text>
                   <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
@@ -439,7 +495,10 @@ export default function WelcomePage() {
                       size="large"
                       icon={<ExternalLink size={14} />}
                       onClick={() =>
-                        window.open("https://dashboard.exa.ai/api-keys", "_blank")
+                        window.open(
+                          "https://dashboard.exa.ai/api-keys",
+                          "_blank",
+                        )
                       }
                     >
                       Get Key
@@ -455,7 +514,10 @@ export default function WelcomePage() {
 
                 <div>
                   <Text strong>xAI (Grok)</Text>
-                  <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                  <Text
+                    type="secondary"
+                    style={{ marginLeft: 8, fontSize: 12 }}
+                  >
                     Web search + X/Twitter search (via Grok)
                   </Text>
                   <div style={{ display: "flex", gap: 8, marginTop: 4 }}>

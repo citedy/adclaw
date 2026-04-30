@@ -30,25 +30,35 @@ const MAX_DESC_LEN = 90;
 
 function extractDescription(content: string): string {
   // Parse description from YAML frontmatter: "description: ..." or multi-line "description: >\n  ..."
-  const match = content.match(/^description:\s*[>|]?\s*\n?([\s\S]*?)(?:\n[a-z_]+:|\n---)/m);
+  const match = content.match(
+    /^description:\s*[>|]?\s*\n?([\s\S]*?)(?:\n[a-z_]+:|\n---)/m,
+  );
   if (match) {
     const desc = match[1].replace(/\s+/g, " ").trim();
     if (desc) {
-      return desc.length > MAX_DESC_LEN ? desc.slice(0, MAX_DESC_LEN) + "…" : desc;
+      return desc.length > MAX_DESC_LEN
+        ? desc.slice(0, MAX_DESC_LEN) + "…"
+        : desc;
     }
   }
   // Fallback: try single-line description
   const single = content.match(/^description:\s*["']?(.+?)["']?\s*$/m);
   if (single) {
     const desc = single[1].trim();
-    return desc.length > MAX_DESC_LEN ? desc.slice(0, MAX_DESC_LEN) + "…" : desc;
+    return desc.length > MAX_DESC_LEN
+      ? desc.slice(0, MAX_DESC_LEN) + "…"
+      : desc;
   }
   // Last fallback: first heading or line after frontmatter
   const afterFm = content.split("---").slice(2).join("---").trim();
-  const firstLine = afterFm.split("\n").find((l) => l.trim() && !l.startsWith("#"));
+  const firstLine = afterFm
+    .split("\n")
+    .find((l) => l.trim() && !l.startsWith("#"));
   if (firstLine) {
     const desc = firstLine.trim();
-    return desc.length > MAX_DESC_LEN ? desc.slice(0, MAX_DESC_LEN) + "…" : desc;
+    return desc.length > MAX_DESC_LEN
+      ? desc.slice(0, MAX_DESC_LEN) + "…"
+      : desc;
   }
   return "—";
 }
@@ -167,7 +177,9 @@ export function SkillCard({
         </div>
 
         <div className={styles.infoSection}>
-          <div className={styles.infoLabel}>{t("skills.description", "Description")}</div>
+          <div className={styles.infoLabel}>
+            {t("skills.description", "Description")}
+          </div>
           <span className={`${styles.infoCode} ${styles.description}`}>
             {extractDescription(skill.content)}
           </span>

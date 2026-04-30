@@ -159,9 +159,7 @@ export function ModelsSection({
             <Select
               style={{ width: "100%" }}
               placeholder={
-                hasModels
-                  ? t("models.selectModel")
-                  : t("models.addModelFirst")
+                hasModels ? t("models.selectModel") : t("models.addModelFirst")
               }
               disabled={!hasModels}
               showSearch

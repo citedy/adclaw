@@ -115,6 +115,65 @@
     }
     .install .copy:hover { color: var(--fg); }
 
+    /* DigitalOcean Marketplace CTA */
+    .do-cta-wrap {
+      margin-top: 14px;
+      text-align: center;
+    }
+    .do-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      background: #0080FF;
+      color: #fff;
+      border: 1px solid #0080FF;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      font-family: inherit;
+      line-height: 1;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .do-cta:hover {
+      background: #006acc;
+      border-color: #006acc;
+      color: #fff;
+    }
+    .do-cta svg { flex-shrink: 0; }
+    .do-cta .arrow {
+      font-size: 14px;
+      margin-left: 2px;
+      transition: transform 0.15s;
+    }
+    .do-cta:hover .arrow { transform: translateX(2px); }
+    .do-cta-sub {
+      display: block;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--zinc-400);
+      letter-spacing: 0.01em;
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px auto 0;
+      max-width: 340px;
+      font-size: 10px;
+      color: var(--zinc-400);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .or-divider::before,
+    .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--zinc-200);
+    }
+
     /* Two paths */
     .paths {
       display: grid;
@@ -304,6 +363,17 @@
       </button>
     </div>
 
+    <div class="do-cta-wrap">
+      <a class="do-cta" href="https://cloud.digitalocean.com/droplets/new?onboarding_origin=marketplace&amp;appId=224129502&amp;image=citedy-adclaw&amp;activation_redirect=%2Fdroplets%2Fnew%3FappId%3D224129502%26image%3Dcitedy-adclaw" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="#fff" aria-hidden="true"><path d="M16 32v-6c6.627 0 11.852-6.568 9.29-13.545C24.349 9.897 22.267 7.829 19.676 6.888 12.702 4.343 6.148 9.554 6.148 16H0C0 5.592 10.014-2.504 20.912.906c4.76 1.489 8.555 5.275 10.034 10.034 3.41 10.897-4.686 20.912-15.094 20.912L16 32z M16 26v-6h6v6h-6z M10.74 31.009v-4.73h4.73v4.73h-4.73z M6.766 26.279v-3.95h3.975v3.95H6.766z"/></svg>
+        Create AdClaw Droplet in 1 click
+        <span class="arrow">&rarr;</span>
+      </a>
+      <span class="do-cta-sub">DigitalOcean Marketplace · deploys in 60 seconds</span>
+    </div>
+
+    <div class="or-divider">or install locally</div>
+
     <div class="paths">
       <div class="path">
         <div class="label">pip</div>
@@ -424,7 +494,7 @@ adclaw app</code>
         <tr><th>Capability</th><th>AdClaw</th><th>CoPaw</th><th>CrewAI</th><th>Dify</th><th>OpenClaw MC</th></tr>
       </thead>
       <tbody>
-        <tr><td>LLM providers</td><td><strong>22 (100+ models)</strong></td><td>~5</td><td>Custom</td><td>~10</td><td>Custom</td></tr>
+        <tr><td>LLM providers</td><td><strong>23 (100+ models)</strong></td><td>~5</td><td>Custom</td><td>~10</td><td>Custom</td></tr>
         <tr><td>LLM auto-fallback</td><td class="y"><strong>Chain</strong></td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Multi-agent personas</td><td class="y">Yes</td><td class="n">No</td><td class="y">Yes</td><td class="n">No</td><td class="y">Yes</td></tr>
         <tr><td>Built-in skills</td><td><strong>130+</strong></td><td>~50</td><td>Custom</td><td>Plugins</td><td>—</td></tr>
@@ -441,7 +511,7 @@ adclaw app</code>
         <tr><td>Karma economy</td><td class="y">Yes</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Cron scheduling</td><td class="y">Per-persona</td><td>Basic</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>File publishing</td><td class="y">here.now</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
-        <tr><td>Browser skills</td><td><strong>6 tools</strong></td><td>Basic</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
+        <tr><td>Browser skills</td><td><strong>8 tools</strong></td><td>Basic</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
         <tr><td>Approval workflows</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="y">Yes</td></tr>
         <tr><td>pip install</td><td class="y">Yes</td><td class="y">Yes</td><td class="y">Yes</td><td class="n">Docker</td><td class="n">Docker</td></tr>
         <tr><td>License</td><td>Apache 2.0</td><td>Apache 2.0</td><td>MIT</td><td>Various</td><td>MIT</td></tr>

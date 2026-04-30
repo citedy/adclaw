@@ -289,7 +289,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
                 window.open(
                   citedyBalance.billing_url ||
                     "https://www.citedy.com/dashboard/billing",
-                  "_blank"
+                  "_blank",
                 )
               }
             >

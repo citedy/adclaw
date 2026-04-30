@@ -4,9 +4,15 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from typing import Dict, List, Optional, Literal
 
 import logging
+
+# BaseExceptionGroup is a builtin in 3.11+; on 3.10 we use the
+# `exceptiongroup` backport (declared in pyproject.toml only for 3.10).
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup  # noqa: F401
 
 # Hot-reload timeout: cap connect attempts so API doesn't hang
 _HOT_RELOAD_TIMEOUT = 10.0  # seconds
@@ -241,7 +247,10 @@ async def _hot_reload_client(
             f"Connection timed out after {_HOT_RELOAD_TIMEOUT:.0f}s; "
             "client will retry via background watcher"
         )
-    except Exception:
+    except (Exception, BaseExceptionGroup):
+        # replace_client re-raises BaseExceptionGroup from anyio TaskGroup
+        # teardown (e.g. HTTP 401); without catching it here the worker
+        # crashes during a hot-reload API call.
         logger.warning(
             "MCP client '%s' hot-reload failed (will retry via watcher)",
             client_key,

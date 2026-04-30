@@ -9,7 +9,12 @@ body {
 #root {
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(135deg, #f8fafc, rgba(239, 246, 255, 0.3), rgba(250, 245, 255, 0.2));
+  background: linear-gradient(
+    135deg,
+    #f8fafc,
+    rgba(239, 246, 255, 0.3),
+    rgba(250, 245, 255, 0.2)
+  );
 }
 
 .ant-layout {

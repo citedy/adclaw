@@ -9,9 +9,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 from typing import Any, Dict, List, TYPE_CHECKING
 
 from agentscope.mcp import HttpStatefulClient, StdIOStatefulClient
+
+# BaseExceptionGroup is a builtin in 3.11+; on 3.10 we use the
+# `exceptiongroup` backport (declared in pyproject.toml only for 3.10).
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup  # noqa: F401
 
 if TYPE_CHECKING:
     from ...config.config import MCPClientConfig, MCPConfig
@@ -50,7 +56,11 @@ class MCPClientManager:
             try:
                 await self._add_client(key, client_config)
                 logger.debug(f"MCP client '{key}' initialized successfully")
-            except Exception as e:
+            except (Exception, BaseExceptionGroup) as e:
+                # anyio TaskGroup teardown raises BaseExceptionGroup which
+                # is NOT a subclass of Exception in Python 3.11+; without
+                # it here a broken client (e.g. HTTP 401) crashes the whole
+                # FastAPI lifespan with "Application startup failed".
                 logger.warning(
                     f"Failed to initialize MCP client '{key}': {e}",
                     exc_info=True,
@@ -104,8 +114,11 @@ class MCPClientManager:
             except Exception:
                 pass
             raise
-        except Exception as e:
-            logger.warning(f"Failed to connect MCP client '{key}': {e}")
+        except (Exception, BaseExceptionGroup) as e:
+            logger.warning(
+                f"Failed to connect MCP client '{key}': {e}",
+                exc_info=True,
+            )
             try:
                 await new_client.close()
             except Exception:
@@ -169,6 +182,14 @@ class MCPClientManager:
     ) -> None:
         """Add a new client (used during initial setup).
 
+        The caller is responsible for catching BaseExceptionGroup —
+        anyio TaskGroup teardown propagates it through ``client.connect()``
+        and it is not a subclass of Exception in Python 3.11+.
+
+        On connect failure the partially-built client is best-effort
+        closed before the exception propagates, mirroring
+        ``replace_client``.
+
         Args:
             key: Client identifier
             client_config: Client configuration
@@ -176,8 +197,15 @@ class MCPClientManager:
         """
         client = self._build_client(client_config)
 
-        # Add timeout to prevent indefinite blocking
-        await asyncio.wait_for(client.connect(), timeout=timeout)
+        try:
+            # Add timeout to prevent indefinite blocking
+            await asyncio.wait_for(client.connect(), timeout=timeout)
+        except (Exception, BaseExceptionGroup):
+            try:
+                await client.close()
+            except Exception:
+                pass
+            raise
 
         async with self._lock:
             self._clients[key] = client

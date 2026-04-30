@@ -3,9 +3,14 @@
 
 from __future__ import annotations
 
+import sys
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
+# BaseExceptionGroup backport for 3.10 (builtin on 3.11+).
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup  # noqa: F401
 
 from adclaw.app.routers.mcp import (
     _hot_reload_client,
@@ -67,6 +72,28 @@ async def test_hot_reload_returns_warning_on_error():
     """If manager.replace_client raises, return warning string."""
     manager = MagicMock()
     manager.replace_client = AsyncMock(side_effect=Exception("conn failed"))
+    request = _make_request(manager)
+    cfg = _make_client_config(enabled=True)
+
+    result = await _hot_reload_client(request, "test_key", cfg)
+
+    manager.replace_client.assert_called_once()
+    assert result is not None
+    assert "failed" in result.lower()
+
+
+@pytest.mark.asyncio
+async def test_hot_reload_returns_warning_on_base_exception_group():
+    """anyio TaskGroup teardown raises BaseExceptionGroup (NOT subclass of
+    Exception in 3.11+). Must be caught here, otherwise the FastAPI worker
+    crashes on a single bad client config during a hot-reload API call."""
+    manager = MagicMock()
+    manager.replace_client = AsyncMock(
+        side_effect=BaseExceptionGroup(
+            "taskgroup teardown",
+            [RuntimeError("HTTP 401 Unauthorized")],
+        )
+    )
     request = _make_request(manager)
     cfg = _make_client_config(enabled=True)
 

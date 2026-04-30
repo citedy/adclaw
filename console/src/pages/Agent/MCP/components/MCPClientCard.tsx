@@ -201,7 +201,9 @@ export function MCPClientCard({
         width={700}
       >
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Description</label>
+          <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>
+            Description
+          </label>
           <Input.TextArea
             value={editedDescription}
             onChange={(e) => setEditedDescription(e.target.value)}

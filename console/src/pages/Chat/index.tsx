@@ -138,9 +138,12 @@ export default function ChatPage() {
   );
 
   useEffect(() => {
-    personaApi.listPersonas().then((list) => {
-      if (Array.isArray(list)) setPersonas(list);
-    }).catch((err) => console.warn("Failed to load personas:", err));
+    personaApi
+      .listPersonas()
+      .then((list) => {
+        if (Array.isArray(list)) setPersonas(list);
+      })
+      .catch((err) => console.warn("Failed to load personas:", err));
   }, []);
 
   const handleTabChange = (tabId: string) => {
@@ -162,7 +165,8 @@ export default function ChatPage() {
   };
 
   // Compute session_id from React state (not global)
-  const currentSessionId = activeTab === "all" ? "" : `${activeTab}::console--default`;
+  const currentSessionId =
+    activeTab === "all" ? "" : `${activeTab}::console--default`;
 
   const options = useMemo(() => {
     const handleModelError = () => {
@@ -210,7 +214,9 @@ export default function ChatPage() {
       // Prepend @persona tag if a persona is selected via chip bar
       const processedInput = input.slice(-1).map((msg: any) => {
         if (selectedPersona && msg?.content) {
-          const contents = Array.isArray(msg.content) ? msg.content : [msg.content];
+          const contents = Array.isArray(msg.content)
+            ? msg.content
+            : [msg.content];
           const tagged = contents.map((c: any) => {
             if (c?.type === "text" && c.text && !c.text.startsWith("@")) {
               return { ...c, text: `@${selectedPersona} ${c.text}` };
@@ -282,7 +288,14 @@ export default function ChatPage() {
   }, [optionsConfig, selectedPersona, activeTab, personas, currentSessionId]);
 
   return (
-    <div style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column" }}>
+    <div
+      style={{
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {personas.length > 0 && (
         <PersonaTabs
           personas={personas}

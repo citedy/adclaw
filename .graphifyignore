@@ -1,0 +1,4 @@
+# Exclude pre-built frontend bundle (minified JS) - pollutes graph with thousands of A(), Q(), ur() nodes
+console
+adclaw/console
+src/adclaw/console

@@ -7,6 +7,7 @@ with integrated tools, skills, and memory management.
 import asyncio
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Any, List, Literal, Optional, Type
 
@@ -17,6 +18,11 @@ from agentscope.message import Msg
 from agentscope.tool import Toolkit
 from anyio import ClosedResourceError
 from pydantic import BaseModel
+
+# BaseExceptionGroup is a builtin in 3.11+; on 3.10 we use the
+# `exceptiongroup` backport (declared in pyproject.toml only for 3.10).
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup  # noqa: F401
 
 from .command_handler import CommandHandler
 from .hooks import BootstrapHook, MemoryCompactionHook
@@ -477,13 +483,29 @@ class AdClawAgent(ReActAgent):
                         "MCP client '%s' recovery failed, skipping",
                         client_name,
                     )
+            except BaseExceptionGroup as eg:
+                # anyio TaskGroup teardown (e.g. MCP HTTP 401) raises
+                # BaseExceptionGroup which is NOT a subclass of Exception
+                # in Python 3.11+ — handle explicitly so one broken client
+                # never crashes the whole agent. ExceptionGroup is a
+                # subclass of BaseExceptionGroup so this catches both.
+                logger.warning(
+                    "MCP client '%s' unavailable (TaskGroup error), "
+                    "skipping (agent will run without its tools): %s",
+                    client_name,
+                    eg,
+                    exc_info=True,
+                )
+                continue
             except Exception as e:  # pylint: disable=broad-except
-                logger.exception(
-                    "Unexpected error registering MCP client '%s': %s",
+                logger.warning(
+                    "MCP client '%s' unavailable, skipping "
+                    "(agent will run without its tools): %s",
                     client_name,
                     e,
+                    exc_info=True,
                 )
-                raise
+                continue
 
         # Auto-heal broken skills (async context available here)
         if getattr(self, "_broken_skills", None):

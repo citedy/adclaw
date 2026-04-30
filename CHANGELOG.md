@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.2] - 2026-04-30
+
+### Fixed
+- **Graceful MCP client degradation**: a single broken/unauthorized MCP client (e.g. expired API key) no longer crashes app startup or query handling. Failed clients are logged and skipped; agent continues with the remaining tools.
+  - `agents/react_agent.py` `register_mcp_clients`: replaced re-raise with `continue`; added explicit `BaseExceptionGroup` branch (Python 3.11+ anyio TaskGroup teardown).
+  - `app/mcp/manager.py` `init_from_config` and `replace_client`: catch `BaseExceptionGroup` alongside `Exception` so anyio TaskGroup errors don't propagate to FastAPI lifespan.
+
 ## [0.1.2] - 2026-03-15
 
 ### Added

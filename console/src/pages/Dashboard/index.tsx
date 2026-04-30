@@ -250,17 +250,29 @@ function DashboardPage() {
     <div className={styles.page}>
       <div>
         <h1 className={styles.title}>Dashboard</h1>
-        <p className={styles.description}>
-          Monitor your agent team activity
-        </p>
+        <p className={styles.description}>Monitor your agent team activity</p>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--citedy-slate-500)", fontSize: 14 }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "60px 0",
+            color: "var(--citedy-slate-500)",
+            fontSize: 14,
+          }}
+        >
           {t("common.loading")}
         </div>
       ) : personas.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "var(--citedy-slate-400)", fontSize: 14 }}>
+        <div
+          style={{
+            textAlign: "center",
+            padding: "80px 0",
+            color: "var(--citedy-slate-400)",
+            fontSize: 14,
+          }}
+        >
           No agent personas found. Create your first persona to get started.
         </div>
       ) : (

@@ -96,7 +96,9 @@ export function PersonaDrawer({
     };
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   // Set form values
@@ -157,7 +159,9 @@ export function PersonaDrawer({
   // MCP options
   const mcpOptions = useMemo(() => {
     return mcpClients.map((c) => ({
-      label: `${c.name || c.key}${c.description ? ` — ${c.description}` : ""}${c.enabled ? "" : " (disabled)"}`,
+      label: `${c.name || c.key}${c.description ? ` — ${c.description}` : ""}${
+        c.enabled ? "" : " (disabled)"
+      }`,
       value: c.key,
     }));
   }, [mcpClients]);
@@ -203,7 +207,9 @@ export function PersonaDrawer({
     <Drawer
       width={600}
       placement="right"
-      title={isEditing ? `Edit: ${editingPersona.name}` : "Create Agent Persona"}
+      title={
+        isEditing ? `Edit: ${editingPersona.name}` : "Create Agent Persona"
+      }
       open={open}
       onClose={onClose}
       destroyOnClose
@@ -236,10 +242,7 @@ export function PersonaDrawer({
           label="ID"
           rules={[{ required: true, message: "Please enter an ID" }]}
         >
-          <Input
-            placeholder="e.g., growth-hacker"
-            disabled={isEditing}
-          />
+          <Input placeholder="e.g., growth-hacker" disabled={isEditing} />
         </Form.Item>
 
         <Form.Item name="soul_md" label="SOUL.md">
@@ -265,7 +268,9 @@ export function PersonaDrawer({
 
         <Form.Item name="model_name" label="Model Name">
           <Select
-            placeholder={selectedProvider ? "Select a model" : "Select provider first"}
+            placeholder={
+              selectedProvider ? "Select a model" : "Select provider first"
+            }
             allowClear
             showSearch
             disabled={!selectedProvider}
@@ -280,7 +285,9 @@ export function PersonaDrawer({
             showSearch
             allowClear
             filterOption={(input, option) =>
-              (option?.label as string ?? "").toLowerCase().includes(input.toLowerCase())
+              ((option?.label as string) ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
             }
             options={skillOptions as any}
           />
@@ -293,7 +300,9 @@ export function PersonaDrawer({
             showSearch
             allowClear
             filterOption={(input, option) =>
-              (option?.label as string ?? "").toLowerCase().includes(input.toLowerCase())
+              ((option?.label as string) ?? "")
+                .toLowerCase()
+                .includes(input.toLowerCase())
             }
             options={mcpOptions}
           />
@@ -325,14 +334,22 @@ export function PersonaDrawer({
             <Switch />
           </Form.Item>
 
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.cron_enabled !== cur.cron_enabled}>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, cur) => prev.cron_enabled !== cur.cron_enabled}
+          >
             {({ getFieldValue }) =>
               getFieldValue("cron_enabled") ? (
                 <>
                   <Form.Item
                     name="cron_schedule"
                     label="Schedule (Cron Expression)"
-                    rules={[{ required: true, message: "Schedule is required when cron is enabled" }]}
+                    rules={[
+                      {
+                        required: true,
+                        message: "Schedule is required when cron is enabled",
+                      },
+                    ]}
                   >
                     <Input placeholder="e.g., 0 9 * * *" />
                   </Form.Item>

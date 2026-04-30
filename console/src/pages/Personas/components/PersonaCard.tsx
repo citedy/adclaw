@@ -44,7 +44,9 @@ export function PersonaCard({
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`${styles.personaCard} ${isHover ? styles.hover : styles.normal}`}
+      className={`${styles.personaCard} ${
+        isHover ? styles.hover : styles.normal
+      }`}
     >
       <div className={styles.cardBody}>
         <div className={styles.cardHeader}>
@@ -64,11 +66,15 @@ export function PersonaCard({
 
         <div className={styles.badges}>
           <Tag color="blue">{modelLabel}</Tag>
-          <Tag>{persona.skills.length} {t("personas.skills")}</Tag>
+          <Tag>
+            {persona.skills.length} {t("personas.skills")}
+          </Tag>
           <Tag>{persona.mcp_clients.length} MCP</Tag>
           {persona.cron && (
             <Tag color={persona.cron.enabled ? "green" : "default"}>
-              {persona.cron.enabled ? t("personas.cronOn") : t("personas.cronOff")}
+              {persona.cron.enabled
+                ? t("personas.cronOn")
+                : t("personas.cronOff")}
             </Tag>
           )}
         </div>
