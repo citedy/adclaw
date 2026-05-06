@@ -8,7 +8,11 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 
-*Fork of [CoPaw](https://github.com/agentscope-ai/CoPaw) by AgentScope (Apache 2.0)*
+**Deploys in 60 seconds in 1 click**
+
+<a href="https://cloud.digitalocean.com/droplets/new?onboarding_origin=marketplace&appId=224129502&image=citedy-adclaw&activation_redirect=%2Fdroplets%2Fnew%3FappId%3D224129502%26image%3Dcitedy-adclaw"><img src="https://img.shields.io/badge/Deploy_on-DigitalOcean-0080FF?style=for-the-badge&logo=digitalocean&logoColor=white" alt="Deploy on DigitalOcean" height="40"></a>
+&nbsp;
+<a href="https://railway.com/deploy/adclaw?referralCode=8K6-i5&utm_medium=integration&utm_source=template&utm_campaign=generic"><img src="https://railway.com/button.svg" alt="Deploy on Railway" height="40"></a>
 
 </div>
 
