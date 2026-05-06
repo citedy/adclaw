@@ -2,7 +2,7 @@
 
 This guide walks through deploying AdClaw — an AI marketing agent team — on [Railway](https://railway.com/).
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/adclaw)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/adclaw?referralCode=8K6-i5&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 ## What you get
 
@@ -147,5 +147,3 @@ Hobby includes $5/month — covers light usage. Set [Railway Spending Limits](ht
 - **DigitalOcean Marketplace:** https://marketplace.digitalocean.com/apps/adclaw
 - **Issues:** https://github.com/Citedy/adclaw/issues
 - **License:** Apache-2.0
-
-Built on top of [AgentScope-Runtime](https://github.com/agentscope-ai/agentscope-runtime).
