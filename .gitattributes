@@ -1,1 +1,3 @@
 *.bat text eol=crlf
+src/adclaw/console/index.html linguist-generated=true
+src/adclaw/console/assets/* linguist-generated=true

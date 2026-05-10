@@ -86,3 +86,6 @@ CLAUDE.md
 # graphify: local cache and temp files (keep graph artifacts)
 graphify-out/cache/
 graphify-out/.graphify_*
+
+# local Cloudflare/Wrangler cache
+.wrangler/

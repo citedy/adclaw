@@ -10,7 +10,7 @@ assignees: []
 
 [What is wrong or missing in the docs? One or two sentences.]
 
-**Docs location:** [e.g. website, README, `website/public/docs/quickstart.en.md`, Console UI copy]
+**Docs location:** [e.g. `docs/getting-started.md`, `README.md`, Console UI copy]
 
 ## Type
 

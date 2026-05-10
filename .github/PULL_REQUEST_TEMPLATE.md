@@ -21,7 +21,7 @@
 - [ ] Channels (DingTalk, Feishu, QQ, Discord, iMessage, etc.)
 - [ ] Skills
 - [ ] CLI
-- [ ] Documentation (website)
+- [ ] Documentation
 - [ ] Tests
 - [ ] CI/CD
 - [ ] Scripts / Deploy
