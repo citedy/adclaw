@@ -21,6 +21,13 @@ import {
   Search,
 } from "lucide-react";
 import { request } from "../../api/request";
+import type { ProviderInfo } from "../../api/types/provider";
+import {
+  sortProviders,
+  XIAOMI_PARTNER_BADGE,
+  XIAOMI_PROVIDER_ID,
+  XIAOMI_TOKEN_PLAN_URL,
+} from "../../shared/providerMeta";
 import styles from "./index.module.less";
 
 const { Title, Text, Paragraph } = Typography;
@@ -31,21 +38,6 @@ interface CitedyStatus {
   balance?: { credits: number; status: string } | null;
   developer_url: string;
   billing_url: string;
-}
-
-interface ModelInfo {
-  id: string;
-  name: string;
-}
-
-interface ProviderInfo {
-  id: string;
-  name: string;
-  models: ModelInfo[];
-  current_api_key: string;
-  current_base_url: string;
-  is_local: boolean;
-  needs_base_url: boolean;
 }
 
 interface ActiveModels {
@@ -88,9 +80,13 @@ export default function WelcomePage() {
       setCitedyStatus(res);
       if (res.configured) setCurrentStep(1);
     });
-    request<ProviderInfo[]>("/models").then((res) => {
-      setProviders(res);
-    });
+    request<ProviderInfo[]>("/models")
+      .then((res) => {
+        setProviders(Array.isArray(res) ? sortProviders(res) : []);
+      })
+      .catch(() => {
+        setProviders([]);
+      });
     request<ActiveModels>("/models/active").then((res) => {
       if (res.active_llm?.provider_id) {
         setLlmConfigured(true);
@@ -126,8 +122,8 @@ export default function WelcomePage() {
     }
   };
 
-  const wizardProviders = providers.filter(
-    (p) => !WIZARD_EXCLUDED.includes(p.id),
+  const wizardProviders = sortProviders(
+    providers.filter((p) => !WIZARD_EXCLUDED.includes(p.id)),
   );
   const currentProvider = providers.find((p) => p.id === selectedProvider);
 
@@ -202,6 +198,15 @@ export default function WelcomePage() {
   };
 
   const providerHints: Record<string, React.ReactNode> = {
+    [XIAOMI_PROVIDER_ID]: (
+      <>
+        MiMo-V2.5-Pro, MiMo-V2.5, and MiMo-V2-Omni. One subscription unlocks the
+        MiMo Token Plan models.{" "}
+        <a href={XIAOMI_TOKEN_PLAN_URL} target="_blank" rel="noopener">
+          $6/month &rarr;
+        </a>
+      </>
+    ),
     openrouter:
       "One key for all models — Claude, GPT, Gemini, Llama, etc. Get key at openrouter.ai",
     openai:
@@ -386,6 +391,18 @@ export default function WelcomePage() {
                     label: (
                       <span>
                         <strong>{p.name}</strong>
+                        {p.id === XIAOMI_PROVIDER_ID && (
+                          <Text
+                            type="secondary"
+                            style={{
+                              marginLeft: 8,
+                              fontSize: 12,
+                              color: "#f5222d",
+                            }}
+                          >
+                            {XIAOMI_PARTNER_BADGE}
+                          </Text>
+                        )}
                         {p.id === "aliyun-intl" && (
                           <Text
                             type="secondary"

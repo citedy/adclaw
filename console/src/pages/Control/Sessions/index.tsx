@@ -18,6 +18,24 @@ import { useSessions } from "./useSessions";
 import api from "../../../api";
 import styles from "./index.module.less";
 
+function SessionsEmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className={styles.emptyState}>
+      <div className={styles.emptyStateCore}>
+        <div className={styles.emptyStateIcon} />
+        <h3 className={styles.emptyStateTitle}>{title}</h3>
+        <p className={styles.emptyStateDescription}>{description}</p>
+      </div>
+    </div>
+  );
+}
+
 function SessionsPage() {
   const { t } = useTranslation();
   const {
@@ -38,6 +56,8 @@ function SessionsPage() {
   const [filterUserId, setFilterUserId] = useState<string>("");
   const [filterChannel, setFilterChannel] = useState<string>("");
   const [availableChannels, setAvailableChannels] = useState<string[]>([]);
+  const hasSessions = sessions.length > 0;
+  const showTable = loading || hasSessions;
 
   useEffect(() => {
     const fetchChannelTypes = async () => {
@@ -147,18 +167,13 @@ function SessionsPage() {
   return (
     <div className={styles.sessionsPage}>
       <div className={styles.header}>
-        <div className={styles.headerInfo}>
+        <div>
           <h1 className={styles.title}>{t("sessions.title")}</h1>
           <p className={styles.description}>{t("sessions.description")}</p>
         </div>
-        {selectedRowKeys.length > 0 && (
-          <Button type="primary" danger onClick={handleBatchDelete}>
-            {t("sessions.batchDeleteButton")} ({selectedRowKeys.length})
-          </Button>
-        )}
       </div>
 
-      <div className={styles.filterBar}>
+      <div className={styles.toolbar}>
         <FilterBar
           filterUserId={filterUserId}
           filterChannel={filterChannel}
@@ -166,24 +181,50 @@ function SessionsPage() {
           onUserIdChange={setFilterUserId}
           onChannelChange={setFilterChannel}
         />
+        <div className={styles.toolbarMeta}>
+          <div className={styles.countChip}>
+            {t("sessions.totalItems", { count: filteredSessions.length })}
+          </div>
+          {selectedRowKeys.length > 0 && (
+            <Button type="primary" danger onClick={handleBatchDelete}>
+              {t("sessions.batchDeleteButton")} ({selectedRowKeys.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className={styles.tableCard} bodyStyle={{ padding: 0 }}>
-        <Table
-          columns={columns}
-          dataSource={filteredSessions}
-          loading={loading}
-          rowKey="id"
-          rowSelection={rowSelection}
-          rowClassName={(record) =>
-            selectedRowKeys.includes(record.id) ? styles.selectedRow : ""
-          }
-          scroll={{ x: 1500 }}
-          pagination={{
-            pageSize: 10,
-            showTotal: (total) => t("sessions.totalItems", { count: total }),
-          }}
-        />
+        <div className={styles.surfaceHead}>
+          <div className={styles.surfaceTitle}>
+            <strong>{t("sessions.sessionListTitle")}</strong>
+            <span>{t("sessions.sessionListSubtitle")}</span>
+          </div>
+        </div>
+        {showTable ? (
+          <Table
+            className={styles.sessionsTable}
+            columns={columns}
+            dataSource={filteredSessions}
+            loading={loading}
+            rowKey="id"
+            rowSelection={rowSelection}
+            rowClassName={(record) =>
+              selectedRowKeys.includes(record.id) ? styles.selectedRow : ""
+            }
+            scroll={{ x: 1500 }}
+            pagination={{
+              pageSize: 10,
+              showTotal: (total) => t("sessions.totalItems", { count: total }),
+            }}
+          />
+        ) : (
+          <div className={styles.emptyStatePanel}>
+            <SessionsEmptyState
+              title={t("sessions.emptyTitle")}
+              description={t("sessions.emptyDescription")}
+            />
+          </div>
+        )}
       </Card>
 
       <SessionDrawer

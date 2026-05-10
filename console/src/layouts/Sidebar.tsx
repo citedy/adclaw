@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 
 const { Sider } = Layout;
-
+const MOBILE_SIDEBAR_MAX_WIDTH = 1024;
 const keyToPath: Record<string, string> = {
   dashboard: "/dashboard",
   chat: "/chat",
@@ -55,7 +55,15 @@ interface SidebarProps {
 export default function Sidebar({ selectedKey }: SidebarProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [isNarrowViewport, setIsNarrowViewport] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.matchMedia(`(max-width: ${MOBILE_SIDEBAR_MAX_WIDTH}px)`)
+      .matches;
+  });
   const [openKeys, setOpenKeys] = useState<string[]>([
     "chat-group",
     "control-group",
@@ -68,6 +76,11 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
     credits?: number;
     billing_url?: string;
   } | null>(null);
+  const collapsed = isNarrowViewport || desktopCollapsed;
+  const useCompactPopupMenu = isNarrowViewport && collapsed;
+  const menuMode: MenuProps["mode"] = useCompactPopupMenu
+    ? "vertical"
+    : "inline";
 
   useEffect(() => {
     api
@@ -84,6 +97,29 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
         });
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia(
+      `(max-width: ${MOBILE_SIDEBAR_MAX_WIDTH}px)`,
+    );
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsNarrowViewport(event.matches);
+    };
+
+    setIsNarrowViewport(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
   }, []);
 
   const menuItems: MenuProps["items"] = [
@@ -190,11 +226,20 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   return (
     <Sider
       collapsed={collapsed}
-      onCollapse={(value) => setCollapsed(value)}
+      onCollapse={(value) => {
+        if (!isNarrowViewport) {
+          setDesktopCollapsed(value);
+        }
+      }}
       width={260}
+      collapsedWidth={68}
       style={{
-        overflow: "auto",
+        overflow: collapsed ? "hidden" : "auto",
         height: "100vh",
+        width: collapsed ? 68 : 260,
+        minWidth: collapsed ? 68 : 260,
+        maxWidth: collapsed ? 68 : 260,
+        flex: `0 0 ${collapsed ? 68 : 260}px`,
       }}
     >
       <div
@@ -202,52 +247,92 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
           height: 64,
           display: "flex",
           alignItems: "center",
-          padding: "0 16px",
-          gap: 12,
+          justifyContent: collapsed ? "center" : "space-between",
+          padding: collapsed ? "0" : "0 16px",
+          gap: collapsed ? 0 : 10,
         }}
       >
-        {!collapsed && (
+        {!collapsed ? (
           <>
-            <img
-              src="/logo.png"
-              alt="AdClaw"
-              style={{ height: 22, width: "auto" }}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                minWidth: 0,
+              }}
+            >
+              <img
+                src="/logo.svg"
+                alt="AdClaw"
+                style={{ height: 20, width: 20, display: "block" }}
+              />
+              {version && (
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "#94a3b8",
+                    fontWeight: 400,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  v{version}
+                </span>
+              )}
+            </div>
+            <Button
+              type="text"
+              icon={<PanelLeftClose size={20} />}
+              onClick={() => setDesktopCollapsed(true)}
+              style={{
+                marginLeft: "auto",
+                color: "#0f172a",
+                width: 36,
+                height: 36,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
             />
-            {version && (
-              <span
-                style={{
-                  fontSize: 11,
-                  color: "#94a3b8",
-                  fontWeight: 400,
-                  lineHeight: 1,
-                }}
-              >
-                v{version}
-              </span>
-            )}
+          </>
+        ) : isNarrowViewport ? (
+          <img
+            src="/logo.svg"
+            alt="AdClaw"
+            style={{ height: 20, width: 20, display: "block" }}
+          />
+        ) : (
+          <>
+            <Button
+              type="text"
+              icon={<PanelLeftOpen size={20} />}
+              onClick={() => setDesktopCollapsed(false)}
+              style={{
+                marginLeft: 0,
+                color: "#0f172a",
+                width: 36,
+                height: 36,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            />
           </>
         )}
-        <Button
-          type="text"
-          icon={
-            collapsed ? (
-              <PanelLeftOpen size={20} />
-            ) : (
-              <PanelLeftClose size={20} />
-            )
-          }
-          onClick={() => setCollapsed(!collapsed)}
-          style={{
-            margin: "auto",
-            color: "#0f172a",
-          }}
-        />
       </div>
       <Menu
-        mode="inline"
+        mode={menuMode}
         selectedKeys={[selectedKey]}
-        openKeys={openKeys}
-        onOpenChange={(keys) => setOpenKeys(keys as string[])}
+        triggerSubMenuAction={useCompactPopupMenu ? "click" : "hover"}
+        openKeys={!useCompactPopupMenu && !collapsed ? openKeys : undefined}
+        onOpenChange={(keys) => {
+          if (!useCompactPopupMenu && !collapsed) {
+            setOpenKeys(keys as string[]);
+          }
+        }}
         onClick={(info: { key: string | number }) => {
           const key = String(info.key);
           const path = keyToPath[key];
@@ -256,7 +341,11 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
           }
         }}
         items={menuItems}
-        style={collapsed ? { width: "100%" } : undefined}
+        style={{
+          width: "100%",
+          borderInlineEnd: "none",
+          background: "transparent",
+        }}
       />
       {!collapsed && citedyBalance?.configured && (
         <div

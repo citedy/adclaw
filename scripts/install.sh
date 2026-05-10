@@ -12,7 +12,7 @@ ADCLAW_HOME="${ADCLAW_HOME:-$HOME/.adclaw}"
 ADCLAW_VENV="$ADCLAW_HOME/venv"
 ADCLAW_BIN="$ADCLAW_HOME/bin"
 PYTHON_VERSION="3.12"
-ADCLAW_REPO="https://github.com/agentscope-ai/AdClaw.git"
+ADCLAW_REPO="https://github.com/Citedy/adclaw.git"
 
 VERSION=""
 FROM_SOURCE=false

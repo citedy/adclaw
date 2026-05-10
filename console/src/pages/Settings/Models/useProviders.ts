@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../../../api";
 import type { ProviderInfo, ActiveModelsInfo } from "../../../api/types";
+import { sortProviders } from "../../../shared/providerMeta";
 
 export function useProviders() {
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -23,7 +24,7 @@ export function useProviders() {
           "Unexpected API response. Is BASE_URL configured correctly?",
         );
       }
-      setProviders(provData);
+      setProviders(sortProviders(provData));
       if (activeData) setActiveModels(activeData);
     } catch (err) {
       const msg =

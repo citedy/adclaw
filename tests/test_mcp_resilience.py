@@ -314,6 +314,175 @@ async def test_add_client_closes_partial_client_on_connect_failure(
 
 
 @pytest.mark.asyncio
+async def test_close_all_swallows_cancelled_error_during_shutdown() -> None:
+    class _CancellingClient:
+        def __init__(self, name: str) -> None:
+            self.name = name
+            self.close_calls = 0
+
+        async def close(self) -> None:
+            self.close_calls += 1
+            raise asyncio.CancelledError()
+
+    manager = MCPClientManager()
+    client = _CancellingClient("cancelled_mcp")
+    manager._clients["cancelled"] = client
+
+    await manager.close_all()
+
+    assert client.close_calls == 1
+    assert manager._clients == {}
+
+
+@pytest.mark.asyncio
+async def test_close_all_reraises_external_task_cancellation() -> None:
+    close_started = asyncio.Event()
+    allow_close_to_finish = asyncio.Event()
+
+    class _BlockingClient:
+        async def close(self) -> None:
+            close_started.set()
+            await allow_close_to_finish.wait()
+
+    manager = MCPClientManager()
+    manager._clients["blocked"] = _BlockingClient()
+
+    close_task = asyncio.create_task(manager.close_all())
+    await asyncio.wait_for(close_started.wait(), timeout=1)
+
+    close_task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await close_task
+
+    allow_close_to_finish.set()
+
+
+@pytest.mark.asyncio
+async def test_close_all_uses_strict_close_when_supported() -> None:
+    class _StrictCloseClient:
+        def __init__(self) -> None:
+            self.ignore_errors_values: list[bool] = []
+
+        async def close(self, ignore_errors: bool = True) -> None:
+            self.ignore_errors_values.append(ignore_errors)
+
+    manager = MCPClientManager()
+    client = _StrictCloseClient()
+    manager._clients["strict"] = client
+
+    await manager.close_all()
+
+    assert client.ignore_errors_values == [False]
+
+
+@pytest.mark.asyncio
+async def test_close_all_downgrades_benign_cancel_scope_noise() -> None:
+    class _NoisyClient:
+        async def close(self, ignore_errors: bool = True) -> None:
+            raise RuntimeError(
+                "Attempted to exit a cancel scope that isn't the current "
+                "tasks's current cancel scope"
+            )
+
+    manager = MCPClientManager()
+    manager._clients["agent_browser"] = _NoisyClient()
+
+    with _capture_warnings(mcp_manager_module.logger) as captured:
+        await manager.close_all()
+
+    assert captured == []
+
+
+@pytest.mark.asyncio
+async def test_close_all_warns_on_non_benign_base_exception_group() -> None:
+    class _GroupedClient:
+        async def close(self, ignore_errors: bool = True) -> None:
+            raise BaseExceptionGroup(
+                "taskgroup teardown",
+                [RuntimeError("socket closed unexpectedly")],
+            )
+
+    manager = MCPClientManager()
+    manager._clients["grouped"] = _GroupedClient()
+
+    with _capture_warnings(mcp_manager_module.logger) as captured:
+        await manager.close_all()
+
+    assert captured == [
+        "MCP client 'grouped' close raised BaseExceptionGroup during "
+        "manager shutdown: taskgroup teardown (1 sub-exception)"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_close_all_downgrades_grouped_cancelled_error() -> None:
+    class _GroupedClient:
+        async def close(self, ignore_errors: bool = True) -> None:
+            raise BaseExceptionGroup(
+                "taskgroup teardown",
+                [asyncio.CancelledError()],
+            )
+
+    manager = MCPClientManager()
+    manager._clients["grouped"] = _GroupedClient()
+
+    with _capture_warnings(mcp_manager_module.logger) as captured:
+        await manager.close_all()
+
+    assert captured == []
+
+
+@pytest.mark.asyncio
+async def test_replace_client_releases_lock_before_old_close_finishes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    close_started = asyncio.Event()
+    allow_close_to_finish = asyncio.Event()
+
+    class _OldClient:
+        async def close(self) -> None:
+            close_started.set()
+            await allow_close_to_finish.wait()
+
+    class _NewClient:
+        async def connect(self) -> None:
+            return
+
+        async def close(self) -> None:
+            return
+
+    manager = MCPClientManager()
+    manager._clients["demo"] = _OldClient()
+    new_client = _NewClient()
+
+    monkeypatch.setattr(
+        MCPClientManager,
+        "_build_client",
+        staticmethod(lambda cfg: new_client),
+    )
+
+    replace_task = asyncio.create_task(
+        manager.replace_client(
+            "demo",
+            MCPClientConfig(
+                name="demo",
+                enabled=True,
+                transport="streamable_http",
+                url="https://example.invalid/mcp",
+            ),
+        )
+    )
+
+    await asyncio.wait_for(close_started.wait(), timeout=1)
+
+    clients = await asyncio.wait_for(manager.get_clients(), timeout=0.1)
+    assert clients == [new_client]
+
+    allow_close_to_finish.set()
+    await replace_task
+
+
+@pytest.mark.asyncio
 async def test_init_from_config_handles_base_exception_group(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

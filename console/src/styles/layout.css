@@ -44,6 +44,153 @@ body {
   padding: 0 24px 24px 24px;
 }
 
+.page-content-chat {
+  overflow: hidden;
+  padding: 0;
+}
+
+.page-content-chat .adclaw-chat-anywhere-sessions-header-collapse {
+  display: none !important;
+}
+
+.page-content-chat .adclaw-chat-anywhere-layout {
+  background: transparent !important;
+}
+
+.page-content-chat .adclaw-chat-anywhere-layout-left {
+  background: transparent !important;
+  border-right: none;
+  backdrop-filter: none;
+}
+
+.page-content-chat .adclaw-chat-anywhere-layout-right,
+.page-content-chat .adclaw-chat-anywhere-layout-right-header,
+.page-content-chat .adclaw-chat-anywhere-message-list,
+.page-content-chat .adclaw-chat-anywhere-message-list-welcome,
+.page-content-chat .adclaw-chat-anywhere-message-list > div {
+  background: transparent !important;
+}
+
+.page-content-chat .adclaw-chat-anywhere-welcome-default-prompt {
+  background-color: rgba(255, 255, 255, 0.84) !important;
+  border: 1px solid rgba(226, 232, 240, 0.72);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.page-content-chat .adclaw-chat-anywhere-sessions-header {
+  display: none !important;
+}
+
+.page-content-chat .adclaw-chat-anywhere-sessions-content {
+  margin: 12px 16px 16px;
+  padding: 12px 0 10px;
+  min-height: 0;
+  border: 1px solid rgba(226, 232, 240, 0.78);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.page-content-chat .adclaw-chat-anywhere-sessions-adder {
+  padding: 0 12px 12px;
+}
+
+.page-content-chat .adclaw-chat-anywhere-sessions-adder button {
+  min-height: 44px;
+  border-radius: 999px;
+  box-shadow: none !important;
+}
+
+.page-content-chat .adclaw-chat-anywhere-sessions-list {
+  padding: 2px 10px 8px;
+}
+
+.page-content-chat .adclaw-conversations-item {
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.page-content-chat .adclaw-conversations-item:hover {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.page-content-chat .adclaw-conversations-item-active {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.page-content-chat .adclaw-sender {
+  border: 1px solid rgba(191, 200, 219, 0.56) !important;
+  border-radius: 22px !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.84),
+    rgba(248, 250, 252, 0.78)
+  ) !important;
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(16px);
+}
+
+.page-content-chat .adclaw-sender::after {
+  border-width: 1px !important;
+  border-color: rgba(226, 232, 240, 0.55) !important;
+}
+
+.page-content-chat .adclaw-sender:focus-within {
+  border-color: rgba(180, 193, 222, 0.58) !important;
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.06),
+    0 0 0 3px rgba(255, 255, 255, 0.58),
+    0 0 0 6px rgba(226, 232, 240, 0.38) !important;
+}
+
+.page-content-chat .adclaw-sender:focus-within::after {
+  border-width: 1px !important;
+  border-color: rgba(203, 213, 225, 0.78) !important;
+}
+
+.page-content-chat .adclaw-sender-content {
+  padding: 12px 12px 10px !important;
+}
+
+.page-content-chat .adclaw-sender-input {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.page-content-chat .adclaw-sender .ant-input,
+.page-content-chat .adclaw-sender textarea,
+.page-content-chat .adclaw-sender [class*="ant-input"] {
+  min-height: 58px !important;
+  border: 1px solid rgba(226, 232, 240, 0.92) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 8px 18px rgba(15, 23, 42, 0.03) !important;
+  padding: 16px 18px !important;
+  line-height: 1.5 !important;
+}
+
+.page-content-chat .adclaw-sender .ant-input:focus,
+.page-content-chat .adclaw-sender textarea:focus,
+.page-content-chat .adclaw-sender .ant-input-focused,
+.page-content-chat .adclaw-sender [class*="ant-input"]:focus {
+  border-color: rgba(203, 213, 225, 0.92) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0 0 4px rgba(241, 245, 249, 0.9) !important;
+}
+
+.page-content-chat .adclaw-sender-actions-list-length {
+  color: #94a3b8 !important;
+}
+
 .table-container {
   height: 100%;
   overflow: hidden;

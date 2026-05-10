@@ -8,6 +8,7 @@ for runtime updates without restarting the application.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import sys
 from typing import Any, Dict, List, TYPE_CHECKING
@@ -40,6 +41,94 @@ class MCPClientManager:
         """Initialize an empty MCP client manager."""
         self._clients: Dict[str, Any] = {}
         self._lock = asyncio.Lock()
+
+    @staticmethod
+    async def _close_client_quietly(
+        client: Any,
+        *,
+        key: str,
+        reason: str,
+    ) -> None:
+        """Close a client without letting shutdown noise escape.
+
+        anyio-backed MCP transports may raise ``asyncio.CancelledError`` or
+        ``BaseExceptionGroup`` during teardown when the app itself is already
+        stopping. That should not fail FastAPI shutdown or emit a scary
+        traceback for an otherwise clean stop.
+        """
+        try:
+            close_method = getattr(client, "close")
+            try:
+                supports_ignore_errors = (
+                    "ignore_errors"
+                    in inspect.signature(close_method).parameters
+                )
+            except (TypeError, ValueError):
+                supports_ignore_errors = False
+
+            if supports_ignore_errors:
+                await close_method(ignore_errors=False)
+            else:
+                await close_method()
+        except asyncio.CancelledError as exc:
+            current_task = asyncio.current_task()
+            if current_task is not None and current_task.cancelling():
+                raise
+
+            logger.debug(
+                "MCP client '%s' close cancelled during %s: %s",
+                key,
+                reason,
+                exc,
+            )
+        except BaseExceptionGroup as exc:
+            log_method = (
+                logger.debug
+                if MCPClientManager._is_benign_close_group(exc)
+                else logger.warning
+            )
+            log_method(
+                "MCP client '%s' close raised BaseExceptionGroup during %s: %s",
+                key,
+                reason,
+                exc,
+            )
+        except Exception as exc:
+            if MCPClientManager._is_benign_close_error(exc):
+                logger.debug(
+                    "MCP client '%s' close reported benign shutdown noise during %s: %s",
+                    key,
+                    reason,
+                    exc,
+                )
+            else:
+                logger.warning(
+                    "Error closing MCP client '%s' during %s: %s",
+                    key,
+                    reason,
+                    exc,
+                )
+
+    @staticmethod
+    def _is_benign_close_error(exc: BaseException) -> bool:
+        if isinstance(exc, asyncio.CancelledError):
+            return True
+
+        message = str(exc)
+        return (
+            "cancel scope" in message
+            and "current tasks's current cancel scope" in message
+        )
+
+    @classmethod
+    def _is_benign_close_group(cls, exc: BaseExceptionGroup) -> bool:
+        return all(
+            cls._is_benign_close_group(child)
+            if isinstance(child, BaseExceptionGroup)
+            else isinstance(child, (Exception, asyncio.CancelledError))
+            and cls._is_benign_close_error(child)
+            for child in exc.exceptions
+        )
 
     async def init_from_config(self, config: "MCPConfig") -> None:
         """Initialize clients from configuration.
@@ -109,37 +198,38 @@ class MCPClientManager:
             logger.warning(
                 f"Timeout connecting MCP client '{key}' after {timeout}s",
             )
-            try:
-                await new_client.close()
-            except Exception:
-                pass
+            await self._close_client_quietly(
+                new_client,
+                key=key,
+                reason="timeout cleanup",
+            )
             raise
         except (Exception, BaseExceptionGroup) as e:
             logger.warning(
                 f"Failed to connect MCP client '{key}': {e}",
                 exc_info=True,
             )
-            try:
-                await new_client.close()
-            except Exception:
-                pass
+            await self._close_client_quietly(
+                new_client,
+                key=key,
+                reason="connect failure cleanup",
+            )
             raise
 
-        # 2. Swap and close old client inside lock
+        # 2. Swap inside lock, then close old client outside lock
         async with self._lock:
             old_client = self._clients.get(key)
             self._clients[key] = new_client
 
-            if old_client is not None:
-                logger.debug(f"Closing old MCP client: {key}")
-                try:
-                    await old_client.close()
-                except Exception as e:
-                    logger.warning(
-                        f"Error closing old MCP client '{key}': {e}",
-                    )
-            else:
-                logger.debug(f"Added new MCP client: {key}")
+        if old_client is not None:
+            logger.debug(f"Closing old MCP client: {key}")
+            await self._close_client_quietly(
+                old_client,
+                key=key,
+                reason="client replacement",
+            )
+        else:
+            logger.debug(f"Added new MCP client: {key}")
 
     async def remove_client(self, key: str) -> None:
         """Remove and close a client.
@@ -152,10 +242,11 @@ class MCPClientManager:
 
         if old_client is not None:
             logger.debug(f"Removing MCP client: {key}")
-            try:
-                await old_client.close()
-            except Exception as e:
-                logger.warning(f"Error closing MCP client '{key}': {e}")
+            await self._close_client_quietly(
+                old_client,
+                key=key,
+                reason="client removal",
+            )
 
     async def close_all(self) -> None:
         """Close all MCP clients.
@@ -169,10 +260,11 @@ class MCPClientManager:
         logger.debug("Closing all MCP clients")
         for key, client in clients_snapshot:
             if client is not None:
-                try:
-                    await client.close()
-                except Exception as e:
-                    logger.warning(f"Error closing MCP client '{key}': {e}")
+                await self._close_client_quietly(
+                    client,
+                    key=key,
+                    reason="manager shutdown",
+                )
 
     async def _add_client(
         self,
@@ -201,10 +293,11 @@ class MCPClientManager:
             # Add timeout to prevent indefinite blocking
             await asyncio.wait_for(client.connect(), timeout=timeout)
         except (Exception, BaseExceptionGroup):
-            try:
-                await client.close()
-            except Exception:
-                pass
+            await self._close_client_quietly(
+                client,
+                key=key,
+                reason="initial add cleanup",
+            )
             raise
 
         async with self._lock:

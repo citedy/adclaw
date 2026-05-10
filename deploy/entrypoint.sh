@@ -50,7 +50,7 @@ mcp = cfg.setdefault('mcp', {}).setdefault('clients', {})
 key = os.environ['CITEDY_API_KEY']
 mcp['citedy'] = {
     'name': 'citedy_mcp',
-    'description': 'Citedy SEO & Marketing Tools (52 tools)',
+    'description': 'Citedy SEO & Marketing Tools (59 tools)',
     'enabled': True,
     'transport': 'streamable_http',
     'url': 'https://mcp.citedy.com/mcp',

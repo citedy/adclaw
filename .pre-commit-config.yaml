@@ -117,4 +117,4 @@ repos:
       - id: prettier
         additional_dependencies: [ 'prettier@3.0.0' ]
         files: \.(tsx?)$
-        exclude: '(?x)(^web/|^console/|/dist/|.*/skills/.*)'
+        exclude: '(?x)(^console/|/dist/|.*/skills/.*)'

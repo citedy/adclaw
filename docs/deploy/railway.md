@@ -18,12 +18,14 @@ This guide walks through deploying AdClaw — an AI marketing agent team — on 
 
 > ⚠️ **Plan: Hobby or higher (≥ 2 GB RAM, 25 GB disk).**
 >
-> AdClaw bundles a Python agent runtime + skill registry + Chromium that need ≥ 600 MB on startup. The 30-day Trial 512 MB instance OOMs immediately. Hobby is **$5/month + usage**; idle AdClaw consumes about $0.50–$1/day so the included credits cover ~5 days of testing.
+> AdClaw bundles a Python agent runtime + skill registry + Chromium, so
+> Railway's Free plan is not enough. Use **Hobby or higher**. Hobby is
+> **$5/month** and includes **$5 of monthly usage credits**.
 
 | Plan | Works? | Notes |
 |---|---|---|
-| Trial / 512 MB | ❌ | OOM at startup |
-| Hobby ($5/mo, 2 GB) | ✅ | Recommended starter |
+| Free / 0.5 GB RAM | ❌ | Not enough RAM/volume for AdClaw |
+| Hobby ($5/mo) | ✅ | Recommended starter |
 | Pro and higher | ✅ | For multiple personas under load |
 
 You'll also need:
@@ -47,7 +49,7 @@ You do **not** need a Citedy account to use AdClaw — Citedy MCP is opt-in.
 
 If you prefer to wire it up yourself:
 
-1. **New Project → Deploy from GitHub repo** → `Citedy/adclaw`. Or **Deploy from Docker Image** → `nttylock/adclaw:latest`.
+1. **New Project → Deploy from GitHub repo** → `Citedy/adclaw`. Or **Deploy from Docker Image** → `nttylock/adclaw:1.0.4`.
 2. **Settings → Networking** → expose port `8088`, generate the public domain.
 3. **Settings → Build** → confirm builder is **Dockerfile** with path `deploy/Dockerfile` (read from `railway.json` automatically).
 4. **Settings → Deploy**:
@@ -86,11 +88,15 @@ If you only attach one, pick `/app/working` and accept that LLM keys live inside
 
 | Tag | Image size | Idle RAM | Best for |
 |---|---|---|---|
-| `nttylock/adclaw:latest` (default) | ~4.2 GB | 600–800 MB | Full feature set — Chromium for browser/scraping/social skills |
-| `nttylock/adclaw:1.0.2-browser` | ~4.1 GB | similar | Browser-only, no Feishu/DingTalk channels |
-| `nttylock/adclaw:1.0.2-core` | ~2.7 GB | 250–400 MB | Lightweight — no Chromium, no desktop tools |
+| `nttylock/adclaw:1.0.4` (default pin) | ~4.2 GB | 600–800 MB | Full feature set — Chromium for browser/scraping/social skills |
+| `nttylock/adclaw:1.0.4-browser` | ~4.1 GB | similar | Browser-only, no Feishu/DingTalk channels |
+| `nttylock/adclaw:1.0.4-core` | ~2.7 GB | 250–400 MB | Lightweight — no Chromium, no desktop tools |
 
-Switch by editing **Settings → Source** to use a Docker Image source instead of GitHub repo, then set the image to `nttylock/adclaw:1.0.2-core`. Build is skipped — deploy is ~30 s.
+Switch by editing **Settings → Source** to use a Docker Image source instead of GitHub repo, then set the image to `nttylock/adclaw:1.0.4-core`. Build is skipped — deploy is ~30 s.
+
+If you need a reproducible release pin instead of the moving variant tags, use
+the versioned aliases published by the release workflow, for example
+`nttylock/adclaw:1.0.4-core` or `nttylock/adclaw:1.0.4-browser`.
 
 ## Post-deploy workflow
 
@@ -117,11 +123,20 @@ curl https://<your-railway-url>/api/diagnostics/health
 
 Returns the status of LLM, channels, memory, AOM, MCP, and watchdog. Safe to poll from external monitors.
 
-## Cost estimate
+## Pricing note
 
-Idle (no traffic, default config): about **$0.50–$1/day** on Hobby.
-Active use (continuous chat, browser skills, frequent cron): up to **$3–5/day**.
-Hobby includes $5/month — covers light usage. Set [Railway Spending Limits](https://docs.railway.com/reference/usage-limits) to cap.
+Railway Hobby currently costs **$5/month** and includes **$5 of monthly usage
+credits**.
+
+For AdClaw, the important practical rule is:
+
+- **Free** is not enough for deployment
+- **Hobby** is the minimum supported Railway plan
+- if your usage goes beyond the included monthly credit, Railway charges the
+  overage
+
+Set [Railway Spending Limits](https://docs.railway.com/reference/usage-limits)
+if you want a hard cap.
 
 ## Troubleshooting
 
@@ -143,7 +158,6 @@ Hobby includes $5/month — covers light usage. Set [Railway Spending Limits](ht
 ## Source code & support
 
 - **Public repo:** https://github.com/Citedy/adclaw
-- **Source of truth:** https://github.com/nttylock/AdClaw (private dev — public mirror sync on every release)
 - **DigitalOcean Marketplace:** https://marketplace.digitalocean.com/apps/adclaw
 - **Issues:** https://github.com/Citedy/adclaw/issues
 - **License:** Apache-2.0

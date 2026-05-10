@@ -5,7 +5,7 @@ const defaultConfig = {
     prefix: "adclaw",
     leftHeader: {
       logo: "",
-      title: "Work with AdClaw",
+      title: "Chats",
     },
   },
   sender: {

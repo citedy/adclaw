@@ -10,14 +10,6 @@ bash scripts/wheel_build.sh
 
 - Builds the console frontend (`console/`), copies `console/dist` to `src/adclaw/console/dist`, then builds the wheel. Output: `dist/*.whl`.
 
-## Build website
-
-```bash
-bash scripts/website_build.sh
-```
-
-- Installs dependencies (pnpm or npm) and runs the Vite build. Output: `website/dist/`.
-
 ## Build Docker image
 
 ```bash

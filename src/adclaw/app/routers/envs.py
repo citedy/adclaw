@@ -117,7 +117,7 @@ _KEY_REGISTRY: List[Dict[str, str]] = [
     {"key": "DATAFORSEO_LOGIN", "plugin": "DataForSEO", "description": "SERP & keyword API login (dataforseo.com)"},
     {"key": "DATAFORSEO_PASSWORD", "plugin": "DataForSEO", "description": "SERP & keyword API password"},
     # Marketing & Content
-    {"key": "CITEDY_API_KEY", "plugin": "Citedy", "description": "SEO & marketing tools — 52 tools (citedy.com)"},
+    {"key": "CITEDY_API_KEY", "plugin": "Citedy", "description": "SEO & marketing tools — 59 tools (citedy.com)"},
     # Advertising
     {"key": "GOOGLE_ADS_DEVELOPER_TOKEN", "plugin": "Google Ads", "description": "Google Ads API developer token"},
     {"key": "META_ADS_ACCESS_TOKEN", "plugin": "Meta Ads", "description": "Facebook & Instagram ads access token"},

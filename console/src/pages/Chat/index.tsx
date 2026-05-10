@@ -25,31 +25,49 @@ interface PersonaTabsProps {
   onTabChange: (tabId: string) => void;
 }
 
+function hexToRgba(color: string, alpha: number): string {
+  const normalized = color.replace("#", "");
+
+  if (normalized.length !== 6) {
+    return `rgba(99, 102, 241, ${alpha})`;
+  }
+
+  const red = parseInt(normalized.slice(0, 2), 16);
+  const green = parseInt(normalized.slice(2, 4), 16);
+  const blue = parseInt(normalized.slice(4, 6), 16);
+
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
 function PersonaTabs({ personas, activeTab, onTabChange }: PersonaTabsProps) {
   const nonCoordinator = personas.filter((p) => !p.is_coordinator);
 
   const containerStyle: React.CSSProperties = {
     display: "flex",
-    gap: 0,
-    borderBottom: "1px solid rgba(226,232,240,0.6)",
-    padding: "0 24px",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+    padding: "12px 24px 10px",
     flexShrink: 0,
   };
 
   const baseTabStyle: React.CSSProperties = {
-    padding: "10px 16px",
+    minHeight: 34,
+    padding: "0 14px",
+    borderRadius: 999,
     fontSize: 13,
     fontWeight: 500,
     cursor: "pointer",
     color: "#64748b",
-    transition: "all 0.15s",
+    transition:
+      "background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease",
     display: "flex",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     userSelect: "none",
-    background: "none",
-    border: "none",
-    borderBottom: "2px solid transparent",
+    background: "rgba(255, 255, 255, 0.78)",
+    border: "1px solid rgba(226, 232, 240, 0.9)",
+    boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
     outline: "none",
   };
 
@@ -61,16 +79,24 @@ function PersonaTabs({ personas, activeTab, onTabChange }: PersonaTabsProps) {
       <button
         style={{
           ...baseTabStyle,
-          borderBottomColor: isAllActive ? allTabColor : "transparent",
+          background: isAllActive
+            ? hexToRgba(allTabColor, 0.12)
+            : baseTabStyle.background,
+          borderColor: isAllActive
+            ? hexToRgba(allTabColor, 0.24)
+            : "rgba(226, 232, 240, 0.9)",
           color: isAllActive ? allTabColor : "#94a3b8",
-          fontWeight: isAllActive ? 600 : 500,
+          boxShadow: isAllActive
+            ? `0 8px 20px ${hexToRgba(allTabColor, 0.12)}`
+            : baseTabStyle.boxShadow,
         }}
         onClick={() => onTabChange("all")}
+        aria-pressed={isAllActive}
       >
         <span
           style={{
-            width: 6,
-            height: 6,
+            width: 7,
+            height: 7,
             borderRadius: "50%",
             background: allTabColor,
             display: "inline-block",
@@ -88,16 +114,24 @@ function PersonaTabs({ personas, activeTab, onTabChange }: PersonaTabsProps) {
             key={persona.id}
             style={{
               ...baseTabStyle,
-              borderBottomColor: isActive ? color : "transparent",
+              background: isActive
+                ? hexToRgba(color, 0.12)
+                : baseTabStyle.background,
+              borderColor: isActive
+                ? hexToRgba(color, 0.24)
+                : "rgba(226, 232, 240, 0.9)",
               color: isActive ? color : "#94a3b8",
-              fontWeight: isActive ? 600 : 500,
+              boxShadow: isActive
+                ? `0 8px 20px ${hexToRgba(color, 0.12)}`
+                : baseTabStyle.boxShadow,
             }}
             onClick={() => onTabChange(persona.id)}
+            aria-pressed={isActive}
           >
             <span
               style={{
-                width: 6,
-                height: 6,
+                width: 7,
+                height: 7,
                 borderRadius: "50%",
                 background: color,
                 display: "inline-block",

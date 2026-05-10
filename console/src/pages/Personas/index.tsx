@@ -71,20 +71,41 @@ function PersonasPage() {
           <h1 className={styles.title}>{t("personas.title")}</h1>
           <p className={styles.description}>{t("personas.description")}</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className={styles.headerActions}>
           {templates.length > 0 && (
-            <Dropdown
-              menu={{ items: templateMenuItems, onClick: handleTemplateClick }}
-            >
-              <Button>
-                {t("personas.fromTemplate")} <DownOutlined />
-              </Button>
-            </Dropdown>
+            <div className={styles.headerActionItem}>
+              <Dropdown
+                menu={{
+                  items: templateMenuItems,
+                  onClick: handleTemplateClick,
+                }}
+              >
+                <Button className={styles.headerActionButton}>
+                  {t("personas.fromTemplate")} <DownOutlined />
+                </Button>
+              </Dropdown>
+            </div>
           )}
-          <Button type="primary" onClick={handleCreate} icon={<PlusOutlined />}>
+          <Button
+            type="primary"
+            onClick={handleCreate}
+            icon={<PlusOutlined />}
+            className={styles.headerActionButton}
+          >
             {t("personas.createAgent")}
           </Button>
         </div>
+      </div>
+
+      <div className={styles.introCard}>
+        <div className={styles.introEyebrow}>{t("personas.introEyebrow")}</div>
+        <h2 className={styles.introTitle}>{t("personas.introTitle")}</h2>
+        <p className={styles.introText}>
+          {t("personas.introDescription", {
+            count: templates.length || 5,
+          })}
+        </p>
+        <p className={styles.introHint}>{t("personas.introHint")}</p>
       </div>
 
       {loading ? (

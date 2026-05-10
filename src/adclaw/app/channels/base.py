@@ -35,6 +35,10 @@ from agentscope_runtime.engine.schemas.agent_schemas import (
 
 from .renderer import MessageRenderer, RenderStyle
 from .schema import ChannelType
+from .utils import (
+    sanitize_agent_request_media,
+    sanitize_inbound_media_content_parts,
+)
 
 # Optional callback to enqueue payload (set by manager)
 EnqueueCallback = Optional[Callable[[Any], None]]
@@ -302,6 +306,7 @@ class BaseChannel(ABC):
             Role,
         )
 
+        content_parts, _ = sanitize_inbound_media_content_parts(content_parts)
         if not content_parts:
             content_parts = [
                 TextContent(type=ContentType.TEXT, text=""),
@@ -343,8 +348,9 @@ class BaseChannel(ABC):
         if payload is None:
             raise ValueError("payload is None")
         if hasattr(payload, "session_id") and hasattr(payload, "input"):
-            return payload
-        return self.build_agent_request_from_native(payload)
+            return sanitize_agent_request_media(payload)
+        request = self.build_agent_request_from_native(payload)
+        return sanitize_agent_request_media(request)
 
     def get_to_handle_from_request(self, request: "AgentRequest") -> str:
         """

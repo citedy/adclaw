@@ -122,15 +122,21 @@ function SkillsPage() {
           <h1 className={styles.title}>{t("skills.title")}</h1>
           <p className={styles.description}>{t("skills.description")}</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className={styles.headerActions}>
           <Button
+            className={styles.headerActionButton}
             type="primary"
             onClick={handleImportFromHub}
             icon={<DownloadOutlined />}
           >
             {t("skills.importSkills")}
           </Button>
-          <Button type="primary" onClick={handleCreate} icon={<PlusOutlined />}>
+          <Button
+            className={styles.headerActionButton}
+            type="primary"
+            onClick={handleCreate}
+            icon={<PlusOutlined />}
+          >
             {t("skills.createSkill")}
           </Button>
         </div>

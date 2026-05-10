@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Alert, Button, Card, Table, Tag, Modal, Space, Spin } from "antd";
+import { Alert, Button, Card, Table, Tag, Modal, Spin } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
   RefreshCw,
@@ -10,6 +10,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { diagnosticsApi } from "../../../api/modules/diagnostics";
+import styles from "./index.module.less";
 import type {
   HealthResponse,
   ErrorEntry,
@@ -48,6 +49,14 @@ export default function DiagnosticsPage() {
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [restarting, setRestarting] = useState(false);
+
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    return "Unknown error";
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -93,10 +102,10 @@ export default function DiagnosticsPage() {
               content: res.error || "Unknown error",
             });
           }
-        } catch (err: any) {
+        } catch (error: unknown) {
           Modal.error({
             title: "Restart Failed",
-            content: err?.message || "Unknown error",
+            content: getErrorMessage(error),
           });
         } finally {
           setRestarting(false);
@@ -151,9 +160,17 @@ export default function DiagnosticsPage() {
     : STATUS_CONFIG.unhealthy;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Diagnostics</h1>
+        <p className={styles.description}>
+          Monitor system health, subsystems, and recent errors.
+        </p>
+      </div>
+
       {/* Overall status banner */}
       <Alert
+        className={styles.statusBanner}
         type={
           statusCfg.color === "success"
             ? "success"
@@ -164,39 +181,39 @@ export default function DiagnosticsPage() {
         showIcon
         icon={<Heart size={18} />}
         message={
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span>
-              System Status: <strong>{statusCfg.label}</strong>
+          <div className={styles.statusBannerMessage}>
+            <div className={styles.statusBannerSummary}>
+              <span className={styles.statusBannerLabel}>
+                System Status: <strong>{statusCfg.label}</strong>
+              </span>
               {health && (
-                <span style={{ marginLeft: 16, color: "#64748b" }}>
+                <span className={styles.statusBannerUptime}>
                   Uptime: {formatUptime(health.uptime_seconds)}
                 </span>
               )}
-            </span>
-            <Space>
+            </div>
+            <div className={styles.statusBannerActions}>
               <Button
+                className={styles.statusActionButton}
                 icon={<RefreshCw size={14} />}
                 onClick={fetchData}
                 size="small"
+                aria-label="Refresh diagnostics"
               >
-                Refresh
+                <span className={styles.statusActionText}>Refresh</span>
               </Button>
               <Button
+                className={styles.statusActionButton}
                 danger
                 icon={<RotateCcw size={14} />}
                 onClick={handleRestart}
                 loading={restarting}
                 size="small"
+                aria-label="Restart AdClaw"
               >
-                Restart
+                <span className={styles.statusActionText}>Restart</span>
               </Button>
-            </Space>
+            </div>
           </div>
         }
         style={{ marginBottom: 24 }}
@@ -204,52 +221,29 @@ export default function DiagnosticsPage() {
 
       {/* Subsystem cards */}
       {health && (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
+        <div className={styles.subsystemGrid}>
           {Object.entries(health.subsystems).map(
             ([name, sub]: [string, SubsystemStatus]) => {
               const cfg =
                 SUB_STATUS_CONFIG[sub.status] || SUB_STATUS_CONFIG.error;
               return (
-                <Card
-                  key={name}
-                  size="small"
-                  style={{ minWidth: 200, flex: "1 1 200px", maxWidth: 300 }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 8,
-                    }}
-                  >
+                <Card key={name} size="small" className={styles.subsystemCard}>
+                  <div className={styles.subsystemCardHeader}>
                     <strong>{name.toUpperCase()}</strong>
                     <Tag
                       color={cfg.color}
                       icon={cfg.icon}
-                      style={{
-                        margin: 0,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
+                      className={styles.subsystemStatusTag}
                     >
                       {sub.status}
                     </Tag>
                   </div>
-                  <div style={{ color: "#475569", fontSize: 13 }}>
+                  <div className={styles.subsystemDetail}>
                     {typeof sub.detail === "string"
                       ? sub.detail
                       : typeof sub.detail === "object" && sub.detail !== null
                       ? Object.entries(sub.detail).map(([k, v]) => (
-                          <span key={k} style={{ marginRight: 12 }}>
+                          <span key={k} className={styles.subsystemDetailItem}>
                             <strong>{k}:</strong>{" "}
                             {Array.isArray(v) ? v.join(", ") : String(v)}
                           </span>
@@ -257,9 +251,7 @@ export default function DiagnosticsPage() {
                       : JSON.stringify(sub.detail)}
                   </div>
                   {sub.count != null && (
-                    <div
-                      style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}
-                    >
+                    <div className={styles.subsystemCount}>
                       Count: {sub.count}
                     </div>
                   )}
@@ -273,6 +265,7 @@ export default function DiagnosticsPage() {
       {/* Error log table */}
       <Card title="Recent Errors" size="small">
         <Table
+          className={styles.errorTable}
           dataSource={[...errors].sort(
             (a, b) =>
               new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
@@ -281,6 +274,9 @@ export default function DiagnosticsPage() {
           rowKey={(record, index) => `${record.timestamp}-${index}`}
           size="small"
           pagination={{ pageSize: 20, size: "small" }}
+          locale={{
+            emptyText: <span className={styles.tableEmptyText}>No data</span>,
+          }}
           expandable={{
             expandedRowRender: (record: ErrorEntry) => (
               <pre

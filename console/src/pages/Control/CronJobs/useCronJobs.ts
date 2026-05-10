@@ -7,7 +7,7 @@ type CronJob = CronJobSpecOutput;
 
 export function useCronJobs() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchJobs = async () => {
     setLoading(true);

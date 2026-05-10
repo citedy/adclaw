@@ -22,7 +22,7 @@ if defined ADCLAW_HOME (
 set "ADCLAW_VENV=%ADCLAW_HOME%\venv"
 set "ADCLAW_BIN=%ADCLAW_HOME%\bin"
 set "PYTHON_VERSION=3.12"
-set "ADCLAW_REPO=https://github.com/agentscope-ai/AdClaw.git"
+set "ADCLAW_REPO=https://github.com/Citedy/adclaw.git"
 
 REM ──── Argument defaults ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 set "ARG_VERSION="

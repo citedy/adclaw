@@ -1,17 +1,10 @@
 .cronJobsPage {
   padding: 24px;
+  min-height: calc(100vh - 128px);
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.headerInfo {
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 18px;
 }
 
 .title {
@@ -27,8 +20,195 @@
   font-size: 14px;
 }
 
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.toolbarMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.countChip {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  padding: 0 14px;
+  color: var(--citedy-slate-500);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.surfaceHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  background: linear-gradient(
+    180deg,
+    rgba(249, 251, 255, 0.94),
+    rgba(245, 247, 252, 0.88)
+  );
+  border-radius: 18px 18px 0 0;
+}
+
+.surfaceTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.surfaceTitle strong {
+  color: var(--citedy-slate-800);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.surfaceTitle span {
+  color: var(--citedy-slate-500);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.cronJobsTable {
+  :global(.adclaw-table) {
+    background: transparent;
+  }
+
+  :global(.adclaw-table-container) {
+    border-radius: 0 0 28px 28px;
+  }
+
+  :global(.adclaw-table-thead > tr > th) {
+    min-height: 58px;
+    padding: 18px 20px !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+    background: rgba(252, 252, 255, 0.82) !important;
+    color: var(--citedy-slate-500) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+  }
+
+  :global(.adclaw-table-tbody > tr > td) {
+    padding: 18px 20px !important;
+    border-bottom: 1px solid rgba(230, 234, 242, 0.72) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: var(--citedy-slate-700);
+    vertical-align: middle;
+  }
+
+  :global(.adclaw-table-tbody > tr:hover > td) {
+    background: rgba(248, 250, 252, 0.88) !important;
+  }
+
+  :global(.adclaw-table-placeholder > td),
+  :global(.ant-table-placeholder > td) {
+    padding: 0 !important;
+    border-bottom: 0 !important;
+    background: transparent !important;
+  }
+
+  :global(.adclaw-table-pagination) {
+    margin: 0 !important;
+    padding: 18px 20px 20px !important;
+  }
+}
+
 .tableCard {
+  overflow: hidden;
+  border-radius: 28px !important;
+  border: 1px solid rgba(226, 232, 240, 0.78) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07) !important;
+
   :global(.ant-card-body) {
     padding: 0;
   }
+}
+
+.emptyStatePanel {
+  border-radius: 0 0 18px 18px;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 24px 24px 28px;
+  width: 100%;
+}
+
+.emptyStateCore {
+  max-width: 460px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.emptyStateIcon {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(129, 140, 248, 0.18);
+  background: linear-gradient(
+    180deg,
+    rgba(238, 242, 255, 0.94),
+    rgba(248, 250, 252, 0.96)
+  );
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 13px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(99, 102, 241, 0.22);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.9),
+      rgba(239, 246, 255, 0.76)
+    );
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    top: 27px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.26);
+    box-shadow: 0 -8px 0 rgba(148, 163, 184, 0.16);
+  }
+}
+
+.emptyStateTitle {
+  margin: 0 0 8px;
+  color: var(--citedy-slate-800);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.emptyStateDescription {
+  margin: 0;
+  color: var(--citedy-slate-500);
+  font-size: 14px;
+  line-height: 1.7;
 }
