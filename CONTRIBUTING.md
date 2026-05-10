@@ -2,9 +2,9 @@
 
 ## Welcome! 🐾
 
-Thank you for your interest in contributing to AdClaw! AdClaw is an open-source **personal AI assistant** that runs in your own environment—on your machine or in the cloud. It connects to DingTalk, Feishu, QQ, Discord, iMessage, and other chat apps, supports scheduled tasks and heartbeat, and extends its capabilities through **Skills**. We warmly welcome contributions that help make AdClaw more useful for everyone: whether you add a new channel, a new model provider, a Skill, improve docs, or fix bugs.
+Thank you for your interest in contributing to AdClaw! AdClaw is an open-source **AI marketing agent team** that runs in your own environment—on your machine or in the cloud. It connects to DingTalk, Feishu, QQ, Discord, iMessage, and other chat apps, supports scheduled tasks and heartbeat, and extends its capabilities through **Skills**. We warmly welcome contributions that help make AdClaw more useful for everyone: whether you add a new channel, a new model provider, a Skill, improve docs, or fix bugs.
 
-**Quick links:** [GitHub](https://github.com/nttylock/AdClaw) · [Docs](https://github.com/nttylock/AdClaw/) · [License: Apache 2.0](LICENSE)
+**Quick links:** [GitHub](https://github.com/Citedy/adclaw) · [Docs](https://github.com/Citedy/adclaw/tree/main/docs) · [License: Apache 2.0](LICENSE)
 
 ---
 
@@ -16,7 +16,7 @@ To keep collaboration smooth and maintain quality, please follow these guideline
 
 Before starting:
 
-- **Check [Open Issues](https://github.com/nttylock/AdClaw/issues)** and any [Projects](https://github.com/nttylock/AdClaw/projects) or roadmap labels.
+- **Check [Open Issues](https://github.com/Citedy/adclaw/issues)** and any roadmap labels.
 - **If a related issue exists** and is open or unassigned: comment to say you want to work on it to avoid duplicate effort.
 - **If no related issue exists**: open a new issue describing your proposal. The maintainers will respond and can help align with the project direction.
 
@@ -77,12 +77,13 @@ docs(skills): document Skills Hub import
 - **If pre-commit modifies files:** Commit those changes, then rerun
   `pre-commit run --all-files` until it passes cleanly.
 - **CI policy:** Pull requests with failing pre-commit checks are not merge-ready.
-- **Frontend formatting:** If your changes involve the `console` or `website` directories, run the formatter before committing:
+- **Frontend formatting:** If your changes involve the `console` directory, run the frontend checks before committing:
   ```bash
   cd console && npm run format
-  cd website && npm run format
+  cd console && npm run lint
+  cd console && npm run build
   ```
-- **Documentation:** Update docs and README when you add or change user-facing behavior. The docs live under `website/public/docs/`.
+- **Documentation:** Update docs and README when you add or change user-facing behavior. The docs live under `docs/`.
 
 ---
 
@@ -135,7 +136,7 @@ Channels are how AdClaw talks to **DingTalk, Feishu, QQ, Discord, iMessage**, et
   - `adclaw channels remove <key>` — remove custom channel from `custom_channels/`
   - `adclaw channels config` — interactive config
 
-If you contribute a **new built-in channel**, add it to the registry and, if needed, a configurator so it appears in the Console and CLI. Document the new channel (auth, webhooks, etc.) in `website/public/docs/channels.*.md`.
+If you contribute a **new built-in channel**, add it to the registry and, if needed, a configurator so it appears in the Console and CLI. Document the new channel (auth, webhooks, etc.) in the public docs under `docs/`.
 
 ---
 
@@ -151,7 +152,7 @@ If you contribute a **new built-in channel**, add it to the registry and, if nee
 - **Content:** Write clear, task-oriented instructions. Describe **when** the skill should be used and **how** (steps, commands, file formats). Avoid overly niche or personal workflows if targeting the **base** repository; those are great as custom or community Skills.
 - **Skills Hub:** AdClaw supports importing skills from a community hub (e.g. ClawHub). If you want your skill to be installable via hub, follow the same `SKILL.md` + `references/`/`scripts/` layout and the hub’s packaging format.
 
-Examples of in-repo base skills: **cron**, **file_reader**, **news**, **pdf**, **docx**, **pptx**, **xlsx**, **browser_visible**. Contributing a new base skill usually means: add the directory under `agents/skills/`, add a short entry in the docs (e.g. Skills table in `website/public/docs/skills.*.md`), and ensure it syncs correctly to the working directory.
+Examples of in-repo base skills: **cron**, **file_reader**, **news**, **pdf**, **docx**, **pptx**, **xlsx**, **browser_visible**. Contributing a new base skill usually means: add the directory under `src/adclaw/agents/skills/`, add a short entry in the docs (for example the Skills table under `docs/`), and ensure it syncs correctly to the working directory.
 
 #### Writing Effective Skill Descriptions
 
@@ -207,7 +208,7 @@ If you add or change platform support, please test on the affected OS and mentio
 ### Other Contributions
 
 - **MCP (Model Context Protocol):** AdClaw supports runtime **MCP tool** discovery and hot-plug. Contributing new MCP servers or tools (or docs on how to attach them) helps users extend the agent without changing core code.
-- **Documentation:** Fixes and improvements to [the docs](https://github.com/nttylock/AdClaw/) (under `website/public/docs/`) and README are always welcome.
+- **Documentation:** Fixes and improvements to [the docs](https://github.com/Citedy/adclaw/tree/main/docs) and README are always welcome.
 - **Bug fixes and refactors:** Small fixes, clearer error messages, and refactors that keep behavior the same are valuable. Prefer opening an issue for larger refactors so we can align on approach.
 - **Examples and workflows:** Tutorials or example workflows (e.g. “daily digest to DingTalk”, “local model + cron”) can be documented or linked from the repo/docs.
 - **Any other useful things!**
@@ -236,8 +237,8 @@ If you add or change platform support, please test on the affected OS and mentio
 
 ## Getting Help
 
-- **Discussions:** [GitHub Discussions](https://github.com/nttylock/AdClaw/discussions)
-- **Bugs and features:** [GitHub Issues](https://github.com/nttylock/AdClaw/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/Citedy/adclaw/discussions)
+- **Bugs and features:** [GitHub Issues](https://github.com/Citedy/adclaw/issues)
 - **Community:** DingTalk group (see [README](README.md)) and [Discord](https://discord.gg/eYMpfnkG8h)
 
 Thank you for contributing to AdClaw. Your work helps make it a better assistant for everyone. 🐾

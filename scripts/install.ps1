@@ -31,7 +31,7 @@ $AdClawHome     = if ($env:ADCLAW_HOME) { $env:ADCLAW_HOME } else { Join-Path $H
 $AdClawVenv     = Join-Path $AdClawHome "venv"
 $AdClawBin      = Join-Path $AdClawHome "bin"
 $PythonVersion = "3.12"
-$AdClawRepo     = "https://github.com/agentscope-ai/AdClaw.git"
+$AdClawRepo     = "https://github.com/Citedy/adclaw.git"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 function Write-Info { param([string]$Message) Write-Host "[adclaw] " -ForegroundColor Green  -NoNewline; Write-Host $Message }

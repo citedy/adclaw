@@ -6,6 +6,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.4] - 2026-05-10
+
+### Added
+- **Xiaomi MiMo provider**: added first-class support for MiMo-V2.5-Pro, MiMo-V2.5, and MiMo-V2-Omni in the model registry, onboarding, and persona/model selection flows.
+- **Hosted deploy docs refresh**: added and refined Railway and cross-platform deployment guidance so hosted users have an up-to-date path for Docker image variants, health checks, and persistent volumes.
+
+### Changed
+- **Versioned Docker examples** now point to `1.0.4` variant tags alongside `latest`, keeping deployment docs aligned with the current release line.
+- **Official Docker release outputs** now publish consistent multi-arch (`linux/amd64`, `linux/arm64`) manifests for `full`, `browser`, and `core`.
+
+### Fixed
+- **Console polish across core surfaces**: improved responsive behavior, sidebar collapse/popup behavior, chat composer styling, workspace mobile layout, and multiple Control surfaces including Sessions, Diagnostics, Cron Jobs, and Channels.
+- **Shutdown reliability for local app and containers**: preserved caller cancellation during MCP teardown, treated benign grouped close cancellations as shutdown noise, and kept local shutdown quieter.
+- **Console dependency hardening**: removed an unsafe `refractor` override and scoped npm overrides by parent dependency so installs remain stable while reducing audit debt.
+
 ## [1.0.2] - 2026-04-30
 
 ### Fixed
@@ -20,9 +35,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dashboard page**: persona status cards with model, skills, cron preview
 - **Per-persona chat tabs**: isolated sessions with shared AOM memory
 - **@mention selector**: persona chip bar above chat input
-- **Landing page** at website-landing/ (here.now-inspired design)
+- **DigitalOcean and Railway deploy entrypoints** for faster hosted setup
 - Partner referral links for Aliyun and Z.AI in Welcome wizard
-- 31 Mission Control tests + live E2E script
+- 31 Control-surface tests + live E2E coverage
 
 ### Fixed
 - PermissionError on `/app/logs` during MemoryManager start

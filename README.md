@@ -2,13 +2,13 @@
 
 # AdClaw
 
-**AI Marketing Agent Team powered by [Citedy](https://www.citedy.com)**
+**Open-source AI marketing agent team powered by [Citedy](https://www.citedy.com)**
 
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/nttylock/AdClaw)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/Citedy/adclaw)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 
-**Deploys in 60 seconds in 1 click**
+**Deploy on DigitalOcean or Railway in minutes**
 
 <a href="https://cloud.digitalocean.com/droplets/new?onboarding_origin=marketplace&appId=224129502&image=citedy-adclaw&activation_redirect=%2Fdroplets%2Fnew%3FappId%3D224129502%26image%3Dcitedy-adclaw"><img src="https://img.shields.io/badge/Deploy_on-DigitalOcean-0080FF?style=for-the-badge&logo=digitalocean&logoColor=white" alt="Deploy on DigitalOcean" height="40"></a>
 &nbsp;
@@ -18,7 +18,7 @@
 
 ---
 
-## What is AdClaw?
+## What ships with AdClaw?
 
 `pip install adclaw` — and you get a **multi-agent AI marketing team** with:
 
@@ -35,30 +35,9 @@
 - **Multi-channel** — Telegram, Discord, DingTalk, Feishu, QQ, Console
 - **Web UI** — dashboard, per-persona chat tabs, skills, models, and channels from the browser
 
-```
-                         +-------------------+
-                         |    Telegram /      |
-                         |  Discord / Web UI  |
-                         +--------+----------+
-                                  |
-                     @tag routing | no tag
-                    +-------------+-------------+
-                    |                           |
-              +-----v------+          +---------v--------+
-              |  @researcher|          |   Coordinator    |
-              |  SOUL.md    |          |   (default agent)|
-              |  LLM: grok  |          |   delegates to   |
-              |  MCP: exa   |          |   specialists    |
-              +-----+------+          +---------+--------+
-                    |                           |
-                    |     +-----------+---------+---------+
-                    |     |           |                   |
-              +-----v--+  +--v------+ +---v--------+ +---v-------+
-              | Shared  |  |@content | |@seo        | |@ads       |
-              | Memory  |  | Writer  | | Specialist | | Manager   |
-              | (files) |  +---------+ +------------+ +-----------+
-              +---------+
-```
+<p align="center">
+  <img src="docs/assets/readme/adclaw-routing-blueprint.png" alt="How AdClaw routes work across your agent team" width="100%">
+</p>
 
 ### What can it do?
 
@@ -88,17 +67,9 @@
 
 AdClaw ships with a built-in **[Clawsy](https://www.clawsy.app)** skill that turns your agent into a worker in a distributed task network.
 
-```
-   Task Owners                      Your AdClaw Agent
-   ┌──────────┐     ┌──────────┐    ┌──────────────┐
-   │  Post a   │────>│ AgentHub │<───│  🌐 Tasks    │  <- Telegram button
-   │  task     │     │  Server  │    │  agenthub-   │
-   │  + karma  │     │ (Go+SQL) │    │  worker skill│
-   └──────────┘     └──────────┘    └──────────────┘
-                         │                  │
-                    Score patches      Submit patches
-                    Accept/Reject      Earn karma
-```
+<p align="center">
+  <img src="docs/assets/readme/clawsy-flow-blueprint.png" alt="How Clawsy tasks move through AdClaw" width="100%">
+</p>
 
 **What is Clawsy?** A bare git repo + task board designed for swarms of AI agents collaborating on the same problems. Think of it as a stripped-down GitHub where agents push patches, get scored, and earn karma. No PRs, no merges — just a DAG of commits going in every direction.
 
@@ -185,8 +156,15 @@ docker run -d --name adclaw --restart unless-stopped \
   -p 8088:8088 \
   -v adclaw-data:/app/working \
   -v adclaw-secret:/app/working.secret \
-  nttylock/adclaw:latest
+  nttylock/adclaw:1.0.4
 ```
+
+AdClaw's release workflow publishes images for both `linux/amd64` and
+`linux/arm64`. If you are validating unreleased source changes or using a
+stale local tag on Apple Silicon, prefer Docker Compose so Docker can build
+the image locally. If you prefer the rolling full-variant alias instead of a
+release pin, `nttylock/adclaw:latest` continues to track the current full
+release line.
 
 ### Docker Compose
 
@@ -194,8 +172,10 @@ docker run -d --name adclaw --restart unless-stopped \
 git clone https://github.com/Citedy/adclaw.git
 cd adclaw
 cp .env.example .env  # edit with your keys
-docker compose up -d
+docker compose up --build -d
 ```
+
+> Console build outputs under `src/adclaw/console/` are intentionally tracked because the packaged app, Docker images, and release artifacts ship those prebuilt assets. After frontend changes, run `cd console && npm run build` before commit so the tracked bundle stays in sync with source.
 
 ---
 
@@ -257,7 +237,7 @@ Create a team of specialized AI agents, each with its own personality, LLM, skil
 
 | Skill | Description |
 |-------|-------------|
-| citedy-seo-agent | Full-stack SEO agent with 52 tools |
+| citedy-seo-agent | Full-stack SEO agent with 59 tools |
 | citedy-content-writer | Blog autopilot — articles, illustrations, voice-over |
 | citedy-content-ingestion | Ingest YouTube, PDFs, web pages, audio |
 | citedy-trend-scout | Scout X/Twitter and Reddit for trends |
@@ -271,32 +251,9 @@ Skills auto-update from [Citedy/citedy-seo-agent](https://github.com/Citedy/cite
 
 ## Architecture
 
-```
-User --> [Telegram / Discord / Console / Web UI]
-               |
-               v
-         +-----+------+
-         |   Router    |  <-- @tag resolution
-         +--+--+--+---+
-            |  |  |
-   +--------+  |  +--------+
-   v            v           v
- Agent A    Coordinator   Agent C
- (SOUL A)   (SOUL coord)  (SOUL C)
- (LLM A)   (LLM default)  (LLM C)
-   |            |           |
-   v            v           v
- [MCP Tools] [Delegation] [MCP Tools]
-              Tool
-   |            |           |
-   +----+-------+-----+----+
-        |              |
-   +----v----+   +-----v------+
-   | Shared  |   | Dual Memory|
-   | Memory  |   | ReMe + AOM |
-   | (files) |   | (per-agent)|
-   +---------+   +------------+
-```
+<p align="center">
+  <img src="docs/assets/readme/adclaw-architecture-blueprint.png" alt="AdClaw architecture overview" width="100%">
+</p>
 
 AdClaw is built on [AgentScope](https://github.com/agentscope-ai/AgentScope) and uses:
 - **FastAPI** backend (Python)
@@ -313,6 +270,10 @@ AdClaw features a dual-layer memory architecture: **ReMe** (per-agent file-based
 
 ### Always-On Memory (AOM)
 
+<p align="center">
+  <img src="docs/assets/readme/aom-memory-blueprint.png" alt="Always-On Memory (AOM) architecture" width="100%">
+</p>
+
 | Component | Description |
 |-----------|-------------|
 | **MemoryStore** | SQLite + sqlite-vec + FTS5 — persistent storage with vector and keyword search |
@@ -328,6 +289,10 @@ AdClaw features a dual-layer memory architecture: **ReMe** (per-agent file-based
 
 Five optimization layers — four deterministic (zero-LLM-cost) inspired by [claw-compactor](https://github.com/aeromomo/claw-compactor), plus smart consolidation:
 
+<p align="center">
+  <img src="docs/assets/readme/r1-r5-memory-optimization.png" alt="R1-R5 Memory Optimization" width="100%">
+</p>
+
 | Layer | Module | What it does | Impact |
 |-------|--------|--------------|--------|
 | **R1** Pre-Compression | `compressor.py` | Rule-based markdown cleanup, line dedup, bullet merging + N-gram codebook with lossless $XX codes | 8-15% token savings before LLM summarization |
@@ -339,6 +304,10 @@ Five optimization layers — four deterministic (zero-LLM-cost) inspired by [cla
 ### Prompt Caching
 
 Static/dynamic prompt separation based on patterns from [Claude Code](https://claude.ai/claude-code):
+
+<p align="center">
+  <img src="docs/assets/readme/prompt-caching-blueprint.png" alt="Prompt Caching" width="100%">
+</p>
 
 | Component | Module | What it does |
 |-----------|--------|--------------|
@@ -363,33 +332,27 @@ POST /api/memory/memories/upload     — upload and ingest a file (text, image, 
 GET  /api/memory/multimodal/status   — check multimodal processing availability
 ```
 
-### Live Testing
-
-```bash
-# Inject 110+ memories, test near-dedup, run consolidation, verify stats
-python3 scripts/test_memory_live.py
-
-# Clean up test data
-python3 scripts/test_memory_live.py --cleanup
-```
-
----
-
 ## Credits & Pricing
 
-Citedy uses a credit-based system (1 credit = $0.01 USD):
+Citedy uses a credit-based billing system (`1 credit = $0.01 USD`) for the built-in Citedy-powered services available in AdClaw.
 
-| Operation | Credits |
-|-----------|---------|
-| Turbo article (500 words) | 2 |
-| Standard article (2,500 words) | 20 |
-| Pillar article (8,000 words) | 48 |
-| X/Twitter scout | 35-70 |
-| Reddit scout | 30 |
-| Lead magnet | 30-100 |
-| AI video short | 60-185 |
+### Built-in services billed via Citedy credits
 
-Free registration includes 100 credits. [Top up here](https://www.citedy.com/dashboard/billing).
+| Service family | Examples inside AdClaw |
+|----------------|------------------------|
+| SEO content generation | Turbo, standard, and pillar articles |
+| Trend scouting | X/Twitter scouting, Reddit scouting |
+| Research and analysis | Competitor research, marketing intelligence workflows |
+| Lead magnet generation | Checklists, frameworks, swipe files |
+| AI media generation | AI video shorts and other multimodal workflows |
+| Citedy MCP tools | Built-in marketing tools exposed through the Citedy MCP server |
+
+Free registration includes 100 credits.
+
+For the full and current list of billable services, credit rates, top-ups, and billing rules, see:
+
+- [Citedy Billing Documentation](https://www.citedy.com/docs/platform/billing)
+- [Citedy Documentation](https://www.citedy.com/docs/)
 
 ---
 
