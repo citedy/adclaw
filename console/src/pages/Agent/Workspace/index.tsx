@@ -158,9 +158,6 @@ export default function WorkspacePage() {
           onReset={handleReset}
         />
       </div>
-
-      <p className={styles.attribution}>{t("workspace.attribution")}</p>
-
       {/* Hidden file input - only accepts .zip files up to 100MB */}
       <input
         type="file"

@@ -396,8 +396,23 @@ PROVIDER_ZAI = ProviderDefinition(
     models=ZAI_MODELS,
 )
 
+MIMO_MODELS: List[ModelInfo] = [
+    ModelInfo(id="mimo-v2.5", name="MiMo-V2.5"),
+    ModelInfo(id="mimo-v2.5-pro", name="MiMo-V2.5-Pro"),
+    ModelInfo(id="mimo-v2-omni", name="MiMo-V2-Omni"),
+]
+
+PROVIDER_MIMO = ProviderDefinition(
+    id="xiaomi-codingplan",
+    name="Xiaomi MiMo Token Plan",
+    default_base_url="https://token-plan-ams.xiaomimimo.com/v1",
+    api_key_prefix="",
+    models=MIMO_MODELS,
+)
+
 _BUILTIN_IDS: frozenset[str] = frozenset(
     [
+        "xiaomi-codingplan",
         "modelscope",
         "dashscope",
         "aliyun-codingplan",
@@ -425,6 +440,7 @@ _BUILTIN_IDS: frozenset[str] = frozenset(
 )
 
 PROVIDERS: dict[str, ProviderDefinition] = {
+    PROVIDER_MIMO.id: PROVIDER_MIMO,
     PROVIDER_OPENROUTER.id: PROVIDER_OPENROUTER,
     PROVIDER_OPENAI.id: PROVIDER_OPENAI,
     PROVIDER_ANTHROPIC.id: PROVIDER_ANTHROPIC,
@@ -448,6 +464,13 @@ PROVIDERS: dict[str, ProviderDefinition] = {
     PROVIDER_OLLAMA.id: PROVIDER_OLLAMA,
     PROVIDER_LLAMACPP.id: PROVIDER_LLAMACPP,
     PROVIDER_MLX.id: PROVIDER_MLX,
+}
+
+_PROVIDER_ORDER: dict[str, int] = {
+    "xiaomi-codingplan": 0,
+    "aliyun-intl": 10,
+    "zai": 20,
+    "openrouter": 30,
 }
 
 _VALID_ID_RE = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
@@ -491,7 +514,13 @@ def get_provider_chat_model(
 
 
 def list_providers() -> List[ProviderDefinition]:
-    return list(PROVIDERS.values())
+    return sorted(
+        PROVIDERS.values(),
+        key=lambda provider: (
+            _PROVIDER_ORDER.get(provider.id, 999),
+            provider.name.lower(),
+        ),
+    )
 
 
 def is_builtin(provider_id: str) -> bool:

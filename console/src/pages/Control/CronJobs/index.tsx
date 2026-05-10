@@ -14,6 +14,24 @@ import styles from "./index.module.less";
 
 type CronJob = CronJobSpecOutput;
 
+function CronJobsEmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className={styles.emptyState}>
+      <div className={styles.emptyStateCore}>
+        <div className={styles.emptyStateIcon} />
+        <h3 className={styles.emptyStateTitle}>{title}</h3>
+        <p className={styles.emptyStateDescription}>{description}</p>
+      </div>
+    </div>
+  );
+}
+
 function CronJobsPage() {
   const { t } = useTranslation();
   const {
@@ -28,6 +46,8 @@ function CronJobsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<CronJob | null>(null);
   const [form] = Form.useForm<CronJob>();
+  const hasJobs = jobs.length > 0;
+  const showTable = loading || hasJobs;
 
   const handleCreate = () => {
     setEditingJob(null);
@@ -177,9 +197,17 @@ function CronJobsPage() {
   return (
     <div className={styles.cronJobsPage}>
       <div className={styles.header}>
-        <div className={styles.headerInfo}>
+        <div>
           <h1 className={styles.title}>{t("cronJobs.title")}</h1>
           <p className={styles.description}>{t("cronJobs.description")}</p>
+        </div>
+      </div>
+
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarMeta}>
+          <div className={styles.countChip}>
+            {t("cronJobs.totalItems", { count: jobs.length })}
+          </div>
         </div>
         <Button type="primary" onClick={handleCreate}>
           + {t("cronJobs.createJob")}
@@ -187,18 +215,35 @@ function CronJobsPage() {
       </div>
 
       <Card className={styles.tableCard} bodyStyle={{ padding: 0 }}>
-        <Table
-          columns={columns}
-          dataSource={jobs}
-          loading={loading}
-          rowKey="id"
-          scroll={{ x: 2840 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: false,
-            showTotal: (total) => t("cronJobs.totalItems", { count: total }),
-          }}
-        />
+        <div className={styles.surfaceHead}>
+          <div className={styles.surfaceTitle}>
+            <strong>{t("cronJobs.registryTitle")}</strong>
+            <span>{t("cronJobs.registrySubtitle")}</span>
+          </div>
+        </div>
+
+        {showTable ? (
+          <Table
+            className={styles.cronJobsTable}
+            columns={columns}
+            dataSource={jobs}
+            loading={loading}
+            rowKey="id"
+            scroll={{ x: 2840 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: false,
+              showTotal: (total) => t("cronJobs.totalItems", { count: total }),
+            }}
+          />
+        ) : (
+          <div className={styles.emptyStatePanel}>
+            <CronJobsEmptyState
+              title={t("cronJobs.emptyTitle")}
+              description={t("cronJobs.emptyDescription")}
+            />
+          </div>
+        )}
       </Card>
 
       <JobDrawer

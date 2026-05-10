@@ -9,15 +9,13 @@ import {
 } from "@agentscope-ai/design";
 import { useTranslation } from "react-i18next";
 import api from "../../../api";
-import type { Persona } from "../../../api/types";
+import type { Persona, ProviderInfo } from "../../../api/types";
+import {
+  sortProviders,
+  XIAOMI_PROVIDER_ID,
+} from "../../../shared/providerMeta";
 
 const { TextArea } = Input;
-
-interface ProviderInfo {
-  id: string;
-  name: string;
-  models: { name: string }[];
-}
 
 interface SkillInfo {
   name: string;
@@ -30,6 +28,9 @@ interface MCPClientInfo {
   description?: string;
   enabled: boolean;
 }
+
+type SelectOption = { label: string; value: string };
+type SelectGroupOption = { label: string; options: SelectOption[] };
 
 interface PersonaDrawerProps {
   open: boolean;
@@ -75,7 +76,7 @@ export function PersonaDrawer({
       if (cancelled) return;
 
       if (provRes.status === "fulfilled" && Array.isArray(provRes.value)) {
-        setProviders(provRes.value);
+        setProviders(sortProviders(provRes.value));
       }
       if (skillRes.status === "fulfilled" && Array.isArray(skillRes.value)) {
         setSkills(skillRes.value);
@@ -129,12 +130,12 @@ export function PersonaDrawer({
     if (!prov) return [];
     return prov.models.map((m) => ({
       label: m.name,
-      value: m.name,
+      value: m.id,
     }));
   }, [selectedProvider, providers]);
 
   // Skill options grouped by type
-  const skillOptions = useMemo(() => {
+  const skillOptions = useMemo<(SelectOption | SelectGroupOption)[]>(() => {
     const byType: Record<string, SkillInfo[]> = {};
     for (const s of skills) {
       const type = s.type || "other";
@@ -178,12 +179,20 @@ export function PersonaDrawer({
   };
 
   const handleFinish = (values: Record<string, unknown>) => {
+    const providerId = (values.model_provider as string) || "";
+    const modelValue = (values.model_name as string) || "";
+    const selectedProviderConfig = providers.find((p) => p.id === providerId);
+    const normalizedModelName =
+      selectedProviderConfig?.models.find(
+        (model) => model.id === modelValue || model.name === modelValue,
+      )?.id ?? modelValue;
+
     const persona: Partial<Persona> = {
       id: values.id as string,
       name: values.name as string,
       soul_md: (values.soul_md as string) || "",
-      model_provider: (values.model_provider as string) || "",
-      model_name: (values.model_name as string) || "",
+      model_provider: providerId,
+      model_name: normalizedModelName,
       skills: (values.skills as string[]) || [],
       mcp_clients: (values.mcp_clients as string[]) || [],
       is_coordinator: (values.is_coordinator as boolean) || false,
@@ -260,7 +269,8 @@ export function PersonaDrawer({
             showSearch
             onChange={handleProviderChange}
             options={providers.map((p) => ({
-              label: p.name,
+              label:
+                p.id === XIAOMI_PROVIDER_ID ? `${p.name} · Partner` : p.name,
               value: p.id,
             }))}
           />
@@ -289,7 +299,7 @@ export function PersonaDrawer({
                 .toLowerCase()
                 .includes(input.toLowerCase())
             }
-            options={skillOptions as any}
+            options={skillOptions}
           />
         </Form.Item>
 

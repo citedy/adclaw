@@ -2,7 +2,6 @@ import { Layout } from "antd";
 import { useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../Sidebar";
-import Header from "../Header";
 import ConsoleCronBubble from "../../components/ConsoleCronBubble";
 import Chat from "../../pages/Chat";
 import ChannelsPage from "../../pages/Control/Channels";
@@ -55,6 +54,7 @@ export default function MainLayout() {
   }, [currentPath, navigate]);
 
   const isWelcomePage = currentPath === "/welcome";
+  const isChatPage = currentPath === "/chat" || currentPath === "/";
 
   if (isWelcomePage) {
     return (
@@ -68,10 +68,11 @@ export default function MainLayout() {
     <Layout style={{ height: "100vh" }}>
       <Sidebar selectedKey={selectedKey} />
       <Layout>
-        <Header selectedKey={selectedKey} />
         <Content className="page-container">
           <ConsoleCronBubble />
-          <div className="page-content">
+          <div
+            className={`page-content${isChatPage ? " page-content-chat" : ""}`}
+          >
             <Routes>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/chat" element={<Chat />} />

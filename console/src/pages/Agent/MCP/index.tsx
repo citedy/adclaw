@@ -1,12 +1,44 @@
 import { useState, useEffect } from "react";
 import { Button, Empty, Modal, Card } from "@agentscope-ai/design";
-import type { MCPClientInfo } from "../../../api/types";
+import type { MCPClientCreateRequest, MCPClientInfo } from "../../../api/types";
 import { MCPClientCard } from "./components";
 import { useMCP } from "./useMCP";
 import { useTranslation } from "react-i18next";
 import { request } from "../../../api/request";
 
 type MCPTransport = "stdio" | "streamable_http" | "sse";
+const CITEDY_MCP_TOOLS_URL = "https://www.citedy.com/tools/mcp";
+type MCPClientPayload = MCPClientCreateRequest["client"];
+type NormalizedMCPClientPayload = {
+  name: string;
+  description: string;
+  enabled: boolean;
+  transport: MCPTransport;
+  url: string;
+  headers: Record<string, string>;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  cwd: string;
+};
+
+interface CitedyStatus {
+  configured: boolean;
+  api_key_prefix?: string;
+  balance?: { credits: number; status: string } | null;
+  developer_url: string;
+  billing_url: string;
+}
+
+type MCPClientDraft = Partial<MCPClientPayload> & {
+  type?: unknown;
+  baseUrl?: unknown;
+  isActive?: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
 function normalizeTransport(raw?: unknown): MCPTransport | undefined {
   if (typeof raw !== "string") return undefined;
@@ -25,7 +57,10 @@ function normalizeTransport(raw?: unknown): MCPTransport | undefined {
   }
 }
 
-function normalizeClientData(key: string, rawData: any) {
+function normalizeClientData(
+  key: string,
+  rawData: MCPClientDraft,
+): NormalizedMCPClientPayload {
   const transport =
     normalizeTransport(rawData.transport ?? rawData.type) ??
     (rawData.url || rawData.baseUrl || !rawData.command
@@ -34,11 +69,17 @@ function normalizeClientData(key: string, rawData: any) {
 
   const command =
     transport === "stdio" ? (rawData.command ?? "").toString() : "";
+  const enabled =
+    typeof rawData.enabled === "boolean"
+      ? rawData.enabled
+      : typeof rawData.isActive === "boolean"
+      ? rawData.isActive
+      : true;
 
   return {
     name: rawData.name || key,
     description: rawData.description || "",
-    enabled: rawData.enabled ?? rawData.isActive ?? true,
+    enabled,
     transport,
     url: (rawData.url || rawData.baseUrl || "").toString(),
     headers: rawData.headers || {},
@@ -61,10 +102,10 @@ function MCPPage() {
   } = useMCP();
   const [hoverKey, setHoverKey] = useState<string | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [citedyStatus, setCitedyStatus] = useState<any>(null);
+  const [citedyStatus, setCitedyStatus] = useState<CitedyStatus | null>(null);
 
   useEffect(() => {
-    request<any>("/citedy/status")
+    request<CitedyStatus>("/citedy/status")
       .then(setCitedyStatus)
       .catch(() => {});
   }, []);
@@ -95,47 +136,59 @@ function MCPPage() {
 
   const handleCreateClient = async () => {
     try {
-      const parsed = JSON.parse(newClientJson);
+      const parsed: unknown = JSON.parse(newClientJson);
 
       // Support two formats:
       // Format 1: { "mcpServers": { "key": { "command": "...", ... } } }
       // Format 2: { "key": { "command": "...", ... } }
       // Format 3: { "key": "...", "name": "...", "command": "...", ... } (direct)
 
-      let clientsToCreate: Array<{ key: string; data: any }> = [];
+      const clientsToCreate: Array<{
+        key: string;
+        data: NormalizedMCPClientPayload;
+      }> = [];
 
-      if (parsed.mcpServers) {
+      if (isRecord(parsed) && isRecord(parsed.mcpServers)) {
         // Format 1: nested mcpServers
-        Object.entries(parsed.mcpServers).forEach(
-          ([key, data]: [string, any]) => {
-            clientsToCreate.push({
-              key,
-              data: normalizeClientData(key, data),
-            });
-          },
-        );
+        Object.entries(parsed.mcpServers).forEach(([key, data]) => {
+          if (!isRecord(data)) return;
+
+          const normalizedData = normalizeClientData(
+            key,
+            data as MCPClientDraft,
+          );
+          clientsToCreate.push({
+            key,
+            data: normalizedData,
+          });
+        });
       } else if (
-        parsed.key &&
+        isRecord(parsed) &&
+        typeof parsed.key === "string" &&
         (parsed.command || parsed.url || parsed.baseUrl)
       ) {
         // Format 3: direct format with key field
         const { key, ...clientData } = parsed;
-        clientsToCreate.push({
-          key,
-          data: normalizeClientData(key, clientData),
-        });
-      } else {
+        if (typeof key === "string") {
+          clientsToCreate.push({
+            key,
+            data: normalizeClientData(key, clientData as MCPClientDraft),
+          });
+        }
+      } else if (isRecord(parsed)) {
         // Format 2: direct client objects with keys
-        Object.entries(parsed).forEach(([key, data]: [string, any]) => {
+        Object.entries(parsed).forEach(([key, data]) => {
           if (
-            typeof data === "object" &&
-            (data.command || data.url || data.baseUrl)
+            !isRecord(data) ||
+            (!data.command && !data.url && !data.baseUrl)
           ) {
-            clientsToCreate.push({
-              key,
-              data: normalizeClientData(key, data),
-            });
+            return;
           }
+
+          clientsToCreate.push({
+            key,
+            data: normalizeClientData(key, data as MCPClientDraft),
+          });
         });
       }
 
@@ -160,7 +213,7 @@ function MCPPage() {
   }
 }`);
       }
-    } catch (error) {
+    } catch {
       alert("Invalid JSON format");
     }
   };
@@ -192,12 +245,18 @@ function MCPPage() {
           >
             <div>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
-                Citedy SEO & Marketing Tools
+                <a
+                  href={CITEDY_MCP_TOOLS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Citedy SEO & Marketing Tools
+                </a>
               </h3>
               <p style={{ margin: "4px 0 0", color: "#475569", fontSize: 13 }}>
                 {citedyStatus.configured
                   ? `API Key: ${citedyStatus.api_key_prefix || "configured"}`
-                  : "API key not configured — get a free key to unlock 52 marketing tools"}
+                  : "API key not configured — get a free key to unlock 59 marketing tools"}
                 {citedyStatus.balance &&
                   ` | Balance: ${citedyStatus.balance.credits} credits`}
               </p>

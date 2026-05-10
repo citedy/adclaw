@@ -151,18 +151,32 @@
 
 /* ---- Popups / Dropdowns / Tooltips: solid background ---- */
 
-/* Popups, dropdowns, tooltips — solid white, no transparency */
+/* Popups and dropdowns — solid white, no transparency */
 .ant-popover-inner,
 .adclaw-popover-inner,
 [class*="popover-inner"],
 .ant-dropdown,
 .adclaw-dropdown,
-[class*="dropdown"],
-.ant-tooltip-inner,
-[class*="tooltip-inner"] {
+[class*="dropdown"] {
   background: #fff !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Tooltips keep their own dark surface; just force opacity and clean radius */
+.ant-tooltip-inner,
+[class*="tooltip-inner"] {
+  color: #fff !important;
+  background: var(--citedy-slate-900) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18) !important;
+}
+
+.ant-tooltip .ant-tooltip-arrow::before,
+[class*="tooltip"] [class*="tooltip-arrow"]::before {
+  background: var(--citedy-slate-900) !important;
 }
 
 /* Collapsed sidebar submenu popup — must be solid and above everything */
@@ -170,13 +184,17 @@
 .adclaw-menu.adclaw-menu-submenu-popup,
 .ant-menu-submenu-popup,
 [class*="menu-submenu-popup"] {
-  background: #fff !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.96),
+    rgba(248, 250, 252, 0.94)
+  ) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
-  border: 1px solid var(--citedy-slate-200) !important;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
   z-index: 1050 !important;
-  border-radius: 8px !important;
+  border-radius: 16px !important;
   overflow: hidden !important;
 }
 
@@ -197,22 +215,34 @@
 .adclaw-menu-submenu-popup .adclaw-menu-sub,
 [class*="menu-submenu-popup"] > ul,
 [class*="menu-submenu-popup"] [class*="menu-sub"] {
-  background: #fff !important;
+  background: transparent !important;
+  padding: 8px !important;
 }
 
 /* Popup menu items — clean layout */
 .adclaw-menu-submenu-popup .adclaw-menu-item,
-[class*="menu-submenu-popup"] [class*="menu-item"] {
-  margin: 0 4px !important;
-  border-radius: 6px !important;
+[class*="menu-submenu-popup"] [class*="menu-item"],
+.adclaw-menu-submenu-popup .adclaw-menu-submenu-title,
+[class*="menu-submenu-popup"] [class*="menu-submenu-title"] {
+  margin: 0 !important;
+  border-radius: 12px !important;
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 /* Collapsed sidebar: center all menu icons */
 .adclaw-layout-sider-collapsed .adclaw-menu-item,
 .adclaw-layout-sider-collapsed .adclaw-menu-submenu-title {
-  padding-inline: 0 !important;
-  padding-left: calc(50% - 8px) !important;
-  margin-inline: 0 !important;
+  width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  margin: 4px auto !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* ---- Tags & Badges: pill + glassmorphism ---- */
@@ -286,9 +316,59 @@
 /* Collapsed sidebar: center icons (ant-prefixed selectors) */
 .ant-layout-sider-collapsed .ant-menu-item,
 .ant-layout-sider-collapsed .ant-menu-submenu-title {
-  padding-inline: 0 !important;
-  padding-left: calc(50% - 8px) !important;
-  margin-inline: 0 !important;
+  width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  margin: 4px auto !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ant-layout-sider-collapsed,
+.adclaw-layout-sider-collapsed,
+[class*="layout-sider-collapsed"] {
+  overflow: hidden !important;
+}
+
+.ant-layout-sider-collapsed .ant-layout-sider-children,
+.adclaw-layout-sider-collapsed .adclaw-layout-sider-children,
+.ant-layout-sider-collapsed [class*="layout-sider-children"],
+.adclaw-layout-sider-collapsed [class*="layout-sider-children"] {
+  overflow: hidden !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-title-content,
+.adclaw-layout-sider-collapsed .adclaw-menu-title-content,
+.ant-layout-sider-collapsed [class*="menu-title-content"],
+.adclaw-layout-sider-collapsed [class*="menu-title-content"] {
+  display: none !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-submenu-arrow,
+.adclaw-layout-sider-collapsed .adclaw-menu-submenu-arrow,
+.ant-layout-sider-collapsed [class*="menu-submenu-arrow"],
+.adclaw-layout-sider-collapsed [class*="menu-submenu-arrow"] {
+  display: none !important;
+}
+
+.ant-layout-sider-collapsed .ant-menu-item .anticon,
+.ant-layout-sider-collapsed .ant-menu-submenu-title .anticon,
+.ant-layout-sider-collapsed .ant-menu-item [class*="icon"],
+.ant-layout-sider-collapsed .ant-menu-submenu-title [class*="icon"],
+.adclaw-layout-sider-collapsed .adclaw-menu-item [class*="icon"],
+.adclaw-layout-sider-collapsed .adclaw-menu-submenu-title [class*="icon"],
+.ant-layout-sider-collapsed .ant-menu-item svg,
+.ant-layout-sider-collapsed .ant-menu-submenu-title svg,
+.adclaw-layout-sider-collapsed .adclaw-menu-item svg,
+.adclaw-layout-sider-collapsed .adclaw-menu-submenu-title svg {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
 }
 
 /* ---- Sidebar: gradient background + accent overlay ---- */
@@ -306,8 +386,17 @@
   backdrop-filter: blur(24px) !important;
   -webkit-backdrop-filter: blur(24px) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-right: none !important;
   position: relative !important;
+  scrollbar-width: none !important;
+}
+
+.ant-layout-sider::-webkit-scrollbar,
+.adclaw-layout-sider::-webkit-scrollbar,
+[class*="ant-layout-sider"]::-webkit-scrollbar,
+[class*="adclaw-layout-sider"]::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Sidebar gradient accent overlay */
@@ -337,11 +426,66 @@
   z-index: 1 !important;
 }
 
+.ant-layout-sider-children,
+.adclaw-layout-sider-children,
+[class*="layout-sider-children"] {
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
 /* Sidebar menu background transparent to show gradient through */
 .ant-menu,
 .adclaw-menu,
 [class*="ant-menu"] {
   background: transparent !important;
+}
+
+.ant-menu-inline,
+.adclaw-menu-inline,
+[class*="ant-menu-inline"] {
+  border-inline-end: none !important;
+}
+
+/* Expanded inline submenu must stay transparent too, otherwise it creates a seam */
+.ant-menu-sub.ant-menu-inline,
+.adclaw-menu-sub.adclaw-menu-inline,
+.rc-menu-sub.rc-menu-inline,
+.ant-menu-inline .ant-menu-sub,
+.adclaw-menu-inline .adclaw-menu-sub,
+.rc-menu-inline .rc-menu-sub,
+[class*="ant-menu-inline"] [class*="ant-menu-sub"] {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove the visual seam between an open parent row and its nested items */
+.ant-menu-inline .ant-menu-submenu-open > .ant-menu-submenu-title,
+.adclaw-menu-inline .adclaw-menu-submenu-open > .adclaw-menu-submenu-title,
+.rc-menu-inline .rc-menu-submenu-open > .rc-menu-submenu-title,
+[class*="ant-menu-inline"]
+  [class*="ant-menu-submenu-open"]
+  > [class*="ant-menu-submenu-title"] {
+  margin-bottom: 0 !important;
+}
+
+.ant-menu-sub.ant-menu-inline > .ant-menu-item,
+.ant-menu-sub.ant-menu-inline > .ant-menu-submenu > .ant-menu-submenu-title,
+.adclaw-menu-sub.adclaw-menu-inline > .adclaw-menu-item,
+.adclaw-menu-sub.adclaw-menu-inline
+  > .adclaw-menu-submenu
+  > .adclaw-menu-submenu-title,
+.rc-menu-sub.rc-menu-inline > .rc-menu-item,
+.rc-menu-sub.rc-menu-inline > .rc-menu-submenu > .rc-menu-submenu-title,
+[class*="ant-menu-sub"][class*="ant-menu-inline"] > [class*="ant-menu-item"],
+[class*="ant-menu-sub"][class*="ant-menu-inline"]
+  > [class*="ant-menu-submenu"]
+  > [class*="ant-menu-submenu-title"] {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 /* Gradient divider for sidebar sections */
@@ -542,6 +686,8 @@
 
 .citedy-promo-card {
   margin-bottom: var(--citedy-space-lg);
+  border-radius: 16px !important;
+  overflow: hidden;
 }
 
 .citedy-promo-card.configured {
@@ -550,8 +696,13 @@
 }
 
 .citedy-promo-card.unconfigured {
-  background: linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%) !important;
-  border: 1px solid #fde68a !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 252, 245, 0.92),
+    rgba(255, 247, 237, 0.98)
+  ) !important;
+  border: 1px solid rgba(251, 191, 36, 0.16) !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04) !important;
 }
 
 /* ---- Drawer Footer ---- */

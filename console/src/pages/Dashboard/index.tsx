@@ -202,6 +202,7 @@ function PersonaDashboardCard({
 
 function DashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [cronJobs, setCronJobs] = useState<CronJobSpecOutput[]>([]);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
@@ -265,15 +266,23 @@ function DashboardPage() {
           {t("common.loading")}
         </div>
       ) : personas.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "80px 0",
-            color: "var(--citedy-slate-400)",
-            fontSize: 14,
-          }}
-        >
-          No agent personas found. Create your first persona to get started.
+        <div className={styles.emptyStateCard}>
+          <div className={styles.emptyEyebrow}>Getting started</div>
+          <h2 className={styles.emptyTitle}>Create your first persona</h2>
+          <p className={styles.emptyText}>
+            Personas are your free virtual office of AI specialists. Start by
+            activating one of the 5 built-in personas we already provide, then
+            add as many custom personas as your workflow needs.
+          </p>
+          <div className={styles.emptyActions}>
+            <Button type="primary" onClick={() => navigate("/personas")}>
+              Open Personas
+            </Button>
+          </div>
+          <p className={styles.emptyHint}>
+            Once your first persona is ready, it will appear here for quick
+            monitoring and chat access.
+          </p>
         </div>
       ) : (
         <div className={styles.grid}>

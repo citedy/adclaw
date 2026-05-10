@@ -15,6 +15,64 @@
   font-size: 14px;
 }
 
+.emptyStateCard {
+  margin-top: 20px;
+  max-width: 720px;
+  padding: 28px;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(248, 250, 252, 0.88),
+    rgba(255, 255, 255, 0.74),
+    rgba(249, 250, 251, 0.92)
+  );
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.emptyEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.emptyTitle {
+  margin: 16px 0 8px;
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: var(--citedy-slate-900);
+}
+
+.emptyText {
+  margin: 0;
+  max-width: 560px;
+  color: var(--citedy-slate-600);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.emptyActions {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.emptyHint {
+  margin: 18px 0 0;
+  color: var(--citedy-slate-500);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));

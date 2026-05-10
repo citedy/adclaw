@@ -1,22 +1,29 @@
 import { useState, useEffect, useMemo } from "react";
-import { Form, Input, Modal, message, Button } from "@agentscope-ai/design";
+import {
+  Form,
+  Input,
+  Modal,
+  message,
+  Button,
+  Tag,
+} from "@agentscope-ai/design";
 import { ApiOutlined } from "@ant-design/icons";
-import type { ProviderConfigRequest } from "../../../../../api/types";
+import type {
+  ActiveModelsInfo,
+  ProviderConfigRequest,
+  ProviderInfo,
+} from "../../../../../api/types";
 import api from "../../../../../api";
 import { useTranslation } from "react-i18next";
+import {
+  XIAOMI_PROVIDER_ID,
+  XIAOMI_TOKEN_PLAN_URL,
+} from "../../../../../shared/providerMeta";
 import styles from "../../index.module.less";
 
 interface ProviderConfigModalProps {
-  provider: {
-    id: string;
-    name: string;
-    current_api_key?: string;
-    api_key_prefix?: string;
-    current_base_url?: string;
-    is_custom: boolean;
-    needs_base_url: boolean;
-  };
-  activeModels: any;
+  provider: ProviderInfo;
+  activeModels: ActiveModelsInfo | null;
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -34,7 +41,11 @@ export function ProviderConfigModal({
   const [testing, setTesting] = useState(false);
   const [formDirty, setFormDirty] = useState(false);
   const [form] = Form.useForm<ProviderConfigRequest>();
-  const canEditBaseUrl = provider.needs_base_url || provider.id === "ollama";
+  const canEditBaseUrl =
+    provider.needs_base_url ||
+    provider.id === "ollama" ||
+    provider.id === XIAOMI_PROVIDER_ID;
+  const showXiaomiPlanCta = provider.id === XIAOMI_PROVIDER_ID;
 
   const apiKeyExtra = useMemo(() => {
     if (provider.current_api_key) {
@@ -182,6 +193,20 @@ export function ProviderConfigModal({
             >
               {t("models.testConnection")}
             </Button>
+            {showXiaomiPlanCta && (
+              <Button
+                size="small"
+                onClick={() =>
+                  window.open(
+                    XIAOMI_TOKEN_PLAN_URL,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
+              >
+                Get Token Plan 6$/mo
+              </Button>
+            )}
           </div>
           <div className={styles.modalFooterRight}>
             <Button onClick={onClose}>{t("models.cancel")}</Button>
@@ -198,6 +223,27 @@ export function ProviderConfigModal({
       }
       destroyOnHidden
     >
+      {provider.models.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div
+            style={{
+              marginBottom: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#30335a",
+            }}
+          >
+            Available models
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {provider.models.map((model) => (
+              <Tag key={model.id} color="blue">
+                {model.name}
+              </Tag>
+            ))}
+          </div>
+        </div>
+      )}
       <Form
         form={form}
         layout="vertical"

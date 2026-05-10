@@ -9,6 +9,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
+from agentscope_runtime.engine.schemas.agent_schemas import ContentType
+
 
 # --- SSRF whitelist tests (skills_hub.py) ---
 
@@ -114,13 +116,27 @@ class TestPathTraversal:
 class TestPromptHash:
     """Test that the actual agent code uses sha256, not md5."""
 
-    def test_agent_hash_method_uses_sha256(self):
-        """Inspect the actual source code of _prompt_source_hash to verify sha256."""
-        from adclaw.agents.react_agent import AdClawAgent
+    def test_prompt_cache_hash_paths_use_sha256(self):
+        """Inspect the current prompt cache codepaths for sha256 usage."""
+        from adclaw.agents.prompt import CachedPromptBuilder, CachedSection
 
-        source = inspect.getsource(AdClawAgent._prompt_source_hash)
-        assert "sha256" in source, "Agent should use sha256 for prompt hash"
-        assert "md5" not in source, "Agent should not use md5"
+        section_source = inspect.getsource(CachedSection.load)
+        static_source = inspect.getsource(
+            CachedPromptBuilder._static_source_hash,
+        )
+
+        assert "sha256" in section_source, (
+            "Prompt section cache should use sha256 for content hash"
+        )
+        assert "md5" not in section_source, (
+            "Prompt section cache should not use md5"
+        )
+        assert "sha256" in static_source, (
+            "Static prompt source hash should use sha256"
+        )
+        assert "md5" not in static_source, (
+            "Static prompt source hash should not use md5"
+        )
 
 
 # --- URL sanitization tests (actual production code) ---
@@ -161,6 +177,36 @@ class TestURLSanitization:
         assert "GITHUB_TOKEN" in _github_token_hint("https://github.com/user/repo")
         assert "GITHUB_TOKEN" in _github_token_hint("https://api.github.com/repos")
         assert "GITHUB_TOKEN" in _github_token_hint("https://skills.sh/bundle")
+
+
+class TestInboundMediaSSRFMitigation:
+    """Test canonical inbound media sanitization for AgentScope-bound media."""
+
+    def test_channel_utils_blocks_remote_video_dict_payload(self):
+        """
+        sanitize_inbound_media_content_parts must also catch dict payloads.
+
+        Some channel/native payload paths can still carry plain dict content
+        parts, so the shared sanitizer must block remote video_url values there
+        too instead of only handling typed Content objects.
+        """
+        from adclaw.app.channels.utils import (
+            sanitize_inbound_media_content_parts,
+        )
+
+        sanitized, changed = sanitize_inbound_media_content_parts(
+            [
+                {
+                    "type": "video",
+                    "video_url": "https://evil.example/clip.mp4",
+                },
+            ],
+        )
+
+        assert changed is True
+        assert len(sanitized) == 1
+        assert sanitized[0].type == ContentType.TEXT
+        assert "remote video URL was blocked" in sanitized[0].text
 
 
 # --- Env line length limit test (actual endpoint) ---

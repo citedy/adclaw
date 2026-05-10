@@ -109,7 +109,7 @@ async def save_citedy_api_key(body: dict):
         config = load_config()
         config.mcp.clients["citedy"] = MCPClientConfig(
             name="citedy_mcp",
-            description="Citedy SEO & Marketing Tools (52 tools)",
+            description="Citedy SEO & Marketing Tools (59 tools)",
             enabled=True,
             transport="streamable_http",
             url="https://mcp.citedy.com/mcp",

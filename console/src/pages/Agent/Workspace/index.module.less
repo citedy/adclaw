@@ -356,11 +356,62 @@
   color: var(--citedy-slate-500);
 }
 
-.attribution {
-  margin: 0;
-  padding: 4px 0 0;
-  font-size: 11px;
-  color: var(--citedy-slate-400);
-  text-align: right;
-  flex-shrink: 0;
+@media (max-width: 768px) {
+  .agentsPage {
+    padding: 16px;
+    height: auto;
+    min-height: calc(100vh - 96px);
+    overflow: auto;
+  }
+
+  .header {
+    margin-bottom: 16px;
+  }
+
+  .workspaceInfo {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    height: auto;
+    gap: 12px;
+  }
+
+  .workspacePath {
+    margin-bottom: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  .actionButtons {
+    width: 100%;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+  }
+
+  .content {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .fileListPanel {
+    width: 100%;
+  }
+
+  .editorHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .buttonGroup {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .editorContent {
+    height: auto;
+    min-height: 320px;
+  }
 }

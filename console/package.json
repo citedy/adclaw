@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "npm": ">=8.3.0"
+  },
   "scripts": {
     "dev": "vite --host",
     "build": "tsc -b && vite build",
@@ -30,6 +33,32 @@
     "react-grab": "^0.1.27",
     "react-i18next": "^16.5.4",
     "react-router-dom": "^7.13.0"
+  },
+  "overrides": {
+    "dompurify": "3.4.2",
+    "cosmiconfig": {
+      "yaml": "1.10.3"
+    },
+    "@eslint/config-array": {
+      "minimatch": {
+        "brace-expansion": "1.1.13"
+      }
+    },
+    "@eslint/eslintrc": {
+      "minimatch": {
+        "brace-expansion": "1.1.13"
+      }
+    },
+    "eslint": {
+      "minimatch": {
+        "brace-expansion": "1.1.13"
+      }
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": {
+        "brace-expansion": "5.0.5"
+      }
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

@@ -14,6 +14,21 @@
   flex-direction: column;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.headerActionItem {
+  display: flex;
+}
+
+.headerActionButton {
+  justify-content: center;
+}
+
 .title {
   margin-bottom: 4px;
   font-size: 24px;
@@ -25,6 +40,57 @@
   margin: 0;
   color: var(--citedy-slate-500);
   font-size: 14px;
+}
+
+.introCard {
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(248, 250, 252, 0.88),
+    rgba(255, 255, 255, 0.74),
+    rgba(249, 250, 251, 0.92)
+  );
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.introEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.introTitle {
+  margin: 14px 0 6px;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--citedy-slate-900);
+}
+
+.introText {
+  margin: 0;
+  max-width: 760px;
+  color: var(--citedy-slate-600);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.introHint {
+  margin: 10px 0 0;
+  color: var(--citedy-slate-500);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .loading {
@@ -39,7 +105,7 @@
 .emptyState {
   text-align: center;
   padding: 80px 0;
-  color: var(--citedy-slate-400);
+  color: var(--citedy-slate-500);
   font-size: 14px;
 }
 
@@ -134,5 +200,40 @@
     background-color: var(--citedy-red-600) !important;
     color: #fff !important;
     border-color: var(--citedy-red-600) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .personasPage {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .headerActions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .headerActionItem {
+    width: 100%;
+  }
+
+  .headerActionItem > :global(*) {
+    width: 100%;
+  }
+
+  .headerActionButton {
+    width: 100%;
+  }
+
+  .personasGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }

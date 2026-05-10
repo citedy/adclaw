@@ -335,7 +335,7 @@ class MCPConfig(BaseModel):
             ),
             "citedy": MCPClientConfig(
                 name="citedy_mcp",
-                description="Citedy SEO & Marketing Tools (52 tools)",
+                description="Citedy SEO & Marketing Tools (59 tools)",
                 enabled=bool(os.getenv("CITEDY_API_KEY")),
                 transport="streamable_http",
                 url="https://mcp.citedy.com/mcp",

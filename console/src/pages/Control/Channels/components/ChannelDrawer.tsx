@@ -29,11 +29,7 @@ const CHANNEL_DOC_URLS: Partial<Record<ChannelKey, string>> = {
   dingtalk:
     "https://adclaw.agentscope.io/docs/channels/#%E9%92%89%E9%92%89%E6%8E%A8%E8%8D%90",
   feishu: "https://adclaw.agentscope.io/docs/channels/#%E9%A3%9E%E4%B9%A6",
-  imessage:
-    "https://adclaw.agentscope.io/docs/channels/#iMessage%E4%BB%85-macOS",
   discord: "https://adclaw.agentscope.io/docs/channels/#Discord",
-  qq: "https://adclaw.agentscope.io/docs/channels/#QQ",
-  telegram: "https://adclaw.agentscope.io/docs/channels/#Telegram",
 };
 
 export function ChannelDrawer({
