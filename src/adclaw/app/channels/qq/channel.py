@@ -591,6 +591,27 @@ class QQChannel(BaseChannel):
         identify_fail_count = 0
         should_refresh_token = False
 
+        def backoff_before_retry(reason: str) -> bool:
+            nonlocal reconnect_attempts
+            if reconnect_attempts >= MAX_RECONNECT_ATTEMPTS:
+                logger.error(
+                    "qq max reconnect attempts reached after %s",
+                    reason,
+                )
+                return False
+            delay = RECONNECT_DELAYS[
+                min(reconnect_attempts, len(RECONNECT_DELAYS) - 1)
+            ]
+            reconnect_attempts += 1
+            logger.info(
+                "qq reconnecting in %ss after %s (attempt %s)",
+                delay,
+                reason,
+                reconnect_attempts,
+            )
+            self._stop_event.wait(timeout=delay)
+            return not self._stop_event.is_set()
+
         def connect() -> bool:
             nonlocal session_id, last_seq, reconnect_attempts, last_connect_time, quick_disconnect_count, should_refresh_token, identify_fail_count  # pylint: disable=line-too-long # noqa: E501
             if self._stop_event.is_set():
@@ -603,13 +624,13 @@ class QQChannel(BaseChannel):
                 url = _get_channel_url_sync(token)
             except Exception as e:
                 logger.warning("qq get token/gateway failed: %s", e)
-                return True
+                return backoff_before_retry("token/gateway failure")
             logger.info("qq connecting to %s", url)
             try:
                 ws = websocket.create_connection(url)
             except Exception as e:
                 logger.warning("qq ws connect failed: %s", e)
-                return True
+                return backoff_before_retry("websocket connect failure")
             current_ws = ws
             heartbeat_interval: Optional[float] = None
             heartbeat_timer: Optional[threading.Timer] = None

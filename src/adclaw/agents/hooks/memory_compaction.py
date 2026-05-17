@@ -68,6 +68,20 @@ class MemoryCompactionHook:
             "false",
         ).lower() in ("true", "1", "yes")
 
+    @property
+    def compact_batch_messages(self) -> int:
+        """Maximum number of old messages to summarize in one ReMe task."""
+        raw_value = os.environ.get("ADCLAW_MEMORY_COMPACT_BATCH_MESSAGES", "80")
+        try:
+            value = int(raw_value)
+        except ValueError:
+            logger.warning(
+                "Invalid ADCLAW_MEMORY_COMPACT_BATCH_MESSAGES=%r; using 80",
+                raw_value,
+            )
+            return 80
+        return max(value, 1)
+
     async def __call__(
         self,
         agent,
@@ -214,6 +228,17 @@ class MemoryCompactionHook:
                         len(messages_to_compact),
                     )
                     msgs_to_summarize = messages_to_compact
+
+                if len(msgs_to_summarize) > self.compact_batch_messages:
+                    logger.info(
+                        "Limiting memory compaction batch from %d to %d "
+                        "messages",
+                        len(msgs_to_summarize),
+                        self.compact_batch_messages,
+                    )
+                    msgs_to_summarize = msgs_to_summarize[
+                        : self.compact_batch_messages
+                    ]
 
                 self.memory_manager.add_async_summary_task(
                     messages=msgs_to_summarize,

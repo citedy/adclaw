@@ -22,10 +22,24 @@ ARG ADCLAW_VARIANT=full
 # Variant defaults: core="[local]", browser="[browser,local]", full="[all,local]"
 ARG ADCLAW_PIP_EXTRAS=""
 
+# Preload default local embedding model during image build by default.
+ARG ADCLAW_PRELOAD_EMBEDDINGS=1
+
 # ENV variables
 ENV NODE_ENV=production
 ENV WORKSPACE_DIR=/app
 ENV ADCLAW_WORKING_DIR=/app/working
+ENV HF_HOME=/app/model-cache/huggingface
+ENV SENTENCE_TRANSFORMERS_HOME=/app/model-cache/sentence-transformers
+ENV ADCLAW_MEMORY_MANAGER_START_MODE=background
+ENV ADCLAW_ENABLE_REME=0
+ENV ADCLAW_REME_LIGHT_TOKEN_COUNTER=1
+ENV ADCLAW_MEMORY_MANAGER_BACKGROUND_DELAY_SECONDS=5
+ENV ADCLAW_MEMORY_MANAGER_MAX_LOADAVG=2.0
+ENV ADCLAW_MEMORY_COMPACT_BATCH_MESSAGES=80
+ENV ADCLAW_REME_RETENTION_DAYS=30
+ENV MEMORY_STORE_BACKEND=sqlite
+ENV FTS_ENABLED=true
 
 # Default enabled channels (can be overridden at runtime with -e ADCLAW_ENABLED_CHANNELS=...).
 ARG ADCLAW_ENABLED_CHANNELS="discord,dingtalk,feishu,qq,console,telegram"
@@ -131,10 +145,19 @@ RUN EXTRAS="${ADCLAW_PIP_EXTRAS}"; \
     pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir ".${EXTRAS}"
 
+# Preload the default local embedding model at build time so first production
+# memory queries don't stall while downloading from Hugging Face.
+RUN mkdir -p /app/model-cache \
+    && if [ "$ADCLAW_PRELOAD_EMBEDDINGS" = "1" ]; then \
+      python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" ; \
+    else \
+      echo ">>> Skipping embedding model preload"; \
+    fi
+
 # Non-root user for running the app (supervisord stays root for system services).
 RUN groupadd -r adclaw && useradd -r -g adclaw -m -s /bin/bash adclaw \
-  && mkdir -p /app/working /app/working.secret /app/logs /home/adclaw/.config/pinchtab \
-  && chown -R adclaw:adclaw /app/working /app/working.secret /app/logs /home/adclaw/.config
+  && mkdir -p /app/working /app/working.secret /app/logs /home/adclaw/.config/pinchtab /app/model-cache \
+  && chown -R adclaw:adclaw /app/working /app/working.secret /app/logs /home/adclaw/.config /app/model-cache
 
 # Config.json is generated at runtime by entrypoint.sh (only if missing),
 # so it persists user settings across container restarts.

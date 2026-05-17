@@ -156,7 +156,7 @@ docker run -d --name adclaw --restart unless-stopped \
   -p 8088:8088 \
   -v adclaw-data:/app/working \
   -v adclaw-secret:/app/working.secret \
-  nttylock/adclaw:1.0.4
+  nttylock/adclaw:1.0.5
 ```
 
 AdClaw's release workflow publishes images for both `linux/amd64` and

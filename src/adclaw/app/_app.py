@@ -65,7 +65,15 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
     # --- MCP client manager init (independent module, hot-reloadable) ---
     config = load_config()
     mcp_manager = MCPClientManager()
-    if hasattr(config, "mcp"):
+    mcp_disabled = os.environ.get("ADCLAW_DISABLE_MCP", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if mcp_disabled:
+        logger.warning("MCP disabled by ADCLAW_DISABLE_MCP")
+        runner.set_mcp_manager(mcp_manager)
+    elif hasattr(config, "mcp"):
         try:
             await mcp_manager.init_from_config(config.mcp)
             runner.set_mcp_manager(mcp_manager)
@@ -154,7 +162,9 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
 
     # --- MCP config watcher (auto-reload MCP clients on change) ---
     mcp_watcher = None
-    if hasattr(config, "mcp"):
+    if mcp_disabled:
+        logger.warning("MCP watcher disabled by ADCLAW_DISABLE_MCP")
+    elif hasattr(config, "mcp"):
         try:
             mcp_watcher = MCPConfigWatcher(
                 mcp_manager=mcp_manager,

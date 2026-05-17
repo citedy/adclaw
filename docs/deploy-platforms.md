@@ -9,7 +9,7 @@ AdClaw ships as a single Docker image (`nttylock/adclaw:latest`) with three vari
 
 | Item | Value |
 |---|---|
-| Image | `nttylock/adclaw:1.0.4` (or `nttylock/adclaw:1.0.4-core` if minimal) |
+| Image | `nttylock/adclaw:1.0.5` (or `nttylock/adclaw:1.0.5-core` if minimal) |
 | Architectures | release workflow publishes `linux/amd64`, `linux/arm64` |
 | Container port | `8088` |
 | Health check endpoint | `GET /api/diagnostics/health` → 200 |
@@ -46,7 +46,7 @@ LLM provider keys are entered through the wizard at `http://<host>:8088`, not en
 
 ### Railway
 
-1. **New Project → Deploy from Docker Image** → `nttylock/adclaw:1.0.4`.
+1. **New Project → Deploy from Docker Image** → `nttylock/adclaw:1.0.5`.
 2. Settings → Networking → expose port `8088`. Generate the public domain.
 3. Settings → Variables → add `ADCLAW_ENABLED_CHANNELS=console,telegram` and any tokens.
 4. Settings → Volumes → mount `adclaw-data` at `/app/working` and `adclaw-secret` at `/app/working.secret`. Both **must** persist or the wizard reruns on every redeploy and providers re-disappear.
@@ -62,7 +62,7 @@ services:
     name: adclaw
     runtime: image
     image:
-      url: docker.io/nttylock/adclaw:1.0.4
+      url: docker.io/nttylock/adclaw:1.0.5
     plan: standard          # 2 GB RAM
     healthCheckPath: /api/diagnostics/health
     envVars:
@@ -81,7 +81,7 @@ Render only allows one disk per service — mount `/app/working` and accept that
 ### Fly.io
 
 ```bash
-fly launch --image nttylock/adclaw:1.0.4 --no-deploy
+fly launch --image nttylock/adclaw:1.0.5 --no-deploy
 # in fly.toml:
 #   [http_service]
 #     internal_port = 8088
@@ -117,13 +117,13 @@ docker run -d --name adclaw --restart unless-stopped \
   -v adclaw-secret:/app/working.secret \
   -e ADCLAW_ENABLED_CHANNELS=console,telegram \
   -e LOG_LEVEL=INFO \
-  nttylock/adclaw:1.0.4
+  nttylock/adclaw:1.0.5
 ```
 
 ## Caveats
 
 - **Two-volume requirement is real**: provider API keys live in `/app/working.secret/providers.json`. Skip the secret volume and every redeploy nukes your LLM credentials.
-- **Moving vs pinned tags**: `latest`, `browser`, and `core` are moving tags. If you need a stable release pin, use a versioned tag such as `nttylock/adclaw:1.0.4-core` or a digest.
+- **Moving vs pinned tags**: `latest`, `browser`, and `core` are moving tags. If you need a stable release pin, use a versioned tag such as `nttylock/adclaw:1.0.5-core` or a digest.
 - **Cold start**: 20–40 s on first boot (Python + skill registry + SQLite migrations). Health check `grace_period` should be ≥ 30 s.
 - **Memory profile**: `full` idles around 600–800 MB; spikes to 1.4 GB during skill use (Chromium pages). Sustained `core` is around 250 MB.
 - **HTTP only by default**: place behind your platform's TLS-terminating proxy or run a Caddy/Cloudflare in front.

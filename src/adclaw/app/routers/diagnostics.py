@@ -128,6 +128,27 @@ async def health(request: Request) -> HealthResponse:
     except Exception as exc:
         subsystems["aom"] = SubsystemStatus(status="error", detail=str(exc))
 
+    # --- ReMe ---
+    try:
+        runner = request.app.state.runner
+        state = getattr(runner, "memory_manager_status", "unknown")
+        detail = getattr(runner, "memory_manager_status_detail", None)
+        pending_task = getattr(runner, "_memory_manager_start_task", None)
+        has_manager = getattr(runner, "memory_manager", None) is not None
+        pending = pending_task is not None or state in ("scheduled", "starting")
+        reme_status = "warning" if state in ("error", "timeout") else "ok"
+        subsystems["reme"] = SubsystemStatus(
+            status=reme_status,
+            detail={
+                "state": state,
+                "detail": detail,
+                "enabled": has_manager,
+                "pending": pending,
+            },
+        )
+    except Exception as exc:
+        subsystems["reme"] = SubsystemStatus(status="error", detail=str(exc))
+
     # --- Watchdog ---
     wd = getattr(request.app.state, "watchdog", None)
     if wd:

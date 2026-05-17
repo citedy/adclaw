@@ -7,7 +7,7 @@ stderr_logfile=/var/log/dbus.err.log
 stdout_logfile=/var/log/dbus.out.log
 
 [program:pinchtab]
-command=/bin/sh -c "sleep 2; exec /usr/local/bin/pinchtab-bin"
+command=/bin/sh -c "sleep 2; exec /usr/local/bin/pinchtab-bin server"
 user=adclaw
 autostart=true
 autorestart=true

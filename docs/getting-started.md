@@ -27,15 +27,15 @@ docker run -d --name adclaw \
   -v adclaw-data:/app/working \
   -e CITEDY_API_KEY=your_citedy_agent_key \
   -e TELEGRAM_BOT_TOKEN=your_telegram_bot_token \
-  nttylock/adclaw:1.0.4
+  nttylock/adclaw:1.0.5
 ```
 
 The release workflow publishes images for both `linux/amd64` and
 `linux/arm64`. If you are testing local source changes before the next
 Docker release, use Docker Compose from this repo so the image is built on
 your machine. If you need a pinned published tag instead of the moving
-`latest`, use `nttylock/adclaw:1.0.4`, `nttylock/adclaw:1.0.4-browser`, or
-`nttylock/adclaw:1.0.4-core`.
+`latest`, use `nttylock/adclaw:1.0.5`, `nttylock/adclaw:1.0.5-browser`, or
+`nttylock/adclaw:1.0.5-core`.
 
 ## First-Run Setup
 
