@@ -12,7 +12,7 @@ dependencies = [
     "uvicorn>=0.40.0",
     "apscheduler>=3.11.2,<4",
     "questionary>=2.1.1",
-    "reme-ai==0.3.0.5",
+    "reme-ai==0.3.1.9",
     "python-dotenv>=1.0.0",
     "python-socks>=2.5.3",
     "onnxruntime<1.24",
