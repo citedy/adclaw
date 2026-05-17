@@ -198,6 +198,46 @@ async def test_compaction_not_triggered_when_total_under_threshold(
     assert agent.formatter.calls == 1
 
 
+async def test_compaction_batch_limit_caps_one_summary_task(
+    monkeypatch,
+) -> None:
+    """Large backlogs should not be summarized in one unbounded ReMe task."""
+    monkeypatch.setattr(
+        "adclaw.agents.hooks.memory_compaction.safe_count_message_tokens",
+        _fake_safe_count_message_tokens,
+    )
+    monkeypatch.setattr(
+        "adclaw.agents.hooks.memory_compaction.safe_count_str_tokens",
+        _fake_safe_count_str_tokens,
+    )
+    monkeypatch.setenv("ADCLAW_MEMORY_COMPACT_BATCH_MESSAGES", "3")
+
+    memory_manager = FakeMemoryManager()
+    hook = MemoryCompactionHook(
+        memory_manager=memory_manager,
+        memory_compact_threshold=50,
+        keep_recent=1,
+    )
+
+    messages = [
+        FakeMsg(id="sys", role="system", token_count=10),
+        *[
+            FakeMsg(id=f"old-{idx}", role="user", token_count=100)
+            for idx in range(10)
+        ],
+        FakeMsg(id="recent", role="user", token_count=10),
+    ]
+    agent = _make_agent(messages=messages)
+
+    await hook(agent=agent, kwargs={})
+
+    assert len(memory_manager.summary_task_messages) == 1
+    assert len(memory_manager.summary_task_messages[0]) == 3
+    assert len(memory_manager.compact_calls) == 1
+    assert len(memory_manager.compact_calls[0]["messages"]) == 3
+    assert len(agent.memory.marked_ids) == 3
+
+
 # ===================================================================
 # Gap #1: Multi-cycle hook integration test
 # ===================================================================

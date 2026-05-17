@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.5] - 2026-05-17
+
+### Changed
+- **Runtime startup optimizations**: memory services now use safer defaults, explicit ReMe enablement, background initialization, load guards, and diagnostics so small servers stay responsive during startup.
+- **Docker memory readiness**: release images preload the default embedding assets at build time and ship bounded memory-compaction defaults for more predictable first-run behavior.
+- **Shared memory continuity**: chat turns can be captured into Always-On Memory without embedding latency and surfaced across persona-scoped sessions when AOM capture is enabled.
+- **Channel idle efficiency**: QQ reconnect handling now uses bounded retry backoff to reduce idle churn during transient gateway or token refresh periods.
+
 ## [1.0.4] - 2026-05-10
 
 ### Added

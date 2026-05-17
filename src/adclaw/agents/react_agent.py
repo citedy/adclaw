@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, List, Literal, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Type
 
 from agentscope.agent import ReActAgent
 from agentscope.mcp import HttpStatefulClient, StdIOStatefulClient
@@ -52,13 +52,15 @@ from .tools import (
 from .tools.aom_query import create_aom_query_tool
 from .tools.skill_patcher import patch_skill_script, TOOL_SPEC as _PATCHER_TOOL_SPEC
 from .utils import process_file_and_media_blocks_in_message
-from ..agents.memory import MemoryManager
 from ..config import load_config
 from ..constant import (
     MEMORY_COMPACT_KEEP_RECENT,
     MEMORY_COMPACT_RATIO,
     WORKING_DIR,
 )
+
+if TYPE_CHECKING:
+    from ..agents.memory import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +94,7 @@ class AdClawAgent(ReActAgent):
         env_context: Optional[str] = None,
         enable_memory_manager: bool = True,
         mcp_clients: Optional[List[Any]] = None,
-        memory_manager: MemoryManager | None = None,
+        memory_manager: "MemoryManager | None" = None,
         aom_manager: Optional[Any] = None,
         max_iters: int = 50,
         max_input_length: int = 128 * 1024,  # 128K = 131072 tokens
@@ -298,7 +300,7 @@ class AdClawAgent(ReActAgent):
     def _setup_memory_manager(
         self,
         enable_memory_manager: bool,
-        memory_manager: MemoryManager | None,
+        memory_manager: "MemoryManager | None",
         namesake_strategy: NamesakeStrategy,
     ) -> None:
         """Setup memory manager and register memory search tool if enabled.

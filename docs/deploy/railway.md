@@ -49,7 +49,7 @@ You do **not** need a Citedy account to use AdClaw — Citedy MCP is opt-in.
 
 If you prefer to wire it up yourself:
 
-1. **New Project → Deploy from GitHub repo** → `Citedy/adclaw`. Or **Deploy from Docker Image** → `nttylock/adclaw:1.0.4`.
+1. **New Project → Deploy from GitHub repo** → `Citedy/adclaw`. Or **Deploy from Docker Image** → `nttylock/adclaw:1.0.5`.
 2. **Settings → Networking** → expose port `8088`, generate the public domain.
 3. **Settings → Build** → confirm builder is **Dockerfile** with path `deploy/Dockerfile` (read from `railway.json` automatically).
 4. **Settings → Deploy**:
@@ -88,15 +88,15 @@ If you only attach one, pick `/app/working` and accept that LLM keys live inside
 
 | Tag | Image size | Idle RAM | Best for |
 |---|---|---|---|
-| `nttylock/adclaw:1.0.4` (default pin) | ~4.2 GB | 600–800 MB | Full feature set — Chromium for browser/scraping/social skills |
-| `nttylock/adclaw:1.0.4-browser` | ~4.1 GB | similar | Browser-only, no Feishu/DingTalk channels |
-| `nttylock/adclaw:1.0.4-core` | ~2.7 GB | 250–400 MB | Lightweight — no Chromium, no desktop tools |
+| `nttylock/adclaw:1.0.5` (default pin) | ~4.2 GB | 600–800 MB | Full feature set — Chromium for browser/scraping/social skills |
+| `nttylock/adclaw:1.0.5-browser` | ~4.1 GB | similar | Browser-only, no Feishu/DingTalk channels |
+| `nttylock/adclaw:1.0.5-core` | ~2.7 GB | 250–400 MB | Lightweight — no Chromium, no desktop tools |
 
-Switch by editing **Settings → Source** to use a Docker Image source instead of GitHub repo, then set the image to `nttylock/adclaw:1.0.4-core`. Build is skipped — deploy is ~30 s.
+Switch by editing **Settings → Source** to use a Docker Image source instead of GitHub repo, then set the image to `nttylock/adclaw:1.0.5-core`. Build is skipped — deploy is ~30 s.
 
 If you need a reproducible release pin instead of the moving variant tags, use
 the versioned aliases published by the release workflow, for example
-`nttylock/adclaw:1.0.4-core` or `nttylock/adclaw:1.0.4-browser`.
+`nttylock/adclaw:1.0.5-core` or `nttylock/adclaw:1.0.5-browser`.
 
 ## Post-deploy workflow
 

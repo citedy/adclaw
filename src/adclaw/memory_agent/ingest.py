@@ -57,6 +57,7 @@ class IngestAgent:
         source_type: str = "manual",
         source_id: str = "",
         skip_llm: bool = False,
+        skip_embedding: bool = False,
         metadata: Optional[dict] = None,
     ) -> Memory:
         """Ingest a single piece of content into memory store."""
@@ -143,12 +144,13 @@ class IngestAgent:
             memory_type=memory_type,
         )
 
-        # Generate embedding
-        try:
-            embedding = await self.embedder.embed(content)
-        except Exception as exc:
-            logger.warning("Embedding failed: %s", exc)
-            embedding = None
+        # Generate embedding unless the caller is on a latency-critical path.
+        embedding = None
+        if not skip_embedding:
+            try:
+                embedding = await self.embedder.embed(content)
+            except Exception as exc:
+                logger.warning("Embedding failed: %s", exc)
 
         result = await self.store.insert_memory(memory, embedding=embedding)
         # Only notify if this is a genuinely new memory (not a dedup hit)
