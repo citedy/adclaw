@@ -18,6 +18,7 @@ from .query_error_dump import write_query_error_dump
 from .session import SafeJSONSession
 from .utils import build_env_context
 from ..channels.schema import DEFAULT_CHANNEL
+from ...agents.model_factory import create_model_and_formatter
 from ...agents.persona_manager import PersonaManager
 from ...agents.react_agent import AdClawAgent
 from ...config import load_config
@@ -46,6 +47,11 @@ _SESSION_STATE_TB_MARKERS = (
     "formatter", "memory_compaction", "state_dict",
     "_strip_missing", "_format", "load_state", "TemporaryMemory",
     "_openai_formatter", "_to_openai_image_url",
+)
+
+_STALE_SESSION_BAD_REQUEST_MARKERS = (
+    "invalid_parameter",
+    "invalid api parameter",
 )
 
 _TRUTHY_ENV_VALUES = ("1", "true", "yes", "on")
@@ -133,6 +139,12 @@ def _is_session_state_error(exc: Exception) -> bool:
         return False
     tb_text = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     return any(marker in tb_text for marker in _SESSION_STATE_TB_MARKERS)
+
+
+def _is_stale_session_bad_request(exc: Exception) -> bool:
+    """Return True if a provider rejected stale formatted session history."""
+    err_str = str(exc).lower()
+    return any(marker in err_str for marker in _STALE_SESSION_BAD_REQUEST_MARKERS)
 
 
 class AgentRunner(Runner):
@@ -407,8 +419,7 @@ class AgentRunner(Runner):
 
                 # --- Retry on stale-session BadRequestError ---
                 if isinstance(first_err, _OAIBadRequest):
-                    err_str = str(first_err).lower()
-                    if "invalid_parameter" in err_str:
+                    if _is_stale_session_bad_request(first_err):
                         logger.warning(
                             "LLM rejected request (likely stale session), "
                             "clearing history and retrying: %s",

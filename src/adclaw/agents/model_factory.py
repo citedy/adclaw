@@ -31,12 +31,51 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _strip_missing_images(msgs):
-    """Remove image content blocks that reference missing local files.
+_LOCAL_FILE_URL_FIELDS = (
+    "image_url",
+    "file_url",
+    "video_url",
+    "audio_url",
+    "url",
+)
+
+
+def _is_missing_local_file_url(url: str) -> bool:
+    if not isinstance(url, str) or not url.startswith("file://"):
+        return False
+    raw = url.removeprefix("file://")
+    return bool(raw) and not os.path.isfile(raw)
+
+
+def _block_missing_local_file_url(block) -> str:
+    """Return the missing file:// URL referenced by a content block."""
+    for field in _LOCAL_FILE_URL_FIELDS:
+        url = getattr(block, field, None)
+        if _is_missing_local_file_url(url):
+            return url
+
+    if isinstance(block, dict):
+        for field in _LOCAL_FILE_URL_FIELDS:
+            url = block.get(field)
+            if _is_missing_local_file_url(url):
+                return url
+
+        source = block.get("source")
+        if isinstance(source, dict):
+            url = source.get("url")
+            if _is_missing_local_file_url(url):
+                return url
+
+    return ""
+
+
+def _strip_missing_local_files(msgs):
+    """Remove content blocks that reference missing local files.
 
     Agentscope's formatter crashes with ValueError when a local image
-    file no longer exists (e.g. Telegram photos cleaned up between
-    sessions). This strips those blocks so formatting can proceed.
+    file no longer exists, and some OpenAI-compatible providers reject
+    stale local file blocks with BadRequest errors. This strips those
+    blocks so formatting can proceed after container/runtime changes.
     """
     for msg in msgs:
         content = getattr(msg, "content", None)
@@ -44,22 +83,26 @@ def _strip_missing_images(msgs):
             continue
         cleaned = []
         for block in content:
-            if hasattr(block, "image_url"):
-                url = block.image_url or ""
-                raw = url.removeprefix("file://")
-                if raw and not raw.startswith(("http://", "https://", "data:")) and not os.path.isfile(raw):
-                    logger.warning("Dropping missing image from message: %s", url)
-                    continue
-            elif isinstance(block, dict) and block.get("type") == "image":
-                url = block.get("source", {}).get("url", "") or block.get("image_url", "")
-                raw = url.removeprefix("file://")
-                if raw and not raw.startswith(("http://", "https://", "data:")) and not os.path.isfile(raw):
-                    logger.warning("Dropping missing image from message: %s", url)
-                    continue
+            missing_url = _block_missing_local_file_url(block)
+            if missing_url:
+                logger.warning(
+                    "Dropping missing local file from message: %s",
+                    missing_url,
+                )
+                continue
             cleaned.append(block)
         if len(cleaned) != len(content):
-            msg.content = cleaned if cleaned else (msg.get_text_content() or "[image removed]")
+            msg.content = (
+                cleaned
+                if cleaned
+                else (msg.get_text_content() or "[local file removed]")
+            )
     return msgs
+
+
+def _strip_missing_images(msgs):
+    """Backward-compatible alias for older tests/imports."""
+    return _strip_missing_local_files(msgs)
 
 
 # Mapping from chat model class to formatter class
@@ -107,10 +150,10 @@ def _create_file_block_support_formatter(
             """Override to sanitize tool messages before formatting.
 
             This prevents OpenAI API errors from improperly paired
-            tool messages and removes references to missing local images.
+            tool messages and removes references to missing local files.
             """
             msgs = _sanitize_tool_messages(msgs)
-            msgs = _strip_missing_images(msgs)
+            msgs = _strip_missing_local_files(msgs)
             messages = await super()._format(msgs)
             return _strip_top_level_message_name(messages)
 
