@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.7] - 2026-05-19
+
+### Fixed
+- **Hosted Host AI quota UX**: AdClaw now shows a clear included-message limit notice instead of a generic fallback failure when hosted Host AI quota is exhausted.
+- **Fallback de-duplication**: provider fallback skips the active Host AI provider/model slot so a quota-limited hosted default is not retried as its own fallback.
+- **Runner diagnostics hardening**: query logs no longer include user message previews, debug dumps explicitly keep `0600` file permissions, and persona-scoped session IDs are sanitized before filesystem persistence.
+
 ## [1.0.6] - 2026-05-18
 
 ### Changed
@@ -50,9 +57,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dashboard page**: persona status cards with model, skills, cron preview
 - **Per-persona chat tabs**: isolated sessions with shared AOM memory
 - **@mention selector**: persona chip bar above chat input
-- **DigitalOcean and Railway deploy entrypoints** for faster hosted setup
+- **Landing page** at website-landing/ (here.now-inspired design)
 - Partner referral links for Aliyun and Z.AI in Welcome wizard
-- 31 Control-surface tests + live E2E coverage
+- 31 Mission Control tests + live E2E script
 
 ### Fixed
 - PermissionError on `/app/logs` during MemoryManager start
