@@ -118,7 +118,9 @@ jobs:
                   )
                   for item in manifest.get("manifests", [])
               }
-              if platforms and not required_platforms.issubset(platforms):
+              if not platforms:
+                  raise SystemExit(f"{tag} is not a multi-platform manifest list")
+              if not required_platforms.issubset(platforms):
                   raise SystemExit(f"{tag} is missing required platforms: {sorted(platforms)}")
               return digest
 
