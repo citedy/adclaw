@@ -2,13 +2,13 @@
 
 # AdClaw
 
-**Open-source AI marketing agent team powered by [Citedy](https://www.citedy.com)**
+**AI Marketing Agent Team powered by [Citedy](https://www.citedy.com)**
 
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Repo-black.svg?logo=github)](https://github.com/Citedy/adclaw)
 [![License](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=License)](LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.10%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 
-**Deploy on DigitalOcean or Railway in minutes**
+**Deploys in 60 seconds in 1 click**
 
 <a href="https://cloud.digitalocean.com/droplets/new?onboarding_origin=marketplace&appId=224129502&image=citedy-adclaw&activation_redirect=%2Fdroplets%2Fnew%3FappId%3D224129502%26image%3Dcitedy-adclaw"><img src="https://img.shields.io/badge/Deploy_on-DigitalOcean-0080FF?style=for-the-badge&logo=digitalocean&logoColor=white" alt="Deploy on DigitalOcean" height="40"></a>
 &nbsp;
@@ -18,7 +18,7 @@
 
 ---
 
-## What ships with AdClaw?
+## What is AdClaw?
 
 `pip install adclaw` — and you get a **multi-agent AI marketing team** with:
 
@@ -156,7 +156,7 @@ docker run -d --name adclaw --restart unless-stopped \
   -p 8088:8088 \
   -v adclaw-data:/app/working \
   -v adclaw-secret:/app/working.secret \
-  nttylock/adclaw:1.0.6
+  nttylock/adclaw:1.0.7
 ```
 
 AdClaw's release workflow publishes images for both `linux/amd64` and
@@ -175,7 +175,7 @@ cp .env.example .env  # edit with your keys
 docker compose up --build -d
 ```
 
-> Console build outputs under `src/adclaw/console/` are intentionally tracked because the packaged app, Docker images, and release artifacts ship those prebuilt assets. After frontend changes, run `cd console && npm run build` before commit so the tracked bundle stays in sync with source.
+> Console build outputs under `src/adclaw/console/` are intentionally tracked because the packaged app, Docker image, and public mirror ship those prebuilt assets. After frontend changes, run `cd console && npm run build` before commit so the tracked bundle stays in sync with source.
 
 ---
 
@@ -331,6 +331,18 @@ PUT  /api/memory/config              — update AOM config
 POST /api/memory/memories/upload     — upload and ingest a file (text, image, audio, PDF)
 GET  /api/memory/multimodal/status   — check multimodal processing availability
 ```
+
+### Live Testing
+
+```bash
+# Inject 110+ memories, test near-dedup, run consolidation, verify stats
+python3 scripts/test_memory_live.py
+
+# Clean up test data
+python3 scripts/test_memory_live.py --cleanup
+```
+
+---
 
 ## Credits & Pricing
 

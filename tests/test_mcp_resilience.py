@@ -685,7 +685,7 @@ async def test_query_handler_uses_model_factory_for_provider_fallback(monkeypatc
             self.save_calls += 1
 
     class _FakePersonaManager:
-        all_personas = []
+        all_personas = ()
 
         def __init__(self, **kwargs) -> None:  # noqa: ARG002
             return
@@ -715,7 +715,10 @@ async def test_query_handler_uses_model_factory_for_provider_fallback(monkeypatc
         ),
     )
     fallback_cfg = SimpleNamespace(enabled=True, timeout_seconds=1)
-    resolved_fallback = SimpleNamespace(model="fallback-model")
+    resolved_fallback = SimpleNamespace(
+        provider_id="fallback-provider",
+        model="fallback-model",
+    )
     factory_calls = []
     stream_calls = 0
 
@@ -758,6 +761,14 @@ async def test_query_handler_uses_model_factory_for_provider_fallback(monkeypatc
     )
     monkeypatch.setattr(
         provider_store,
+        "get_active_llm_config",
+        lambda: SimpleNamespace(
+            provider_id="primary-provider",
+            model="primary-model",
+        ),
+    )
+    monkeypatch.setattr(
+        provider_store,
         "resolve_fallback_chain",
         lambda: [resolved_fallback],
     )
@@ -789,5 +800,306 @@ async def test_query_handler_uses_model_factory_for_provider_fallback(monkeypatc
     assert factory_calls == [(resolved_fallback, 1)]
     assert any("Switching to fallback-model" in str(content) for content, _ in events)
     assert ("fallback reply", True) in events
+    assert runner.session.load_calls == 1
+    assert runner.session.save_calls == 1
+
+
+async def test_query_handler_skips_duplicate_active_fallback(monkeypatch):
+    """Fallback chain should not retry the active provider/model slot."""
+    import httpx
+    from agentscope.message import Msg
+    from openai import APITimeoutError
+
+    from adclaw.providers import store as provider_store
+
+    class _FakeAgent:
+        def __init__(self, **kwargs) -> None:
+            self.model = kwargs.get(
+                "model",
+                SimpleNamespace(model_name="primary-model"),
+            )
+            self._env_context = kwargs.get("env_context")
+            self._mcp_clients = kwargs.get("mcp_clients", [])
+            self._namesake_strategy = "skip"
+            self._persona = kwargs.get("persona")
+            self._team_summary = kwargs.get("team_summary", "")
+
+        async def register_mcp_clients(self) -> None:
+            return
+
+        def set_console_output_enabled(self, enabled: bool) -> None:  # noqa: ARG002
+            return
+
+        def rebuild_sys_prompt(self) -> None:
+            return
+
+        def __call__(self, msgs):  # noqa: ANN001
+            return self
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.load_calls = 0
+            self.save_calls = 0
+
+        async def load_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.load_calls += 1
+
+        async def save_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.save_calls += 1
+
+    class _FakePersonaManager:
+        all_personas = []
+
+        def __init__(self, **kwargs) -> None:  # noqa: ARG002
+            return
+
+        def ensure_dirs(self) -> None:
+            return
+
+        def resolve_tag(self, msg_text: str):  # noqa: ANN201, ARG002
+            return None
+
+        def get_coordinator(self):  # noqa: ANN201
+            return None
+
+        def get_team_summary(self) -> str:
+            return ""
+
+    class _DummyInputMsg:
+        content = "hello"
+
+        def get_text_content(self) -> str:
+            return "hello"
+
+    cfg = SimpleNamespace(
+        agents=SimpleNamespace(
+            running=SimpleNamespace(max_iters=1, max_input_length=2048),
+            personas=[],
+        ),
+    )
+    fallback_cfg = SimpleNamespace(enabled=True, timeout_seconds=1)
+    duplicate = SimpleNamespace(
+        provider_id="adclaw-host-ai",
+        model="@cf/google/gemma-4-26b-a4b-it",
+    )
+    fallback = SimpleNamespace(
+        provider_id="customer-openai",
+        model="gpt-4.1-mini",
+    )
+    factory_calls = []
+    stream_calls = 0
+
+    def _fake_create_model_and_formatter(model_cfg, timeout_seconds=None):
+        factory_calls.append((model_cfg, timeout_seconds))
+        return SimpleNamespace(model_name=model_cfg.model), object()
+
+    async def _fake_stream_printing_messages(*, agents, coroutine_task):  # noqa: ARG001
+        nonlocal stream_calls
+        stream_calls += 1
+        if stream_calls == 1:
+            raise APITimeoutError(
+                request=httpx.Request("POST", "https://llm.example.test"),
+            )
+        yield Msg(name="assistant", role="assistant", content="fallback reply"), True
+
+    async def _empty_context(**kwargs) -> str:  # noqa: ARG001
+        return ""
+
+    async def _noop_capture(**kwargs) -> None:  # noqa: ARG001
+        return
+
+    monkeypatch.setattr(runner_module, "AdClawAgent", _FakeAgent)
+    monkeypatch.setattr(runner_module, "PersonaManager", _FakePersonaManager)
+    monkeypatch.setattr(runner_module, "load_config", lambda: cfg)
+    monkeypatch.setattr(
+        runner_module,
+        "build_env_context",
+        lambda **kwargs: "env",
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "stream_printing_messages",
+        _fake_stream_printing_messages,
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "get_fallback_config",
+        lambda: fallback_cfg,
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "get_active_llm_config",
+        lambda: duplicate,
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "resolve_fallback_chain",
+        lambda: [duplicate, fallback],
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "create_model_and_formatter",
+        _fake_create_model_and_formatter,
+    )
+
+    runner = AgentRunner()
+    runner.session = _FakeSession()
+    runner._build_shared_persona_memory_context = _empty_context
+    runner._capture_chat_memory = _noop_capture
+
+    request = SimpleNamespace(
+        session_id="s1",
+        user_id="u1",
+        channel="telegram",
+    )
+
+    events = []
+    async for msg, last in runner.query_handler(
+        [_DummyInputMsg()],
+        request=request,
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert factory_calls == [(fallback, 1)]
+    assert any("Switching to gpt-4.1-mini" in str(content) for content, _ in events)
+    assert ("fallback reply", True) in events
+
+
+async def test_query_handler_renders_host_ai_limit_without_generic_error(monkeypatch):
+    """Host AI quota 429 should produce a stable limit message."""
+    import httpx
+    from openai import RateLimitError
+
+    from adclaw.providers import store as provider_store
+
+    class _FakeAgent:
+        def __init__(self, **kwargs) -> None:
+            self.model = SimpleNamespace(
+                model_name="@cf/google/gemma-4-26b-a4b-it",
+            )
+            self._env_context = kwargs.get("env_context")
+            self._mcp_clients = kwargs.get("mcp_clients", [])
+            self._namesake_strategy = "skip"
+            self._persona = kwargs.get("persona")
+            self._team_summary = kwargs.get("team_summary", "")
+
+        async def register_mcp_clients(self) -> None:
+            return
+
+        def set_console_output_enabled(self, enabled: bool) -> None:  # noqa: ARG002
+            return
+
+        def rebuild_sys_prompt(self) -> None:
+            return
+
+        def __call__(self, msgs):  # noqa: ANN001
+            return self
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.load_calls = 0
+            self.save_calls = 0
+
+        async def load_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.load_calls += 1
+
+        async def save_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.save_calls += 1
+
+    class _FakePersonaManager:
+        all_personas = []
+
+        def __init__(self, **kwargs) -> None:  # noqa: ARG002
+            return
+
+        def ensure_dirs(self) -> None:
+            return
+
+        def resolve_tag(self, msg_text: str):  # noqa: ANN201, ARG002
+            return None
+
+        def get_coordinator(self):  # noqa: ANN201
+            return None
+
+        def get_team_summary(self) -> str:
+            return ""
+
+    class _DummyInputMsg:
+        content = "hello"
+
+        def get_text_content(self) -> str:
+            return "hello"
+
+    cfg = SimpleNamespace(
+        agents=SimpleNamespace(
+            running=SimpleNamespace(max_iters=1, max_input_length=2048),
+            personas=[],
+        ),
+    )
+    response = httpx.Response(
+        429,
+        request=httpx.Request(
+            "POST",
+            "https://real.adclaw.app/api/host-ai/v1/chat/completions",
+        ),
+    )
+    quota_error = RateLimitError(
+        "adclaw_host_ai_limit_reached",
+        response=response,
+        body={"error": {"code": "adclaw_host_ai_limit_reached"}},
+    )
+
+    async def _fake_stream_printing_messages(*, agents, coroutine_task):  # noqa: ARG001
+        if False:
+            yield None
+        raise quota_error
+
+    async def _empty_context(**kwargs) -> str:  # noqa: ARG001
+        return ""
+
+    async def _noop_capture(**kwargs) -> None:  # noqa: ARG001
+        return
+
+    monkeypatch.setattr(runner_module, "AdClawAgent", _FakeAgent)
+    monkeypatch.setattr(runner_module, "PersonaManager", _FakePersonaManager)
+    monkeypatch.setattr(runner_module, "load_config", lambda: cfg)
+    monkeypatch.setattr(
+        runner_module,
+        "build_env_context",
+        lambda **kwargs: "env",
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "stream_printing_messages",
+        _fake_stream_printing_messages,
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "get_fallback_config",
+        lambda: SimpleNamespace(enabled=False, timeout_seconds=1),
+    )
+
+    runner = AgentRunner()
+    runner.session = _FakeSession()
+    runner._build_shared_persona_memory_context = _empty_context
+    runner._capture_chat_memory = _noop_capture
+
+    request = SimpleNamespace(
+        session_id="s1",
+        user_id="u1",
+        channel="telegram",
+    )
+
+    events = []
+    async for msg, last in runner.query_handler(
+        [_DummyInputMsg()],
+        request=request,
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert len(events) == 1
+    assert events[0][1] is True
+    assert "Included AdClaw Host AI messages" in str(events[0][0])
+    assert "fallback model" not in str(events[0][0]).lower()
     assert runner.session.load_calls == 1
     assert runner.session.save_calls == 1

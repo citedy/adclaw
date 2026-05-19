@@ -88,6 +88,7 @@ def write_query_error_dump(
             dir=tempfile.gettempdir(),
             text=True,
         )
+        os.fchmod(fd, 0o600)
         try:
             with open(fd, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)

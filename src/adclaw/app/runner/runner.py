@@ -15,7 +15,7 @@ from agentscope_runtime.engine.schemas.agent_schemas import AgentRequest
 from dotenv import load_dotenv
 
 from .query_error_dump import write_query_error_dump
-from .session import SafeJSONSession
+from .session import SafeJSONSession, sanitize_filename
 from .utils import build_env_context
 from ..channels.schema import DEFAULT_CHANNEL
 from ...agents.model_factory import create_model_and_formatter
@@ -52,6 +52,11 @@ _SESSION_STATE_TB_MARKERS = (
 _STALE_SESSION_BAD_REQUEST_MARKERS = (
     "invalid_parameter",
     "invalid api parameter",
+)
+
+_HOST_AI_LIMIT_MARKERS = (
+    "adclaw_host_ai_limit_reached",
+    "host_ai_limit_reached",
 )
 
 _TRUTHY_ENV_VALUES = ("1", "true", "yes", "on")
@@ -145,6 +150,58 @@ def _is_stale_session_bad_request(exc: Exception) -> bool:
     """Return True if a provider rejected stale formatted session history."""
     err_str = str(exc).lower()
     return any(marker in err_str for marker in _STALE_SESSION_BAD_REQUEST_MARKERS)
+
+
+def _exception_search_text(exc: Exception) -> str:
+    """Collect safe exception text for provider error classification."""
+    parts = [str(exc)]
+    body = getattr(exc, "body", None)
+    if body is not None:
+        parts.append(repr(body))
+    response = getattr(exc, "response", None)
+    response_text = getattr(response, "text", None)
+    if response_text:
+        parts.append(str(response_text))
+    return "\n".join(parts).lower()
+
+
+def _is_host_ai_limit_error(exc: Exception) -> bool:
+    """Return True when the managed Host AI quota gate rejected the call."""
+    text = _exception_search_text(exc)
+    if any(marker in text for marker in _HOST_AI_LIMIT_MARKERS):
+        return True
+    status_code = getattr(exc, "status_code", None)
+    response = getattr(exc, "response", None)
+    if status_code is None and response is not None:
+        status_code = getattr(response, "status_code", None)
+    return status_code == 429 and "host ai" in text and "limit" in text
+
+
+def _host_ai_limit_message() -> str:
+    """Customer-facing copy for the hosted monthly Host AI cap."""
+    return (
+        "Included AdClaw Host AI messages for this billing period are used. "
+        "Connect your own LLM key in Settings -> Models to continue now, "
+        "or wait for the next billing period when the included messages reset."
+    )
+
+
+def _same_model_slot(candidate, primary) -> bool:
+    """Return True when a fallback slot points at the current provider/model."""
+    if candidate is None or primary is None:
+        return False
+    candidate_provider = getattr(candidate, "provider_id", "")
+    primary_provider = getattr(primary, "provider_id", "")
+    candidate_model = getattr(candidate, "model", "")
+    primary_model = getattr(primary, "model", "")
+    return bool(
+        candidate_provider
+        and primary_provider
+        and candidate_model
+        and primary_model
+        and candidate_provider == primary_provider
+        and candidate_model == primary_model
+    )
 
 
 class AgentRunner(Runner):
@@ -260,7 +317,7 @@ class AgentRunner(Runner):
                         "user_id": user_id,
                         "channel": channel,
                         "msgs_len": len(msgs) if msgs else 0,
-                        "msgs_str": str(msgs)[:300] + "...",
+                        "msgs_redacted": True,
                     },
                     ensure_ascii=False,
                     indent=2,
@@ -310,7 +367,7 @@ class AgentRunner(Runner):
             if persona:
                 self._session_persona_map[request.session_id] = persona.id
                 persona_id_for_memory = persona.id
-                session_id = f"{persona.id}::{session_id}"
+                session_id = sanitize_filename(f"{persona.id}::{session_id}")
 
             shared_memory_context = await self._build_shared_persona_memory_context(
                 base_session_id=base_session_id,
@@ -366,7 +423,8 @@ class AgentRunner(Runner):
             agent.set_console_output_enabled(enabled=False)
 
             logger.debug(
-                f"Agent Query msgs {msgs}",
+                "Agent Query messages redacted: count=%s",
+                len(msgs) if msgs else 0,
             )
 
             name = "New Chat"
@@ -468,15 +526,63 @@ class AgentRunner(Runner):
                     raise first_err  # request itself is broken
 
                 from ...providers.store import (
+                    get_active_llm_config,
                     get_fallback_config,
                     resolve_fallback_chain,
                 )
+                host_ai_limit_reached = _is_host_ai_limit_error(first_err)
+                non_host_provider_error_seen = not host_ai_limit_reached
+
+                from agentscope.message import Msg
+
+                def _yield_host_ai_limit_msg():
+                    return Msg(
+                        name="system",
+                        role="assistant",
+                        content=_host_ai_limit_message(),
+                    )
+
                 fallback_cfg = get_fallback_config()
                 if not fallback_cfg.enabled:
+                    if host_ai_limit_reached:
+                        assistant_text = _host_ai_limit_message()
+                        yield _yield_host_ai_limit_msg(), True
+                        return
                     raise
 
                 resolved_chain = resolve_fallback_chain()
                 if not resolved_chain:
+                    if host_ai_limit_reached:
+                        assistant_text = _host_ai_limit_message()
+                        yield _yield_host_ai_limit_msg(), True
+                        return
+                    raise
+
+                try:
+                    primary_cfg = get_active_llm_config()
+                except (KeyError, ValueError, AttributeError) as cfg_err:
+                    logger.debug(
+                        "Could not resolve active LLM for fallback de-dupe: %s",
+                        cfg_err,
+                    )
+                    primary_cfg = None
+
+                original_fallback_count = len(resolved_chain)
+                resolved_chain = [
+                    cfg for cfg in resolved_chain
+                    if not _same_model_slot(cfg, primary_cfg)
+                ]
+                skipped_same_slot_count = original_fallback_count - len(resolved_chain)
+                if skipped_same_slot_count:
+                    logger.warning(
+                        "Skipped %d fallback slot(s) matching the active LLM",
+                        skipped_same_slot_count,
+                    )
+                if not resolved_chain:
+                    if host_ai_limit_reached:
+                        assistant_text = _host_ai_limit_message()
+                        yield _yield_host_ai_limit_msg(), True
+                        return
                     raise
 
                 primary_model = (
@@ -491,8 +597,6 @@ class AgentRunner(Runner):
                     "trying fallback chain (%d candidates)",
                     primary_model, err_type, len(resolved_chain),
                 )
-
-                from agentscope.message import Msg
 
                 for fb_cfg in resolved_chain:
                     try:
@@ -550,6 +654,13 @@ class AgentRunner(Runner):
                         )
                         raise
                     except _OAIAPIError as fb_err:
+                        fb_host_ai_limit_reached = _is_host_ai_limit_error(fb_err)
+                        host_ai_limit_reached = (
+                            host_ai_limit_reached
+                            or fb_host_ai_limit_reached
+                        )
+                        if not fb_host_ai_limit_reached:
+                            non_host_provider_error_seen = True
                         logger.warning(
                             "Fallback model %s failed with API error: %s",
                             fb_cfg.model, fb_err,
@@ -557,14 +668,20 @@ class AgentRunner(Runner):
                         continue
 
                 # All fallbacks exhausted — notify user and re-raise
+                exhausted_content = (
+                    _host_ai_limit_message()
+                    if host_ai_limit_reached and not non_host_provider_error_seen
+                    else (
+                        f"All {len(resolved_chain)} fallback model(s) "
+                        "also failed. Please check your provider configurations."
+                    )
+                )
                 exhausted_msg = Msg(
                     name="system",
                     role="assistant",
-                    content=(
-                        f"All {len(resolved_chain)} fallback model(s) "
-                        "also failed. Please check your provider configurations."
-                    ),
+                    content=exhausted_content,
                 )
+                assistant_text = exhausted_content
                 yield exhausted_msg, False
                 raise first_err
 
