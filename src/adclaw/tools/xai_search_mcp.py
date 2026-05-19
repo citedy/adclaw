@@ -19,7 +19,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 XAI_API_URL = "https://api.x.ai/v1/responses"
-XAI_MODEL = "grok-4-1-fast-non-reasoning"
+XAI_MODEL = "grok-4.20-non-reasoning"
 
 
 def _call_xai(query: str, tools: list[dict], api_key: str) -> dict:

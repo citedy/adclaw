@@ -104,19 +104,9 @@ ANTHROPIC_MODELS: List[ModelInfo] = [
 ]
 
 XAI_MODELS: List[ModelInfo] = [
-    ModelInfo(
-        id="grok-4-1-fast-reasoning",
-        name="Grok 4.1 Fast (reasoning)",
-    ),
-    ModelInfo(
-        id="grok-4-1-fast-non-reasoning",
-        name="Grok 4.1 Fast (non-reasoning)",
-    ),
-    ModelInfo(id="grok-code-fast-1", name="Grok Code Fast 1"),
-    ModelInfo(
-        id="grok-4.20-beta-0309-non-reasoning",
-        name="Grok 4.20 Beta (non-reasoning)",
-    ),
+    ModelInfo(id="grok-4.3", name="Grok 4.3"),
+    ModelInfo(id="grok-4.20-reasoning", name="Grok 4.20 Reasoning"),
+    ModelInfo(id="grok-4.20-non-reasoning", name="Grok 4.20 Non-Reasoning"),
 ]
 
 GEMINI_MODELS: List[ModelInfo] = [
