@@ -25,25 +25,32 @@ Same as casual but reversed emphasis:
 **Open-source AI marketing agent team.<br>Self-host or run hosted.**
 
 ### Sub
-A fully reworked fork of CoPaw (AgentScope). Multi-agent personas, dual-layer memory with contradiction detection, 23 LLM providers with auto-fallback, 208-pattern security scanner, 130+ marketing skills via Citedy MCP. Apache 2.0.
+Multi-agent personas. Dual-layer memory with contradiction detection. 23 LLM providers with auto-fallback. 208-pattern security scanner. 130+ marketing skills, 60+ Citedy MCP tools. Apache 2.0.
 
-### Install (prominent — keep current install block as is)
+### Install (keep current install block, including Docker variant selector)
 
+One-liner:
 ```bash
 curl -fsSL https://get.adclaw.app | bash
 ```
 
-Or:
-
+Python:
 ```bash
 pip install adclaw
 adclaw init
 adclaw app
 ```
 
-### Deploy buttons (current)
-- Deploy on DigitalOcean (VPS from $10)
-- Deploy on Railway (Hobby plan, ≥2GB RAM)
+Docker — pick a variant:
+```bash
+docker run -d -p 8088:8088 nttylock/adclaw:latest     # full,    4.2 GB
+docker run -d -p 8088:8088 nttylock/adclaw:browser    # browser, 4.1 GB
+docker run -d -p 8088:8088 nttylock/adclaw:core       # minimal, 2.7 GB
+```
+
+### Deploy buttons (current — keep)
+- Deploy on DigitalOcean (VPS from $10) — partner
+- Deploy on Railway (Hobby plan, ≥2GB RAM) — partner
 
 ### Secondary CTA
 `Or run our hosted version — $10/mo →` (links to `/pricing`)
@@ -152,33 +159,7 @@ $10–79/mo. No infra. 90-second launch. Includes Citedy credits. → Pricing
 
 ---
 
-## Section 8 — What's new in the fork (NEW)
-
-### Title
-**This is not CoPaw with a logo change.**
-
-### Sub
-80%+ of the code is rewritten. Here's what was added:
-
-- +68 skills (130+ total) — SEO, ads, content, social, growth hacking, analytics
-- Multi-agent persona system with SOUL.md, coordinator delegation, per-persona cron
-- AOM (Always-On Memory) layer on top of ReMe — vector + FTS5 + typed categories + contradiction detection
-- R1-R5 memory optimization (5 layers, four deterministic)
-- 208-pattern static security scanner + analysis-first LLM audit
-- 33-pattern memory sanitizer (prompt injection defense)
-- LLM auto-fallback chain with timeout (configurable per-persona)
-- here.now file publishing integration
-- Citedy MCP server with 60+ marketing tools
-- AgentHub karma-economy integration
-- English-only UI (all Chinese text removed from console + runtime)
-- Per-persona chat tabs with isolated sessions
-
-Source: [github.com/Citedy/adclaw](https://github.com/Citedy/adclaw)
-Diff vs upstream: [github.com/Citedy/adclaw/compare/copaw](#)
-
----
-
-## Section 9 — License / Open source
+## Section 8 — License / Open source
 
 ### Title
 **Apache 2.0. Fork it.**
@@ -193,7 +174,7 @@ CTAs:
 
 ---
 
-## Section 10 — Footer
+## Section 9 — Footer
 
 Same as casual but flipped emphasis:
 
@@ -214,9 +195,9 @@ Community:    Clawsy  ·  Discord  ·  Discussions
 
 This page is **mostly the current home page** with minor refinements:
 - Add architecture cards section (deeper than current "What you get")
-- Add "What's new in the fork" section (currently buried in `/docs/comparison.md`)
 - Add deployment options 4-card grid (currently scattered)
 - Keep the comparison table as-is
 - Keep Clawsy AgentHub section as-is
+- Keep the Docker variant selector in the install block (do not strip it)
 
 The casual home page is the **new work**. This dev page is **current home, repositioned**.
