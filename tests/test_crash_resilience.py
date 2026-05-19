@@ -245,3 +245,26 @@ class TestIsSessionStateError:
             memory_compaction_hook()
         except ValueError as e:
             assert _is_session_state_error(e) is True
+
+
+class TestIsStaleSessionBadRequest:
+    def test_openai_invalid_parameter_marker(self):
+        from adclaw.app.runner.runner import _is_stale_session_bad_request
+
+        exc = Exception("invalid_parameter: image URL does not exist")
+        assert _is_stale_session_bad_request(exc) is True
+
+    def test_zai_invalid_api_parameter_marker(self):
+        from adclaw.app.runner.runner import _is_stale_session_bad_request
+
+        exc = Exception(
+            "Error code: 400 - {'error': {'code': '1210', "
+            "'message': 'Invalid API parameter, please check the documentation.'}}",
+        )
+        assert _is_stale_session_bad_request(exc) is True
+
+    def test_unrelated_bad_request_marker(self):
+        from adclaw.app.runner.runner import _is_stale_session_bad_request
+
+        exc = Exception("insufficient quota")
+        assert _is_stale_session_bad_request(exc) is False

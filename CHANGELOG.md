@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.6] - 2026-05-18
+
+### Changed
+- **Session history resilience**: persisted chat history now ignores stale local media references after container or runtime path changes, keeping long-running deployments responsive across redeploys.
+- **Provider fallback reliability**: fallback model initialization now reuses the shared model factory path so provider recovery stays consistent with normal runtime selection.
+- **xAI model catalog refresh**: updated built-in Grok text-chat options to the current chat-compatible `grok-4.3` and `grok-4.20` lineup.
+
 ## [1.0.5] - 2026-05-17
 
 ### Changed
