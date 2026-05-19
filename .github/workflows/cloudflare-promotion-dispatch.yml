@@ -33,9 +33,6 @@ jobs:
       contents: read
 
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Resolve version
         id: version
         env:
@@ -67,25 +64,74 @@ jobs:
           VERSION: ${{ steps.version.outputs.clean }}
         run: |
           set -euo pipefail
-          resolve_digest() {
-            local image="$1"
-            docker buildx imagetools inspect "${image}" | awk '/^Digest:/ {print $2; exit}'
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.parse
+          import urllib.request
+
+          namespace = "nttylock"
+          repo = "adclaw"
+          version = os.environ["VERSION"]
+          digest_pattern = re.compile(r"sha256:[0-9a-f]{64}")
+          required_platforms = {("linux", "amd64"), ("linux", "arm64")}
+          accept = ", ".join(
+              [
+                  "application/vnd.docker.distribution.manifest.list.v2+json",
+                  "application/vnd.oci.image.index.v1+json",
+                  "application/vnd.docker.distribution.manifest.v2+json",
+              ]
+          )
+
+          def read_json(url, headers=None):
+              request = urllib.request.Request(url, headers=headers or {})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return response, json.loads(response.read().decode("utf-8"))
+
+          token_url = "https://auth.docker.io/token?" + urllib.parse.urlencode(
+              {
+                  "service": "registry.docker.io",
+                  "scope": f"repository:{namespace}/{repo}:pull",
+              }
+          )
+          _, token_body = read_json(token_url)
+          token = token_body["token"]
+
+          def resolve_digest(tag):
+              url = f"https://registry-1.docker.io/v2/{namespace}/{repo}/manifests/{tag}"
+              response, manifest = read_json(
+                  url,
+                  {
+                      "Accept": accept,
+                      "Authorization": f"Bearer {token}",
+                  },
+              )
+              digest = response.headers.get("Docker-Content-Digest", "")
+              if not digest_pattern.fullmatch(digest):
+                  raise SystemExit(f"Resolved invalid digest for {tag}: {digest!r}")
+
+              platforms = {
+                  (
+                      item.get("platform", {}).get("os"),
+                      item.get("platform", {}).get("architecture"),
+                  )
+                  for item in manifest.get("manifests", [])
+              }
+              if platforms and not required_platforms.issubset(platforms):
+                  raise SystemExit(f"{tag} is missing required platforms: {sorted(platforms)}")
+              return digest
+
+          outputs = {
+              "core": resolve_digest(f"{version}-core"),
+              "browser": resolve_digest(f"{version}-browser"),
+              "full": resolve_digest(f"{version}-full"),
           }
 
-          core_digest="$(resolve_digest "docker.io/${IMAGE}:${VERSION}-core")"
-          browser_digest="$(resolve_digest "docker.io/${IMAGE}:${VERSION}-browser")"
-          full_digest="$(resolve_digest "docker.io/${IMAGE}:${VERSION}-full")"
-
-          for value in "${core_digest}" "${browser_digest}" "${full_digest}"; do
-            if [[ ! "${value}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-              echo "::error::Resolved invalid digest: ${value}"
-              exit 1
-            fi
-          done
-
-          echo "core=${core_digest}" >> "${GITHUB_OUTPUT}"
-          echo "browser=${browser_digest}" >> "${GITHUB_OUTPUT}"
-          echo "full=${full_digest}" >> "${GITHUB_OUTPUT}"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              for name, digest in outputs.items():
+                  print(f"{name}={digest}", file=output)
+          PY
 
       - name: Dispatch adclaw-cf promotion
         env:
