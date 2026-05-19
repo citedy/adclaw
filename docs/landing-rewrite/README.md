@@ -30,7 +30,7 @@ Two-audience strategy for adclaw.app landing and pricing pages.
 5. **Keep on casual pages:** Apache 2.0 mention (trust signal: "you can leave anytime"), Citedy MCP value (the moat), Cloudflare Sandbox + CDN as plain-English security/speed.
 6. **Specialists are infinite.** Defaults to 5 (Strategist, Researcher, SEO Writer, Ads Manager, Analyst), but the customer can add unlimited personas on every plan. Competitors monetize persona counts — we don't.
 7. **DigitalOcean and Railway are partners.** Don't compare hosted vs DO/Railway as "fast vs slow" — both deploy in minutes. The hosted edge is bundled Citedy credits + bundled LLM messages + zero ops.
-8. **LLM messages are bundled** in every hosted plan (Starter 500 / Pro 2,000 / Business 6,000). Users can also bring their own LLM key for unlimited usage.
+8. **LLM messages are bundled** in every hosted plan (Starter 300 / Pro 1,500 / Business 5,000). Users can also bring their own LLM key for unlimited usage.
 9. **Credit numbers use real Citedy API costs** (per citedy.com/pricing and citedy.com/skill.md). No vague "10 articles/month" — use real per-action credit costs and let the menu tell the story.
 10. **Even with zero credits, AdClaw keeps working.** User's own LLM key (or bundled LLM messages) powers chat + 100+ built-in skills + 25+ MCP servers. Citedy credits power the "first-class SEO/GEO content published to your domain + your socials" pipeline specifically — they are the value-add, not a kill switch.
 

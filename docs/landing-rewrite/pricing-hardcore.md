@@ -99,7 +99,7 @@ What it actually costs to run AdClaw for one solo marketer in real conditions. S
 | Backups | Manual (you configure) | Included |
 | SSL / domain config | Manual | Included |
 | Citedy credits | Pay-as-you-go (~$30/mo for 500 credits if you buy through citedy.com) | 500 credits **bundled** in Pro |
-| Bundled LLM messages | None — you pay your LLM provider direct | 2,000 messages **bundled** in Pro |
+| Bundled LLM messages | None — you pay your LLM provider direct | 1,500 messages **bundled** in Pro |
 | LLM keys | BYO (~$10–30/mo) | BYO (same, on top of bundled messages) |
 | **Total monthly $** | **~$45/mo + ~1–2 hrs labor** | **$29/mo, zero ops** |
 
@@ -142,7 +142,7 @@ The Citedy MCP server is bundled inside AdClaw. Whether you run AdClaw on your l
 
 - **Free tier on signup:** 100 Citedy credits, no card.
 - **Top-ups:** see citedy.com/pricing for top-up packs (Growth = 1,500 credits for $14.99 etc.).
-- **Subscription bundles** (only in AdClaw Host plans): 150 / 500 / 1,500 credits + 500 / 2,000 / 6,000 LLM messages **included monthly**.
+- **Subscription bundles** (only in AdClaw Host plans): 150 / 500 / 1,500 credits + 300 / 1,500 / 5,000 LLM messages **included monthly**.
 
 ### Real action costs (link to /pricing#credits for the full menu)
 - 1 standard SEO article ≈ 20 credits
@@ -195,7 +195,7 @@ Apache 2.0 means you can always leave. No data lock-in, no proprietary format.
 | Multi-agent marketing personas | ✓ (unlimited custom) | Generic | ✗ | Generic |
 | Marketing-specific tools | 60+ (Citedy) | ✗ | ✗ | ✗ |
 | Bundled Citedy credits | 150 / 500 / 1,500 | ✗ | ✗ | ✗ |
-| Bundled LLM messages | 500 / 2,000 / 6,000 | ✗ | ✗ | ✗ |
+| Bundled LLM messages | 300 / 1,500 / 5,000 | ✗ | ✗ | ✗ |
 | Telegram team @-routing | ✓ | DIY | Multi-channel | ✓ (configured) |
 | Auto-publish to blogs / socials | ✓ | DIY | ✗ | DIY |
 | Setup time | 90s | minutes | minutes | minutes |
@@ -212,7 +212,7 @@ DO and Railway are intentionally NOT in this table — they are partners that ho
 **Hosted plans recap**
 
 ### Mini-pricing
-Starter $10 (150 credits + 500 LLM messages) / Pro $29 (500 + 2,000) / Business $79 (1,500 + 6,000) — full details on [/pricing](/pricing).
+Starter $10 (150 credits + 300 LLM messages) / Pro $29 (500 + 1,500) / Business $79 (1,500 + 5,000) — full details on [/pricing](/pricing).
 
 ### CTA
 `Get hosted →`

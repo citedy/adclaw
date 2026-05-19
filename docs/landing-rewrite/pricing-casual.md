@@ -42,14 +42,14 @@ Replace current "Open Host dashboard" secondary button. That goes inside the pla
 **Label:** Starter
 **Name:** Solo Operator
 **Price:** $10 / month
-**Pill:** 150 Citedy credits + 500 LLM messages per month
+**Pill:** 150 Citedy credits + 300 LLM messages per month
 
 **Description (1 sentence):**
 For freelancers, side projects, and "I want to try this without commitment."
 
 **What's bundled per month:**
 - **150 Citedy credits** — for the first-class, SEO/GEO-optimized, auto-published-to-your-domain content pipeline (see menu below)
-- **500 bundled LLM messages** — for chat with your team, drafting, and using the 100+ built-in skills
+- **300 bundled LLM messages** — for chat with your team, drafting, and using the 100+ built-in skills
 - **Unlimited custom specialists** — add whatever roles you want
 - **3-member Telegram team bot**
 - **Web office + Telegram**
@@ -71,14 +71,14 @@ For freelancers, side projects, and "I want to try this without commitment."
 **Label:** Pro
 **Name:** Growth Engine
 **Price:** $29 / month
-**Pill:** 500 Citedy credits + 2,000 LLM messages per month
+**Pill:** 500 Citedy credits + 1,500 LLM messages per month
 
 **Description (1 sentence):**
 For active solopreneurs and 2–5 person teams running real marketing.
 
 **What's bundled per month:**
 - **500 Citedy credits** — see menu below for what they buy
-- **2,000 bundled LLM messages**
+- **1,500 bundled LLM messages**
 - **Unlimited custom specialists**
 - **10-member Telegram team bot**
 - **Multi-channel auto-publishing** to LinkedIn, X (article + thread), Reddit, Facebook, Instagram, Threads, YouTube Shorts
@@ -97,14 +97,14 @@ For active solopreneurs and 2–5 person teams running real marketing.
 **Label:** Business
 **Name:** Agency Office
 **Price:** $79 / month
-**Pill:** 1,500 Citedy credits + 6,000 LLM messages per month
+**Pill:** 1,500 Citedy credits + 5,000 LLM messages per month
 
 **Description (1 sentence):**
 For agencies, 5+ person teams, and client-facing workflows.
 
 **What's bundled per month:**
 - **1,500 Citedy credits**
-- **6,000 bundled LLM messages**
+- **5,000 bundled LLM messages**
 - **Unlimited custom specialists**
 - **Unlimited team members in Telegram group**
 - **Multi-client workflows** (your team works on multiple brands)
@@ -228,7 +228,7 @@ Every plan includes monthly Citedy credits. Use them however you want. These are
 ### Important callout below the table
 > Numbers above show what one plan's credits do if you spend them all on one action type. In practice you mix — say 10 articles, 2 video shorts, 1 competitor deep scout, and 5 lead magnets in the same month. Credits don't expire mid-month.
 
-> **And on top of credits**, you have 500 / 2,000 / 6,000 bundled LLM messages for chatting with your team. Run out of those too? Plug in your own LLM key — chat, drafts, brainstorms, all 100+ built-in skills, and all 25+ MCP servers keep working **for free** (your own LLM cost only). The Citedy credits are specifically for the "first-class, SEO/GEO-optimized, auto-published-to-your-domain-and-socials" content pipeline. Everything else in AdClaw runs on your LLM key.
+> **And on top of credits**, you have 300 / 1,500 / 5,000 bundled LLM messages for chatting with your team. Run out of those too? Plug in your own LLM key — chat, drafts, brainstorms, all 100+ built-in skills, and all 25+ MCP servers keep working **for free** (your own LLM cost only). The Citedy credits are specifically for the "first-class, SEO/GEO-optimized, auto-published-to-your-domain-and-socials" content pipeline. Everything else in AdClaw runs on your LLM key.
 
 ### Implementation note
 This is the killer block for converting hesitant buyers. The "what's a credit" question dies here. Make the table visually clean. Source of truth: citedy.com/agents and citedy.com/skill.md — keep these numbers in sync if Citedy pricing changes.
@@ -246,7 +246,7 @@ Replace the current infrastructure table with an outcomes table.
 |-|-|-|-|
 | **Price** | $10/mo | $29/mo | $79/mo |
 | **Citedy credits / month** | 150 | 500 | 1,500 |
-| **Bundled LLM messages / month** | 500 | 2,000 | 6,000 |
+| **Bundled LLM messages / month** | 300 | 1,500 | 5,000 |
 | **Custom specialists** | Unlimited | Unlimited | Unlimited |
 | **Telegram team members** | 3 | 10 | Unlimited |
 | **Multi-client / multi-brand** | — | — | ✓ |

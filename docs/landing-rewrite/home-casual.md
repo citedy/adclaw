@@ -193,7 +193,7 @@ Replace the current 12-card feature grid (Multi-agent personas, 23 LLM providers
 | | **Starter $10** | **Pro $29** (Recommended) | **Business $79** |
 |-|-|-|-|
 | Citedy credits / month | 150 | 500 | 1,500 |
-| LLM messages / month | 500 | 2,000 | 6,000 |
+| LLM messages / month | 300 | 1,500 | 5,000 |
 | Custom specialists | Unlimited | Unlimited | Unlimited |
 | Telegram team members | 3 | 10 | Unlimited |
 | Best for | Solo / side project | Active solopreneur | Agency / team |
