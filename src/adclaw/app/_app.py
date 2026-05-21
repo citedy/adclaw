@@ -94,6 +94,8 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
         "true",
         "yes",
     )
+    # Defer scheduling until the try/finally below is active so startup aborts
+    # cancel the background MCP connection task instead of orphaning it.
     mcp_initial_config = None
     mcp_init_task = None
     runner.set_mcp_manager(mcp_manager)
