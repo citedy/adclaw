@@ -1,4 +1,4 @@
-# Dispatch a Cloudflare promotion after Docker images are published.
+# Dispatch a Cloudflare promotion after the hosted core Docker image is published.
 #
 # This intentionally lives outside docker-release.yml. Docker publishing must
 # stay green if the downstream Cloudflare promotion signal is delayed or broken.
@@ -6,7 +6,7 @@ name: Dispatch Cloudflare Promotion
 
 on:
   workflow_run:
-    workflows: ["Docker Build and Push"]
+    workflows: ["Docker Core Build and Push"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -68,6 +68,7 @@ jobs:
           import json
           import os
           import re
+          import time
           import urllib.parse
           import urllib.request
 
@@ -98,15 +99,27 @@ jobs:
           _, token_body = read_json(token_url)
           token = token_body["token"]
 
-          def resolve_digest(tag):
+          def resolve_digest(tag, required=True):
               url = f"https://registry-1.docker.io/v2/{namespace}/{repo}/manifests/{tag}"
-              response, manifest = read_json(
-                  url,
-                  {
-                      "Accept": accept,
-                      "Authorization": f"Bearer {token}",
-                  },
-              )
+              attempts = 12 if required else 1
+              for attempt in range(1, attempts + 1):
+                  try:
+                      response, manifest = read_json(
+                          url,
+                          {
+                              "Accept": accept,
+                              "Authorization": f"Bearer {token}",
+                          },
+                      )
+                      break
+                  except Exception as exc:
+                      if not required:
+                          print(f"::notice::{tag} is not available yet; continuing without optional digest")
+                          return ""
+                      if attempt == attempts:
+                          raise SystemExit(f"Unable to resolve required Docker digest for {tag}: {exc}")
+                      print(f"Waiting for {tag} manifest ({attempt}/{attempts}): {exc}")
+                      time.sleep(10)
               digest = response.headers.get("Docker-Content-Digest", "")
               if not digest_pattern.fullmatch(digest):
                   raise SystemExit(f"Resolved invalid digest for {tag}: {digest!r}")
@@ -125,9 +138,9 @@ jobs:
               return digest
 
           outputs = {
-              "core": resolve_digest(f"{version}-core"),
-              "browser": resolve_digest(f"{version}-browser"),
-              "full": resolve_digest(f"{version}-full"),
+              "core": resolve_digest(f"{version}-core", required=True),
+              "browser": resolve_digest(f"{version}-browser", required=False),
+              "full": resolve_digest(f"{version}-full", required=False),
           }
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
@@ -161,8 +174,8 @@ jobs:
                   "source_repo": os.environ["GITHUB_REPOSITORY"],
                   "source_sha": os.environ["SOURCE_SHA"],
                   "core_digest": os.environ["CORE_DIGEST"],
-                  "browser_digest": os.environ["BROWSER_DIGEST"],
-                  "full_digest": os.environ["FULL_DIGEST"],
+                  "browser_digest": os.environ["BROWSER_DIGEST"] or None,
+                  "full_digest": os.environ["FULL_DIGEST"] or None,
               },
           }
 
