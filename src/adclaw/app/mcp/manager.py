@@ -348,26 +348,37 @@ class MCPClientManager:
             raise
 
         should_close = False
-        async with self._lock:
-            current_revision = self._client_revisions.get(key, 0)
-            if (
-                self._clients.get(key) is not None
-                or current_revision != expected_revision
-            ):
-                should_close = True
-            else:
-                self._clients[key] = client
+        installed = False
+        try:
+            async with self._lock:
+                current_revision = self._client_revisions.get(key, 0)
+                if (
+                    self._clients.get(key) is not None
+                    or current_revision != expected_revision
+                ):
+                    should_close = True
+                else:
+                    self._clients[key] = client
+                    installed = True
 
-        if should_close:
-            logger.debug(
-                "Initial MCP client '%s' became stale, closing",
-                key,
-            )
-            await self._close_client_quietly(
-                client,
-                key=key,
-                reason="stale initial add cleanup",
-            )
+            if should_close:
+                logger.debug(
+                    "Initial MCP client '%s' became stale, closing",
+                    key,
+                )
+                await self._close_client_quietly(
+                    client,
+                    key=key,
+                    reason="stale initial add cleanup",
+                )
+        except asyncio.CancelledError:
+            if not installed:
+                await self._close_client_quietly(
+                    client,
+                    key=key,
+                    reason="cancelled initial add post-connect cleanup",
+                )
+            raise
 
     def _bump_client_revision_locked(self, key: str) -> int:
         """Record that a client key changed while holding ``_lock``."""

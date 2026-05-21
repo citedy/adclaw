@@ -736,6 +736,52 @@ async def test_cancelled_initial_mcp_add_closes_partial_client(
 
 
 @pytest.mark.asyncio
+async def test_cancelled_initial_mcp_add_after_connect_closes_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Canceling after connect but before install must close the client."""
+    manager = MCPClientManager()
+    connect_finished = asyncio.Event()
+    closed_clients: list[str] = []
+
+    class _ConnectedClient:
+        name = "startup"
+
+        async def connect(self) -> None:
+            await manager._lock.acquire()
+            connect_finished.set()
+
+        async def close(self) -> None:
+            closed_clients.append(self.name)
+
+    monkeypatch.setattr(
+        MCPClientManager,
+        "_build_client",
+        staticmethod(lambda _cfg: _ConnectedClient()),
+    )
+
+    startup_cfg = MCPClientConfig(
+        name="startup",
+        enabled=True,
+        transport="streamable_http",
+        url="https://example.invalid/startup",
+    )
+
+    try:
+        task = asyncio.create_task(manager._add_client("citedy", startup_cfg))
+        await asyncio.wait_for(connect_finished.wait(), timeout=1)
+
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    finally:
+        manager._lock.release()
+
+    assert closed_clients == ["startup"]
+    assert await manager.get_clients() == []
+
+
+@pytest.mark.asyncio
 async def test_reconnect_mcp_client_respects_timeout() -> None:
     class _SlowClient:
         async def close(self) -> None:
