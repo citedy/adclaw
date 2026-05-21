@@ -636,6 +636,106 @@ async def test_initial_mcp_add_does_not_replace_newer_hot_reload(
 
 
 @pytest.mark.asyncio
+async def test_overlapping_mcp_replacements_keep_latest_operation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A slower older replacement must not clobber a newer replacement."""
+    first_started = asyncio.Event()
+    first_release = asyncio.Event()
+    closed_clients: list[str] = []
+
+    class _GateClient:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        async def connect(self) -> None:
+            if self.name == "first":
+                first_started.set()
+                await first_release.wait()
+
+        async def close(self) -> None:
+            closed_clients.append(self.name)
+
+    def fake_build(client_config: MCPClientConfig) -> _GateClient:
+        return _GateClient(client_config.name)
+
+    monkeypatch.setattr(
+        MCPClientManager,
+        "_build_client",
+        staticmethod(fake_build),
+    )
+
+    manager = MCPClientManager()
+    first_cfg = MCPClientConfig(
+        name="first",
+        enabled=True,
+        transport="streamable_http",
+        url="https://example.invalid/first",
+    )
+    second_cfg = MCPClientConfig(
+        name="second",
+        enabled=True,
+        transport="streamable_http",
+        url="https://example.invalid/second",
+    )
+
+    first_task = asyncio.create_task(
+        manager.replace_client("citedy", first_cfg),
+    )
+    await asyncio.wait_for(first_started.wait(), timeout=1)
+
+    await manager.replace_client("citedy", second_cfg)
+    first_release.set()
+    await asyncio.wait_for(first_task, timeout=1)
+
+    clients = await manager.get_clients()
+    assert [client.name for client in clients] == ["second"]
+    assert closed_clients == ["first"]
+
+
+@pytest.mark.asyncio
+async def test_cancelled_initial_mcp_add_closes_partial_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Canceling startup MCP init must close the partially built client."""
+    connect_started = asyncio.Event()
+    closed_clients: list[str] = []
+
+    class _SlowClient:
+        name = "startup"
+
+        async def connect(self) -> None:
+            connect_started.set()
+            await asyncio.Event().wait()
+
+        async def close(self) -> None:
+            closed_clients.append(self.name)
+
+    monkeypatch.setattr(
+        MCPClientManager,
+        "_build_client",
+        staticmethod(lambda _cfg: _SlowClient()),
+    )
+
+    manager = MCPClientManager()
+    startup_cfg = MCPClientConfig(
+        name="startup",
+        enabled=True,
+        transport="streamable_http",
+        url="https://example.invalid/startup",
+    )
+
+    task = asyncio.create_task(manager._add_client("citedy", startup_cfg))
+    await asyncio.wait_for(connect_started.wait(), timeout=1)
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert closed_clients == ["startup"]
+
+
+@pytest.mark.asyncio
 async def test_reconnect_mcp_client_respects_timeout() -> None:
     class _SlowClient:
         async def close(self) -> None:

@@ -188,6 +188,9 @@ class MCPClientManager:
             client_config: New client configuration
             timeout: Connection timeout in seconds (default 60s)
         """
+        async with self._lock:
+            operation_revision = self._bump_client_revision_locked(key)
+
         # 1. Create and connect new client outside lock (may be slow)
         logger.debug(f"Connecting new MCP client: {key}")
         new_client = self._build_client(client_config)
@@ -205,6 +208,13 @@ class MCPClientManager:
                 reason="timeout cleanup",
             )
             raise
+        except asyncio.CancelledError:
+            await self._close_client_quietly(
+                new_client,
+                key=key,
+                reason="cancelled replacement cleanup",
+            )
+            raise
         except (Exception, BaseExceptionGroup) as e:
             logger.warning(
                 f"Failed to connect MCP client '{key}': {e}",
@@ -218,10 +228,26 @@ class MCPClientManager:
             raise
 
         # 2. Swap inside lock, then close old client outside lock
+        stale_client = None
         async with self._lock:
-            old_client = self._clients.get(key)
-            self._bump_client_revision_locked(key)
-            self._clients[key] = new_client
+            if self._client_revisions.get(key, 0) != operation_revision:
+                stale_client = new_client
+                old_client = None
+            else:
+                old_client = self._clients.get(key)
+                self._clients[key] = new_client
+
+        if stale_client is not None:
+            logger.debug(
+                "MCP client '%s' replacement became stale, closing",
+                key,
+            )
+            await self._close_client_quietly(
+                stale_client,
+                key=key,
+                reason="stale replacement cleanup",
+            )
+            return
 
         if old_client is not None:
             logger.debug(f"Closing old MCP client: {key}")
@@ -306,6 +332,13 @@ class MCPClientManager:
         try:
             # Add timeout to prevent indefinite blocking
             await asyncio.wait_for(client.connect(), timeout=timeout)
+        except asyncio.CancelledError:
+            await self._close_client_quietly(
+                client,
+                key=key,
+                reason="cancelled initial add cleanup",
+            )
+            raise
         except (Exception, BaseExceptionGroup):
             await self._close_client_quietly(
                 client,
@@ -336,9 +369,10 @@ class MCPClientManager:
                 reason="stale initial add cleanup",
             )
 
-    def _bump_client_revision_locked(self, key: str) -> None:
+    def _bump_client_revision_locked(self, key: str) -> int:
         """Record that a client key changed while holding ``_lock``."""
         self._client_revisions[key] = self._client_revisions.get(key, 0) + 1
+        return self._client_revisions[key]
 
     @staticmethod
     def _build_client(client_config: "MCPClientConfig") -> Any:
