@@ -3,6 +3,7 @@
 import asyncio
 import mimetypes
 import os
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -34,6 +35,11 @@ from .runner.manager import ChatManager
 from .routers import router as api_router
 from ..envs import load_envs_into_environ
 
+# BaseExceptionGroup is a builtin in 3.11+; on 3.10 we use the
+# `exceptiongroup` backport (declared in pyproject.toml only for 3.10).
+if sys.version_info < (3, 11):
+    from exceptiongroup import BaseExceptionGroup  # noqa: F401
+
 # Apply log level on load so reload child process gets same level as CLI.
 logger = setup_logger(os.environ.get(LOG_LEVEL_ENV, "info"))
 
@@ -58,8 +64,26 @@ agent_app = AgentApp(
 )
 
 
+def _schedule_mcp_initialization(
+    mcp_manager: MCPClientManager,
+    mcp_config,
+) -> asyncio.Task:
+    """Initialize MCP clients without blocking FastAPI startup."""
+
+    async def _init_mcp_clients() -> None:
+        """Connect configured MCP clients in a background task."""
+        try:
+            await mcp_manager.init_from_config(mcp_config)
+            logger.debug("MCP client manager initialized")
+        except (Exception, BaseExceptionGroup):
+            logger.exception("Failed to initialize MCP manager")
+
+    return asyncio.create_task(_init_mcp_clients(), name="mcp_initial_config")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
+    """Start and stop AdClaw app services around the FastAPI lifecycle."""
     await runner.start()
 
     # --- MCP client manager init (independent module, hot-reloadable) ---
@@ -70,16 +94,13 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
         "true",
         "yes",
     )
+    mcp_init_task = None
+    runner.set_mcp_manager(mcp_manager)
     if mcp_disabled:
         logger.warning("MCP disabled by ADCLAW_DISABLE_MCP")
-        runner.set_mcp_manager(mcp_manager)
     elif hasattr(config, "mcp"):
-        try:
-            await mcp_manager.init_from_config(config.mcp)
-            runner.set_mcp_manager(mcp_manager)
-            logger.debug("MCP client manager initialized")
-        except Exception:
-            logger.exception("Failed to initialize MCP manager")
+        mcp_init_task = _schedule_mcp_initialization(mcp_manager, config.mcp)
+        logger.debug("MCP client manager initialization scheduled")
 
     # --- Always-On Memory Agent init ---
     aom_manager = None
@@ -212,6 +233,12 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
             try:
                 await mcp_watcher.stop()
             except Exception:
+                pass
+        if mcp_init_task and not mcp_init_task.done():
+            mcp_init_task.cancel()
+            try:
+                await mcp_init_task
+            except asyncio.CancelledError:
                 pass
         try:
             await cron_manager.stop()
