@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.8] - 2026-05-21
+
+### Fixed
+- **Hosted MCP startup readiness**: initial MCP client connections now run outside the FastAPI startup critical path so slow or unavailable external MCP services do not block hosted workspace readiness.
+- **MCP lifecycle races**: stale startup/reload clients can no longer overwrite newer MCP config, and partially connected clients are closed when startup initialization is cancelled.
+
 ## [1.0.7] - 2026-05-19
 
 ### Fixed
