@@ -63,16 +63,34 @@ function extractTextFromContent(content: unknown): string {
     .join("\n");
 }
 
+const INTERNAL_OUTPUT_TYPES = new Set([
+  "reasoning",
+  "plugin_call",
+  "plugin_call_output",
+  "function_call",
+  "function_call_output",
+  "mcp_call",
+  "mcp_call_output",
+  "mcp_tool_call",
+  "mcp_tool_call_output",
+]);
+
+/**
+ * Return true when a backend message is safe to show in customer chat history.
+ * Internal reasoning/tool/MCP events are execution details, not chat content.
+ */
+function shouldRenderOutputMessage(msg: Message): boolean {
+  if (INTERNAL_OUTPUT_TYPES.has(String(msg.type || ""))) return false;
+  if (msg.role === "system") return false;
+  return true;
+}
+
 /**
  * Convert a backend message to a response output message.
- * - Maps system + plugin_call_output → role "tool"
  * - Strips metadata (not used in card rendering)
  */
 function toOutputMessage(msg: Message): OutputMessage {
-  let role = msg.role;
-  if (msg.type === "plugin_call_output" && role === "system") {
-    role = "tool";
-  }
+  const role = msg.role;
   return {
     ...msg,
     role,
@@ -145,9 +163,8 @@ function buildResponseCard(
  * the @agentscope-ai/chat component.
  *
  * - User messages → AgentScopeRuntimeRequestCard
- * - Consecutive non-user messages (assistant / system / tool) → grouped
- *   into a single AgentScopeRuntimeResponseCard with all messages in
- *   the `output` array, supporting plugin_call & plugin_call_output.
+ * - Consecutive non-user messages are grouped into one response card.
+ * - Internal reasoning/tool events are intentionally hidden from customer chat.
  */
 function convertMessages(
   messages: Message[],
@@ -165,7 +182,9 @@ function convertMessages(
       // Group consecutive non-user messages into one response card
       const outputMsgs: OutputMessage[] = [];
       while (i < messages.length && messages[i].role !== "user") {
-        outputMsgs.push(toOutputMessage(messages[i]));
+        if (shouldRenderOutputMessage(messages[i])) {
+          outputMsgs.push(toOutputMessage(messages[i]));
+        }
         i++;
       }
       if (outputMsgs.length > 0) {
