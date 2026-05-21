@@ -40,6 +40,7 @@ class MCPClientManager:
     def __init__(self) -> None:
         """Initialize an empty MCP client manager."""
         self._clients: Dict[str, Any] = {}
+        self._client_revisions: Dict[str, int] = {}
         self._lock = asyncio.Lock()
 
     @staticmethod
@@ -219,6 +220,7 @@ class MCPClientManager:
         # 2. Swap inside lock, then close old client outside lock
         async with self._lock:
             old_client = self._clients.get(key)
+            self._bump_client_revision_locked(key)
             self._clients[key] = new_client
 
         if old_client is not None:
@@ -239,6 +241,7 @@ class MCPClientManager:
         """
         async with self._lock:
             old_client = self._clients.pop(key, None)
+            self._bump_client_revision_locked(key)
 
         if old_client is not None:
             logger.debug(f"Removing MCP client: {key}")
@@ -256,6 +259,8 @@ class MCPClientManager:
         async with self._lock:
             clients_snapshot = list(self._clients.items())
             self._clients.clear()
+            for key, _client in clients_snapshot:
+                self._bump_client_revision_locked(key)
 
         logger.debug("Closing all MCP clients")
         for key, client in clients_snapshot:
@@ -287,6 +292,15 @@ class MCPClientManager:
             client_config: Client configuration
             timeout: Connection timeout in seconds (default 60s)
         """
+        async with self._lock:
+            expected_revision = self._client_revisions.get(key, 0)
+            if self._clients.get(key) is not None:
+                logger.debug(
+                    "Initial MCP client '%s' already exists, skipping",
+                    key,
+                )
+                return
+
         client = self._build_client(client_config)
 
         try:
@@ -300,8 +314,31 @@ class MCPClientManager:
             )
             raise
 
+        should_close = False
         async with self._lock:
-            self._clients[key] = client
+            current_revision = self._client_revisions.get(key, 0)
+            if (
+                self._clients.get(key) is not None
+                or current_revision != expected_revision
+            ):
+                should_close = True
+            else:
+                self._clients[key] = client
+
+        if should_close:
+            logger.debug(
+                "Initial MCP client '%s' became stale, closing",
+                key,
+            )
+            await self._close_client_quietly(
+                client,
+                key=key,
+                reason="stale initial add cleanup",
+            )
+
+    def _bump_client_revision_locked(self, key: str) -> None:
+        """Record that a client key changed while holding ``_lock``."""
+        self._client_revisions[key] = self._client_revisions.get(key, 0) + 1
 
     @staticmethod
     def _build_client(client_config: "MCPClientConfig") -> Any:
