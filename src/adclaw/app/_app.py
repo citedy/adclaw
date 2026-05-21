@@ -94,13 +94,14 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
         "true",
         "yes",
     )
+    mcp_initial_config = None
     mcp_init_task = None
     runner.set_mcp_manager(mcp_manager)
     if mcp_disabled:
         logger.warning("MCP disabled by ADCLAW_DISABLE_MCP")
     elif hasattr(config, "mcp"):
-        mcp_init_task = _schedule_mcp_initialization(mcp_manager, config.mcp)
-        logger.debug("MCP client manager initialization scheduled")
+        mcp_initial_config = config.mcp
+        logger.debug("MCP client manager initialization deferred")
 
     # --- Always-On Memory Agent init ---
     aom_manager = None
@@ -220,6 +221,12 @@ async def lifespan(app: FastAPI):  # pylint: disable=too-many-statements
     app.state.watchdog = watchdog
 
     try:
+        if mcp_initial_config is not None:
+            mcp_init_task = _schedule_mcp_initialization(
+                mcp_manager,
+                mcp_initial_config,
+            )
+            logger.debug("MCP client manager initialization scheduled")
         yield
     finally:
         if hasattr(app.state, "watchdog"):

@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.9] - 2026-05-21
+
+### Fixed
+- **MCP startup-abort cleanup**: initial MCP background initialization now starts only after the lifespan cleanup block is active, so failed startup does not leave orphaned MCP connection tasks.
+
 ## [1.0.8] - 2026-05-21
 
 ### Fixed
