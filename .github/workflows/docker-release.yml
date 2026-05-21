@@ -1,19 +1,20 @@
-# Build AdClaw Docker images (core/browser/full) and push to Docker Hub on release.
+# Build optional AdClaw Docker images (browser/full) and push to Docker Hub on release.
 #
 # Tags pushed per release:
-#   - <version>-full, <version>-browser, <version>-core  (e.g. 1.0.0-full)
-#   - full, browser, core                                (moving tags)
-#   - latest                                             (points to full, for DO Marketplace compat)
+#   - <version>-full, <version>-browser  (e.g. 1.0.0-full)
+#   - full, browser                      (moving tags)
+#   - latest                             (points to full, for DO Marketplace compat)
 #
 # For DO Marketplace backwards compatibility, `latest` tracks the `full` variant.
-name: Docker Build and Push
+#
+# Hosted Cloudflare promotion does not wait for this workflow. The core image is
+# published by `Docker Core Build and Push` so paid Host sandboxes can be
+# promoted as soon as the lightweight image is available.
+name: Docker Browser/Full Build and Push
 
 on:
   release:
     types: [published]
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       version:
@@ -34,10 +35,9 @@ jobs:
       fail-fast: false
       matrix:
         # Dockerfile picks extras based on ADCLAW_VARIANT:
-        #   core    → [local]
         #   browser → [browser,local]
         #   full    → [all,local]
-        variant: [full, browser, core]
+        variant: [full, browser]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

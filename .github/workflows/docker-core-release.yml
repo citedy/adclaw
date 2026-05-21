@@ -1,0 +1,162 @@
+# Build the hosted AdClaw core image first.
+#
+# This is the release lane used by Cloudflare Host. It publishes only the
+# lightweight `core` image and validates the multi-arch manifest before the
+# downstream Cloudflare promotion workflow is allowed to run.
+name: Docker Core Build and Push
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image tag (e.g. v1.0.0)"
+        required: true
+        type: string
+
+env:
+  IMAGE: nttylock/adclaw
+
+permissions:
+  contents: read
+
+jobs:
+  build-core:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Determine version tag
+        id: version
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.version }}" ]; then
+            tag="${{ inputs.version }}"
+          elif [ -n "${{ github.event.release.tag_name }}" ]; then
+            tag="${{ github.event.release.tag_name }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          clean="${tag#v}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "clean=${clean}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute core tags
+        id: tags
+        run: |
+          set -euo pipefail
+          VER_CLEAN="${{ steps.version.outputs.clean }}"
+          TAGS="docker.io/${{ env.IMAGE }}:${VER_CLEAN}-core"
+          TAGS="${TAGS},docker.io/${{ env.IMAGE }}:core"
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "Tags: ${TAGS}"
+
+      - name: Build and push core
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            ADCLAW_VARIANT=core
+            ADCLAW_ENABLED_CHANNELS=discord,dingtalk,feishu,qq,console,telegram
+          cache-from: type=gha,scope=core
+          cache-to: type=gha,mode=max,scope=core
+
+      - name: Validate published core manifest
+        env:
+          VERSION: ${{ steps.version.outputs.clean }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import time
+          import urllib.parse
+          import urllib.request
+
+          namespace = "nttylock"
+          repo = "adclaw"
+          tag = f"{os.environ['VERSION']}-core"
+          digest_pattern = re.compile(r"sha256:[0-9a-f]{64}")
+          required_platforms = {("linux", "amd64"), ("linux", "arm64")}
+          accept = ", ".join(
+              [
+                  "application/vnd.docker.distribution.manifest.list.v2+json",
+                  "application/vnd.oci.image.index.v1+json",
+                  "application/vnd.docker.distribution.manifest.v2+json",
+              ]
+          )
+
+          def read_json(url, headers=None):
+              request = urllib.request.Request(url, headers=headers or {})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return response, json.loads(response.read().decode("utf-8"))
+
+          token_url = "https://auth.docker.io/token?" + urllib.parse.urlencode(
+              {
+                  "service": "registry.docker.io",
+                  "scope": f"repository:{namespace}/{repo}:pull",
+              }
+          )
+          _, token_body = read_json(token_url)
+          token = token_body["token"]
+
+          url = f"https://registry-1.docker.io/v2/{namespace}/{repo}/manifests/{tag}"
+          last_error = None
+          for attempt in range(1, 13):
+              try:
+                  response, manifest = read_json(
+                      url,
+                      {
+                          "Accept": accept,
+                          "Authorization": f"Bearer {token}",
+                      },
+                  )
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  if attempt == 12:
+                      raise SystemExit(f"Unable to resolve Docker manifest for {tag}: {exc}")
+                  print(f"Waiting for {tag} manifest ({attempt}/12): {exc}")
+                  time.sleep(10)
+          else:
+              raise SystemExit(f"Unable to resolve Docker manifest for {tag}: {last_error}")
+          digest = response.headers.get("Docker-Content-Digest", "")
+          if not digest_pattern.fullmatch(digest):
+              raise SystemExit(f"Resolved invalid digest for {tag}: {digest!r}")
+
+          platforms = {
+              (
+                  item.get("platform", {}).get("os"),
+                  item.get("platform", {}).get("architecture"),
+              )
+              for item in manifest.get("manifests", [])
+          }
+          if not platforms:
+              raise SystemExit(f"{tag} is not a multi-platform manifest list")
+          if not required_platforms.issubset(platforms):
+              raise SystemExit(f"{tag} is missing required platforms: {sorted(platforms)}")
+
+          print(f"{tag} digest: {digest}")
+          PY
