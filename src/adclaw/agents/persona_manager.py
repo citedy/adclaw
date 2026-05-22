@@ -38,24 +38,58 @@ class PersonaManager:
     def get_shared_dir(self, persona_id: str) -> str:
         return str(self.working_dir / "shared" / persona_id)
 
-    def resolve_tag(self, text: str) -> Optional[str]:
-        """Extract @tag from message start, match by ID or name. Returns persona ID or None."""
-        match = re.match(r'^@(\S+)\s+', text, re.IGNORECASE)
-        if not match:
+    @staticmethod
+    def _normalize_ref(value: str) -> str:
+        """Normalize user-facing persona references for tolerant matching."""
+        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+    def resolve_reference(self, value: str) -> Optional[str]:
+        """Resolve a persona reference by id, display name, or slug."""
+        normalized = self._normalize_ref(value)
+        if not normalized:
             return None
-        tag = match.group(1).lower()
-        # Direct ID match
-        if tag in self._personas:
-            return tag
-        # Match by name (case-insensitive)
-        for pid, p in self._personas.items():
-            if p.name.lower() == tag:
+        if normalized in self._personas:
+            return normalized
+        for pid, persona in self._personas.items():
+            if self._normalize_ref(pid) == normalized:
+                return pid
+            if self._normalize_ref(persona.name) == normalized:
                 return pid
         return None
 
+    def _leading_tag_match(self, text: str) -> Optional[tuple[str, str]]:
+        """Return ``(persona_id, remaining_text)`` for a leading @mention."""
+        if not text.startswith("@"):
+            return None
+        after_at = text[1:]
+        candidates: list[tuple[int, str]] = []
+        for persona in self._personas.values():
+            for alias in {persona.id, persona.name, persona.name.replace(" ", "-")}:
+                alias = alias.strip()
+                if not alias:
+                    continue
+                if re.match(
+                    rf"^{re.escape(alias)}(?=\s|$|[.,;:!?])",
+                    after_at,
+                    re.IGNORECASE,
+                ):
+                    resolved = self.resolve_reference(alias)
+                    if resolved:
+                        candidates.append((len(alias), resolved))
+        if not candidates:
+            return None
+        consumed, persona_id = max(candidates, key=lambda item: item[0])
+        return persona_id, after_at[consumed:].lstrip(" \t,.;:!?")
+
+    def resolve_tag(self, text: str) -> Optional[str]:
+        """Extract leading @tag, matching by id, display name, or slug."""
+        match = self._leading_tag_match(text)
+        return match[0] if match else None
+
     def strip_tag(self, text: str) -> str:
-        """Remove @tag from message start."""
-        return re.sub(r'^@\S+\s+', '', text)
+        """Remove a leading @tag while preserving the remaining prompt."""
+        match = self._leading_tag_match(text)
+        return match[1] if match else text
 
     def get_team_summary(self) -> str:
         """Generate team summary for prompt injection."""

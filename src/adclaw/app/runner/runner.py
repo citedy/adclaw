@@ -417,6 +417,7 @@ class AgentRunner(Runner):
                 max_input_length=max_input_length,
                 persona=persona,
                 team_summary=persona_mgr.get_team_summary() if persona_mgr.all_personas else "",
+                persona_manager=persona_mgr,
                 timeout_seconds=_timeout,
             )
             await agent.register_mcp_clients()
@@ -629,6 +630,7 @@ class AgentRunner(Runner):
                             namesake_strategy=getattr(agent, "_namesake_strategy", "skip"),
                             persona=getattr(agent, "_persona", None),
                             team_summary=getattr(agent, "_team_summary", ""),
+                            persona_manager=getattr(agent, "_persona_manager", None),
                             model=fb_model,
                             formatter=fb_formatter,
                         )

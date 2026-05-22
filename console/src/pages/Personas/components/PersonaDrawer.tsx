@@ -9,7 +9,11 @@ import {
 } from "@agentscope-ai/design";
 import { useTranslation } from "react-i18next";
 import api from "../../../api";
-import type { Persona, ProviderInfo } from "../../../api/types";
+import type {
+  ModelSlotConfig,
+  Persona,
+  ProviderInfo,
+} from "../../../api/types";
 import {
   sortProviders,
   XIAOMI_PROVIDER_ID,
@@ -60,6 +64,9 @@ export function PersonaDrawer({
   const [skills, setSkills] = useState<SkillInfo[]>([]);
   const [mcpClients, setMcpClients] = useState<MCPClientInfo[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [activeDefault, setActiveDefault] = useState<ModelSlotConfig | null>(
+    null,
+  );
 
   // Load providers, skills, MCP clients when drawer opens
   useEffect(() => {
@@ -67,10 +74,11 @@ export function PersonaDrawer({
     let cancelled = false;
 
     const load = async () => {
-      const [provRes, skillRes, mcpRes] = await Promise.allSettled([
+      const [provRes, skillRes, mcpRes, activeRes] = await Promise.allSettled([
         api.listProviders(),
         api.listSkills(),
         api.listMCPClients(),
+        api.getActiveModels(),
       ]);
 
       if (cancelled) return;
@@ -93,6 +101,9 @@ export function PersonaDrawer({
           })) as MCPClientInfo[];
           setMcpClients(list);
         }
+      }
+      if (activeRes.status === "fulfilled") {
+        setActiveDefault(activeRes.value?.active_llm || null);
       }
     };
 
@@ -122,6 +133,24 @@ export function PersonaDrawer({
       }
     }
   }, [open, editingPersona, form]);
+
+  // Pre-fill empty model fields with the active default so the effective
+  // provider/model is visible without overwriting user edits.
+  useEffect(() => {
+    if (!open || !activeDefault) return;
+    const currentProvider =
+      (form.getFieldValue("model_provider") as string) || "";
+    const currentModel = (form.getFieldValue("model_name") as string) || "";
+    if (currentProvider || currentModel) return;
+
+    const defaultProvider = activeDefault.provider_id || "";
+    const defaultModel = activeDefault.model || "";
+    form.setFieldsValue({
+      model_provider: defaultProvider || undefined,
+      model_name: defaultModel || undefined,
+    });
+    setSelectedProvider(defaultProvider);
+  }, [open, activeDefault, form]);
 
   // Models for selected provider
   const modelOptions = useMemo(() => {

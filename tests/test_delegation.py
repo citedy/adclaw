@@ -46,6 +46,22 @@ class TestDelegation:
             assert result == "Result from sub-agent"
             mock_exec.assert_called_once()
 
+    def test_delegation_accepts_display_name(self):
+        personas = [
+            PersonaConfig(
+                id="content-writer",
+                name="Content Writer",
+                soul_md="Test.",
+            ),
+        ]
+        mgr = PersonaManager(working_dir="/tmp/test", personas=personas)
+        with patch(
+            "adclaw.agents.tools.delegation_executor.execute_delegation",
+            return_value="OK",
+        ):
+            tool_fn = make_delegate_tool(mgr)
+            assert tool_fn(agent_id="content writer", task="draft") == "OK"
+
     def test_delegation_error_handling(self):
         personas = [PersonaConfig(id="r", name="R", soul_md="Test.")]
         mgr = PersonaManager(working_dir="/tmp/test", personas=personas)

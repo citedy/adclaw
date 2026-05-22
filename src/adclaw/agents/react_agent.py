@@ -101,6 +101,7 @@ class AdClawAgent(ReActAgent):
         namesake_strategy: NamesakeStrategy = "skip",
         persona=None,
         team_summary: str = "",
+        persona_manager=None,
         model=None,
         formatter=None,
         timeout_seconds: Optional[int] = None,
@@ -123,9 +124,11 @@ class AdClawAgent(ReActAgent):
                 (default: "skip")
             persona: Optional PersonaConfig with soul_md override
             team_summary: Optional team summary for multi-agent awareness
+            persona_manager: Optional manager used for delegation tooling
         """
         self._persona = persona
         self._team_summary = team_summary
+        self._persona_manager = persona_manager
         self._heal_events: list = []
 
         self._prompt_pool = PersonaPromptPool(working_dir=Path(WORKING_DIR))
@@ -250,6 +253,13 @@ class AdClawAgent(ReActAgent):
             patch_skill_script,
             namesake_strategy=namesake_strategy,
         )
+        if self._persona_manager and self._persona_manager.all_personas:
+            from .tools.delegation import make_delegate_tool
+
+            toolkit.register_tool_function(
+                make_delegate_tool(self._persona_manager),
+                namesake_strategy=namesake_strategy,
+            )
 
         return toolkit
 
