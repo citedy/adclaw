@@ -16,6 +16,113 @@
   height: 100% !important;
 }
 
+.chatStage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.liveProgress {
+  position: absolute;
+  left: 50%;
+  bottom: 92px;
+  z-index: 20;
+  width: min(560px, calc(100% - 48px));
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.liveProgressInner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--citedy-slate-700, #334155);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.liveProgressPulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.42);
+  animation: live-progress-pulse 1.5s ease-out infinite;
+  flex: 0 0 auto;
+}
+
+.liveProgressTitle {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--citedy-slate-900, #0f172a);
+}
+
+.liveProgressDetail {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--citedy-slate-500, #64748b);
+}
+
+@keyframes live-progress-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.42);
+    transform: scale(0.94);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(22, 163, 74, 0);
+    transform: scale(1);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveProgressPulse {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .liveProgressInner {
+    border-color: rgba(71, 85, 105, 0.78);
+    background: rgba(15, 23, 42, 0.9);
+    color: var(--citedy-slate-300, #cbd5e1);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  }
+
+  .liveProgressTitle {
+    color: var(--citedy-slate-50, #f8fafc);
+  }
+
+  .liveProgressDetail {
+    color: var(--citedy-slate-300, #cbd5e1);
+  }
+}
+
+@media (max-width: 640px) {
+  .liveProgress {
+    bottom: 84px;
+    width: calc(100% - 24px);
+  }
+
+  .liveProgressInner {
+    align-items: flex-start;
+    border-radius: 18px;
+  }
+}
+
 /* Disabled input overlay */
 .chatDisabledOverlay {
   position: relative;
