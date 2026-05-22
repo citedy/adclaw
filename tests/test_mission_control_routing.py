@@ -18,6 +18,17 @@ class TestMentionRouting:
         assert persona_manager.resolve_tag("@Mike find trends") == "researcher"
         assert persona_manager.resolve_tag("@Mira write a post") == "content-writer"
 
+    def test_at_tag_by_display_name_with_space(self, persona_manager):
+        persona_manager._personas["content-writer"].name = "Content Writer"
+        assert (
+            persona_manager.resolve_tag("@Content Writer write a post")
+            == "content-writer"
+        )
+        assert (
+            persona_manager.strip_tag("@Content Writer write a post")
+            == "write a post"
+        )
+
     def test_no_tag_returns_none(self, persona_manager):
         assert persona_manager.resolve_tag("just a message") is None
 

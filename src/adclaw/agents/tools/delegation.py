@@ -25,13 +25,15 @@ def make_delegate_tool(persona_manager: PersonaManager, delegation_ctx: Optional
         Use this when a task is better handled by a specialist on your team.
 
         Args:
-            agent_id: The persona ID to delegate to (e.g., "researcher", "content")
+            agent_id: Persona id, display name, or slug
+                (e.g., "researcher", "content writer", "content-writer")
             task: The task description / prompt for the agent
 
         Returns:
             The agent's response text
         """
-        persona = persona_manager.get_persona(agent_id)
+        resolved_id = persona_manager.resolve_reference(agent_id)
+        persona = persona_manager.get_persona(resolved_id) if resolved_id else None
         if persona is None:
             available = [p.id for p in persona_manager.all_personas]
             return f"Error: Agent '{agent_id}' not found. Available: {available}"

@@ -48,6 +48,16 @@ class TestPersonaManager:
     def test_resolve_tag_from_message(self):
         assert self.manager.resolve_tag("@researcher найди тренды AI") == "researcher"
 
+    def test_resolve_tag_from_display_name_with_space(self):
+        assert self.manager.resolve_tag("@content writer draft post") == "content"
+        assert self.manager.strip_tag("@content writer draft post") == "draft post"
+        assert self.manager.resolve_tag("@content writer: draft post") == "content"
+        assert self.manager.strip_tag("@content writer: draft post") == "draft post"
+
+    def test_resolve_reference_accepts_name_and_slug(self):
+        assert self.manager.resolve_reference("Content Writer") == "content"
+        assert self.manager.resolve_reference("content-writer") == "content"
+
     def test_resolve_tag_no_tag(self):
         assert self.manager.resolve_tag("просто сообщение") is None
 
