@@ -56,6 +56,20 @@
   flex: 0 0 auto;
 }
 
+.liveProgressError {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #f97316;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.16);
+  flex: 0 0 auto;
+}
+
+.liveProgressText {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .liveProgressTitle {
   font-size: 13px;
   font-weight: 700;
@@ -68,6 +82,19 @@
   font-size: 12px;
   line-height: 1.35;
   color: var(--citedy-slate-500, #64748b);
+}
+
+.liveProgressElapsed {
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--citedy-slate-500, #64748b);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
 }
 
 @keyframes live-progress-pulse {
@@ -109,6 +136,11 @@
   .liveProgressDetail {
     color: var(--citedy-slate-300, #cbd5e1);
   }
+
+  .liveProgressElapsed {
+    background: rgba(248, 250, 252, 0.1);
+    color: var(--citedy-slate-300, #cbd5e1);
+  }
 }
 
 @media (max-width: 640px) {
@@ -120,6 +152,10 @@
   .liveProgressInner {
     align-items: flex-start;
     border-radius: 18px;
+  }
+
+  .liveProgressElapsed {
+    margin-top: 2px;
   }
 }
 
