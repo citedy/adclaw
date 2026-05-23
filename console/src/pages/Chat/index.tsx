@@ -160,7 +160,9 @@ type LiveChatStage = "thinking" | "tools" | "writing" | "error";
 const LIVE_STATUS_SLOW_SECONDS = 12;
 const LIVE_STATUS_LONG_SECONDS = 45;
 const LIVE_STATUS_SUCCESS_CLEAR_DELAY_MS = 900;
-const LIVE_STATUS_ERROR_CLEAR_DELAY_MS = 5000;
+// The AgentScope stream consumer only parses the body on 2xx responses.
+// Synthetic chat failures use SSE with 200 so the UI renders a failed bubble.
+const STREAM_FAILURE_STATUS = 200;
 
 interface LiveChatStatus {
   requestId: string;
@@ -168,6 +170,16 @@ interface LiveChatStatus {
   stage: LiveChatStage;
   detail: string;
   startedAt: number;
+}
+
+interface StreamFailureMetadata {
+  upstream_status?: number;
+  upstream_status_text?: string;
+}
+
+interface StreamEventInspection {
+  stage: LiveChatStage | null;
+  hasRenderableOutput: boolean;
 }
 
 interface RuntimeSession {
@@ -207,9 +219,107 @@ function displayPersonaName(personas: Persona[], personaId: string | null) {
   );
 }
 
+function isUserCancellation(signal?: AbortSignal): boolean {
+  return signal?.aborted === true;
+}
+
+function encodeStreamFailure(
+  code: string,
+  message: string,
+  metadata: StreamFailureMetadata = {},
+): Uint8Array {
+  const now = Math.floor(Date.now() / 1000);
+  const id = `stream_failure_${now}`;
+  return new TextEncoder().encode(
+    `data: ${JSON.stringify({
+      id: `response_${id}`,
+      object: "response",
+      status: "failed",
+      created_at: now,
+      completed_at: now,
+      error: { code, message, ...metadata },
+      output: [
+        {
+          id,
+          object: "message",
+          status: "failed",
+          error: null,
+          type: "error",
+          role: "assistant",
+          content: [],
+          code,
+          message,
+          metadata,
+        },
+      ],
+    })}\n\n`,
+  );
+}
+
+function createStreamFailureResponse(
+  code: string,
+  message: string,
+  metadata: StreamFailureMetadata = {},
+): Response {
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encodeStreamFailure(code, message, metadata));
+      controller.close();
+    },
+  });
+  const headers = new Headers({
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache",
+  });
+
+  if (metadata.upstream_status) {
+    headers.set("X-AdClaw-Upstream-Status", String(metadata.upstream_status));
+  }
+
+  return new Response(stream, {
+    status: STREAM_FAILURE_STATUS,
+    headers,
+  });
+}
+
+function enqueueStreamFailure(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  code: string,
+  message: string,
+) {
+  try {
+    controller.enqueue(encodeStreamFailure(code, message));
+  } catch {
+    closeStreamQuietly(controller);
+    return;
+  }
+
+  closeStreamQuietly(controller);
+}
+
+function closeStreamQuietly(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+) {
+  try {
+    controller.close();
+  } catch {
+    // The consumer may have already cancelled the stream.
+  }
+}
+
+function streamDataFromEvent(eventText: string): string {
+  return eventText
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("data:"))
+    .map((line) => line.slice(5).trimStart())
+    .join("\n")
+    .trim();
+}
+
 function classifyStreamText(value: string): LiveChatStage | null {
   const lower = value.toLowerCase();
   if (
+    lower.includes("mcp_call") ||
     lower.includes("mcp_tool_call") ||
     lower.includes("mcp_tool_call_output") ||
     lower.includes("plugin_call") ||
@@ -242,6 +352,7 @@ function classifyStreamPayload(payload: unknown): LiveChatStage | null {
     typeof record.object === "string" ? record.object.toLowerCase() : "";
 
   if (
+    type.includes("mcp_call") ||
     type.includes("mcp_tool_call") ||
     type.includes("plugin_call") ||
     type.includes("function_call") ||
@@ -254,36 +365,244 @@ function classifyStreamPayload(payload: unknown): LiveChatStage | null {
     return "thinking";
   }
 
-  if (type === "message" || object === "message_delta") {
+  if (
+    type === "message" ||
+    type.includes("message_delta") ||
+    type.includes("output_text") ||
+    type.includes("text_delta") ||
+    type.includes("content_delta") ||
+    object === "message_delta"
+  ) {
     return "writing";
   }
 
   return null;
 }
 
-function classifyStreamEvent(eventText: string): LiveChatStage | null {
-  const data = eventText
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith("data:"))
-    .map((line) => line.slice(5).trimStart())
-    .join("\n")
-    .trim();
+function assistantOutputValueHasText(value: unknown): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.some(assistantOutputValueHasText);
+  if (typeof value !== "object" || value === null) return false;
 
-  if (!data || data === "[DONE]") return null;
+  const record = value as Record<string, unknown>;
+  return ["content", "text", "refusal", "delta", "output_text"].some(
+    (key) => key in record && assistantOutputValueHasText(record[key]),
+  );
+}
+
+function contentHasAssistantOutput(content: unknown): boolean {
+  if (typeof content === "string") return content.trim().length > 0;
+  if (!Array.isArray(content)) return assistantOutputValueHasText(content);
+
+  return content.some((item) => {
+    if (typeof item === "string") return item.trim().length > 0;
+    if (!isRuntimeMessageContent(item)) return false;
+
+    return (
+      assistantOutputValueHasText(item.text) ||
+      assistantOutputValueHasText(item.refusal) ||
+      assistantOutputValueHasText(item.delta)
+    );
+  });
+}
+
+function toolOutputValueHasText(value: unknown): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number" || typeof value === "boolean") return true;
+  if (Array.isArray(value)) return value.some(toolOutputValueHasText);
+  if (typeof value !== "object" || value === null) return false;
+
+  const record = value as Record<string, unknown>;
+  return ["output", "result", "text", "content", "data"].some(
+    (key) => key in record && toolOutputValueHasText(record[key]),
+  );
+}
+
+function contentHasToolOutput(content: unknown): boolean {
+  if (typeof content === "string") return content.trim().length > 0;
+  if (!Array.isArray(content)) return false;
+
+  return content.some((item) => {
+    if (typeof item === "string") return item.trim().length > 0;
+    if (!isRuntimeMessageContent(item)) return false;
+
+    return (
+      toolOutputValueHasText(item.data) ||
+      toolOutputValueHasText(item.output) ||
+      toolOutputValueHasText(item.result) ||
+      toolOutputValueHasText(item.text) ||
+      toolOutputValueHasText(item.content)
+    );
+  });
+}
+
+function isToolOutputPayload(type: string, object: string): boolean {
+  return (
+    type.includes("mcp_call_output") ||
+    type.includes("mcp_tool_call_output") ||
+    type.includes("plugin_call_output") ||
+    type.includes("function_call_output") ||
+    type.includes("tool_call_output") ||
+    object.includes("call_output")
+  );
+}
+
+function isAssistantContentPayload(type: string, object: string): boolean {
+  return (
+    type === "message" ||
+    type.includes("message_delta") ||
+    type.includes("output_text") ||
+    type.includes("text_delta") ||
+    type.includes("content_delta") ||
+    object === "message_delta" ||
+    object === "content"
+  );
+}
+
+function payloadHasRenderableOutput(payload: unknown): boolean {
+  if (typeof payload !== "object" || payload === null) return false;
+
+  const record = payload as Record<string, unknown>;
+  const type = typeof record.type === "string" ? record.type.toLowerCase() : "";
+  const object =
+    typeof record.object === "string" ? record.object.toLowerCase() : "";
+
+  if (
+    isAssistantContentPayload(type, object) &&
+    contentHasAssistantOutput(record.content)
+  ) {
+    return true;
+  }
+
+  if (object === "content" && type === "data") {
+    return toolOutputValueHasText(record.data);
+  }
+
+  if (isToolOutputPayload(type, object)) {
+    return (
+      contentHasToolOutput(record.content) ||
+      toolOutputValueHasText(record.output) ||
+      toolOutputValueHasText(record.result) ||
+      toolOutputValueHasText(record.text) ||
+      toolOutputValueHasText(record.data)
+    );
+  }
+
+  if (object === "content") {
+    return (
+      assistantOutputValueHasText(record.text) ||
+      assistantOutputValueHasText(record.refusal) ||
+      assistantOutputValueHasText(record.delta)
+    );
+  }
+
+  if (
+    type.includes("output_text") ||
+    type.includes("text_delta") ||
+    type.includes("content_delta")
+  ) {
+    return (
+      assistantOutputValueHasText(record.text) ||
+      assistantOutputValueHasText(record.output_text) ||
+      assistantOutputValueHasText(record.delta)
+    );
+  }
+
+  return false;
+}
+
+function inspectStreamEvent(eventText: string): StreamEventInspection {
+  const data = streamDataFromEvent(eventText);
+
+  if (!data || data === "[DONE]") {
+    return { stage: null, hasRenderableOutput: false };
+  }
 
   try {
-    const structuredStage = classifyStreamPayload(JSON.parse(data));
-    return structuredStage || classifyStreamText(data);
+    const payload = JSON.parse(data);
+    const structuredStage = classifyStreamPayload(payload);
+    return {
+      stage: structuredStage || classifyStreamText(data),
+      hasRenderableOutput: payloadHasRenderableOutput(payload),
+    };
   } catch {
-    return classifyStreamText(data);
+    return {
+      stage: classifyStreamText(data),
+      hasRenderableOutput: false,
+    };
   }
 }
 
 function liveDetailForStage(stage: LiveChatStage) {
   if (stage === "tools") return "Checking workspace tools and Citedy services.";
   if (stage === "writing") return "Writing the answer now.";
-  if (stage === "error") return "The answer stream was interrupted.";
+  if (stage === "error") return "AdClaw could not finish the answer.";
   return "Thinking through the request.";
+}
+
+function liveDetailForElapsed(status: LiveChatStatus, elapsedSeconds: number) {
+  if (status.stage === "error") return status.detail;
+
+  if (elapsedSeconds > LIVE_STATUS_LONG_SECONDS) {
+    return "Still working. Long article or tool work can take a few minutes.";
+  }
+
+  if (elapsedSeconds > LIVE_STATUS_SLOW_SECONDS) {
+    return `${status.detail} No action needed.`;
+  }
+
+  return status.detail;
+}
+
+function LiveProgressStatus({ status }: { status: LiveChatStatus }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    setNow(Date.now());
+    if (status.stage === "error") return undefined;
+
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [status.requestId, status.startedAt, status.stage]);
+
+  const elapsedSeconds = Math.max(
+    0,
+    Math.round((now - status.startedAt) / 1000),
+  );
+  const liveDetail = liveDetailForElapsed(status, elapsedSeconds);
+
+  return (
+    <div className={styles.liveProgress}>
+      <div className={styles.liveProgressInner}>
+        <span
+          className={
+            status.stage === "error"
+              ? styles.liveProgressError
+              : styles.liveProgressPulse
+          }
+          aria-hidden="true"
+        />
+        <div
+          className={styles.liveProgressText}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <div className={styles.liveProgressTitle}>
+            {status.stage === "error"
+              ? `${status.personaName} needs a retry`
+              : `${status.personaName} is working`}
+          </div>
+          <div className={styles.liveProgressDetail}>{liveDetail}</div>
+        </div>
+        {status.stage !== "error" && (
+          <span className={styles.liveProgressElapsed} aria-hidden="true">
+            {elapsedSeconds}s
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function ChatPage() {
@@ -296,7 +615,6 @@ export default function ChatPage() {
   const [liveChatStatus, setLiveChatStatus] = useState<LiveChatStatus | null>(
     null,
   );
-  const [statusClock, setStatusClock] = useState(Date.now());
   const clearStatusTimers = useRef<number[]>([]);
   const [optionsConfig] = useLocalStorageState<OptionsConfig>(
     "agent-scope-runtime-webui-options",
@@ -314,12 +632,6 @@ export default function ChatPage() {
       })
       .catch((err) => console.warn("Failed to load personas:", err));
   }, []);
-
-  useEffect(() => {
-    if (!liveChatStatus) return undefined;
-    const timer = window.setInterval(() => setStatusClock(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [liveChatStatus]);
 
   useEffect(() => {
     return () => {
@@ -373,6 +685,19 @@ export default function ChatPage() {
         );
       }, delayMs);
       clearStatusTimers.current.push(timer);
+    };
+
+    const clearLiveStatusNow = (requestId: string) => {
+      setLiveChatStatus((current) =>
+        current?.requestId === requestId ? null : current,
+      );
+    };
+
+    const failLiveStatus = (requestId: string, detail: string) => {
+      updateLiveStatus(requestId, {
+        stage: "error",
+        detail,
+      });
     };
 
     const handleModelError = () => {
@@ -480,33 +805,45 @@ export default function ChatPage() {
           signal: data.signal,
         });
       } catch (error) {
-        updateLiveStatus(requestId, {
-          stage: "error",
-          detail:
-            error instanceof Error
-              ? error.message
-              : "The answer request failed before streaming.",
-        });
-        clearLiveStatus(requestId, LIVE_STATUS_ERROR_CLEAR_DELAY_MS);
-        throw error;
+        if (isUserCancellation(data.signal)) {
+          clearLiveStatusNow(requestId);
+          throw error;
+        }
+
+        failLiveStatus(
+          requestId,
+          "Connection interrupted before AdClaw could start answering. Retry once.",
+        );
+        return createStreamFailureResponse(
+          "Connection interrupted",
+          "Connection interrupted before AdClaw could start answering. Retry once.",
+        );
       }
 
       if (!response.ok) {
-        updateLiveStatus(requestId, {
-          stage: "error",
-          detail: "The answer request failed before streaming.",
-        });
-        clearLiveStatus(requestId, LIVE_STATUS_ERROR_CLEAR_DELAY_MS);
-        return response;
+        failLiveStatus(
+          requestId,
+          "AdClaw could not start the answer. Retry once.",
+        );
+        return createStreamFailureResponse(
+          "Answer needs retry",
+          "AdClaw could not start the answer. Retry once.",
+          {
+            upstream_status: response.status,
+            upstream_status_text: response.statusText,
+          },
+        );
       }
 
       if (!response.body) {
-        updateLiveStatus(requestId, {
-          stage: "error",
-          detail: "The answer response was empty.",
-        });
-        clearLiveStatus(requestId, LIVE_STATUS_ERROR_CLEAR_DELAY_MS);
-        return response;
+        failLiveStatus(
+          requestId,
+          "AdClaw returned an empty response. Retry once.",
+        );
+        return createStreamFailureResponse(
+          "Empty response",
+          "AdClaw returned an empty response. Retry once.",
+        );
       }
 
       const decoder = new TextDecoder();
@@ -514,37 +851,79 @@ export default function ChatPage() {
         async start(controller) {
           const reader = response.body!.getReader();
           let eventBuffer = "";
+          let sawRenderableOutput = false;
+          let releasedRenderableStream = false;
+          const pendingChunks: Uint8Array[] = [];
+          const flushPendingChunks = () => {
+            pendingChunks
+              .splice(0)
+              .forEach((chunk) => controller.enqueue(chunk));
+            releasedRenderableStream = true;
+          };
           try {
             for (;;) {
               const { done, value } = await reader.read();
               if (done) break;
               if (value) {
+                let chunkHasRenderableOutput = false;
                 eventBuffer += decoder.decode(value, { stream: true });
                 const events = eventBuffer.split(/\r?\n\r?\n/);
                 eventBuffer = events.pop() || "";
 
                 for (const eventText of events) {
-                  const stage = classifyStreamEvent(eventText);
-                  if (stage) {
+                  const inspection = inspectStreamEvent(eventText);
+                  if (inspection.hasRenderableOutput) {
+                    sawRenderableOutput = true;
+                    chunkHasRenderableOutput = true;
+                  }
+                  if (inspection.stage) {
                     updateLiveStatus(requestId, {
-                      stage,
-                      detail: liveDetailForStage(stage),
+                      stage: inspection.stage,
+                      detail: liveDetailForStage(inspection.stage),
                     });
                   }
                 }
-                controller.enqueue(value);
+
+                if (releasedRenderableStream) {
+                  controller.enqueue(value);
+                } else {
+                  pendingChunks.push(value);
+                  if (chunkHasRenderableOutput) {
+                    flushPendingChunks();
+                  }
+                }
               }
             }
 
             eventBuffer += decoder.decode();
             if (eventBuffer.trim()) {
-              const stage = classifyStreamEvent(eventBuffer);
-              if (stage) {
+              const inspection = inspectStreamEvent(eventBuffer);
+              if (inspection.hasRenderableOutput) {
+                sawRenderableOutput = true;
+              }
+              if (inspection.stage) {
                 updateLiveStatus(requestId, {
-                  stage,
-                  detail: liveDetailForStage(stage),
+                  stage: inspection.stage,
+                  detail: liveDetailForStage(inspection.stage),
                 });
               }
+            }
+
+            if (sawRenderableOutput && !releasedRenderableStream) {
+              flushPendingChunks();
+            }
+
+            if (!sawRenderableOutput) {
+              failLiveStatus(
+                requestId,
+                "AdClaw stopped before sending an answer. Retry once.",
+              );
+              enqueueStreamFailure(
+                controller,
+                "Answer needs retry",
+                "AdClaw stopped before sending an answer. Retry once.",
+              );
+              return;
             }
 
             updateLiveStatus(requestId, {
@@ -553,16 +932,22 @@ export default function ChatPage() {
             });
             controller.close();
             clearLiveStatus(requestId);
-          } catch (error) {
-            updateLiveStatus(requestId, {
-              stage: "error",
-              detail:
-                error instanceof Error
-                  ? error.message
-                  : "The answer stream was interrupted.",
-            });
-            controller.error(error);
-            clearLiveStatus(requestId, LIVE_STATUS_ERROR_CLEAR_DELAY_MS);
+          } catch {
+            if (isUserCancellation(data.signal)) {
+              clearLiveStatusNow(requestId);
+              closeStreamQuietly(controller);
+              return;
+            }
+
+            failLiveStatus(
+              requestId,
+              "Connection interrupted while AdClaw was answering. Retry once.",
+            );
+            enqueueStreamFailure(
+              controller,
+              "Connection interrupted",
+              "Connection interrupted while AdClaw was answering. Retry once.",
+            );
           } finally {
             reader.releaseLock();
           }
@@ -608,16 +993,6 @@ export default function ChatPage() {
     } as unknown as IAgentScopeRuntimeWebUIOptions;
   }, [optionsConfig, selectedPersona, activeTab, personas, currentSessionId]);
 
-  const elapsedSeconds = liveChatStatus
-    ? Math.max(0, Math.round((statusClock - liveChatStatus.startedAt) / 1000))
-    : 0;
-  const liveDetail =
-    liveChatStatus && elapsedSeconds > LIVE_STATUS_LONG_SECONDS
-      ? "Still working. Long article or tool work can take a few minutes."
-      : liveChatStatus && elapsedSeconds > LIVE_STATUS_SLOW_SECONDS
-      ? `${liveChatStatus.detail} No action needed.`
-      : liveChatStatus?.detail;
-
   return (
     <div
       style={{
@@ -636,27 +1011,7 @@ export default function ChatPage() {
       )}
       <div className={styles.chatStage}>
         <AgentScopeRuntimeWebUI key={activeTab} options={options} />
-        {liveChatStatus && (
-          <div
-            className={styles.liveProgress}
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            <div className={styles.liveProgressInner}>
-              <span className={styles.liveProgressPulse} aria-hidden="true" />
-              <div>
-                <div className={styles.liveProgressTitle}>
-                  {liveChatStatus.personaName} is working
-                </div>
-                <div className={styles.liveProgressDetail}>
-                  {liveDetail}
-                  <span aria-hidden="true"> {elapsedSeconds}s</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {liveChatStatus && <LiveProgressStatus status={liveChatStatus} />}
       </div>
 
       <Modal open={showModelPrompt} closable={false} footer={null} width={480}>
