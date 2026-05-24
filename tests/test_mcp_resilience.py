@@ -1621,3 +1621,296 @@ async def test_query_handler_renders_host_ai_transient_without_dead_chat(monkeyp
     assert "fallback model" not in str(events[0][0]).lower()
     assert runner.session.load_calls == 1
     assert runner.session.save_calls == 1
+
+
+async def test_query_handler_recovers_reasoning_only_host_ai_turn(monkeypatch):
+    """A reasoning-only Host AI turn gets one visible-answer retry."""
+    from agentscope.message import Msg
+
+    from adclaw.providers import store as provider_store
+
+    class _FakeModel:
+        model_name = "@cf/openai/gpt-oss-20b"
+
+        async def __call__(self, msgs):  # noqa: ANN001
+            assert "visible-answer recovery" in msgs[0]["content"]
+            return Msg(
+                name="assistant",
+                role="assistant",
+                content="Recovered visible answer.",
+            )
+
+    class _FakeMemory:
+        def __init__(self) -> None:
+            self.added = []
+
+        async def add(self, msg, **kwargs) -> None:  # noqa: ANN001, ARG002
+            self.added.append(msg)
+
+    created_agents = []
+
+    class _FakeAgent:
+        def __init__(self, **kwargs) -> None:  # noqa: ARG002
+            self.model = _FakeModel()
+            self.memory = _FakeMemory()
+            created_agents.append(self)
+
+        async def register_mcp_clients(self) -> None:
+            return
+
+        def set_console_output_enabled(self, enabled: bool) -> None:  # noqa: ARG002
+            return
+
+        def rebuild_sys_prompt(self) -> None:
+            return
+
+        def __call__(self, msgs):  # noqa: ANN001
+            return self
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.load_calls = 0
+            self.save_calls = 0
+
+        async def load_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.load_calls += 1
+
+        async def save_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.save_calls += 1
+
+    class _FakePersonaManager:
+        all_personas = []
+
+        def __init__(self, **kwargs) -> None:  # noqa: ARG002
+            return
+
+        def ensure_dirs(self) -> None:
+            return
+
+        def resolve_tag(self, msg_text: str):  # noqa: ANN201, ARG002
+            return None
+
+        def get_coordinator(self):  # noqa: ANN201
+            return None
+
+        def get_team_summary(self) -> str:
+            return ""
+
+    class _DummyInputMsg:
+        content = "hello"
+
+        def get_text_content(self) -> str:
+            return "hello"
+
+    cfg = SimpleNamespace(
+        agents=SimpleNamespace(
+            running=SimpleNamespace(max_iters=1, max_input_length=2048),
+            personas=[],
+        ),
+    )
+
+    async def _fake_stream_printing_messages(*, agents, coroutine_task):  # noqa: ARG001
+        yield Msg(
+            name="assistant",
+            role="assistant",
+            content=[{"type": "thinking", "thinking": "private chain"}],
+        ), True
+
+    async def _empty_context(**kwargs) -> str:  # noqa: ARG001
+        return ""
+
+    async def _noop_capture(**kwargs) -> None:  # noqa: ARG001
+        return
+
+    monkeypatch.setattr(runner_module, "AdClawAgent", _FakeAgent)
+    monkeypatch.setattr(runner_module, "PersonaManager", _FakePersonaManager)
+    monkeypatch.setattr(runner_module, "load_config", lambda: cfg)
+    monkeypatch.setattr(
+        runner_module,
+        "build_env_context",
+        lambda **kwargs: "env",
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "stream_printing_messages",
+        _fake_stream_printing_messages,
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "get_fallback_config",
+        lambda: SimpleNamespace(enabled=False, timeout_seconds=1),
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "get_active_llm_config",
+        lambda: SimpleNamespace(provider_id="adclaw-host-ai"),
+    )
+
+    runner = AgentRunner()
+    runner.session = _FakeSession()
+    runner._build_shared_persona_memory_context = _empty_context
+    runner._capture_chat_memory = _noop_capture
+
+    request = SimpleNamespace(
+        session_id="s1",
+        user_id="u1",
+        channel="telegram",
+    )
+
+    events = []
+    async for msg, last in runner.query_handler(
+        [_DummyInputMsg()],
+        request=request,
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert len(events) == 1
+    assert events[0][1] is True
+    assert events[0][0] == "Recovered visible answer."
+    assert created_agents[0].memory.added[0].content == "Recovered visible answer."
+    assert runner.session.load_calls == 1
+    assert runner.session.save_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_stream_recovers_bare_tool_call_json_text(monkeypatch):
+    """A raw tool-call JSON text blob is not exposed as the final answer."""
+    from agentscope.message import Msg
+
+    class _FakeModel:
+        async def __call__(self, msgs):  # noqa: ANN001
+            assert "visible-answer recovery" in msgs[0]["content"]
+            return Msg(
+                name="assistant",
+                role="assistant",
+                content="Recovered after malformed tool JSON.",
+            )
+
+    class _FakeMemory:
+        async def add(self, msg, **kwargs) -> None:  # noqa: ANN001, ARG002
+            return
+
+    class _FakeAgent:
+        model = _FakeModel()
+        memory = _FakeMemory()
+
+    async def _fake_stream_agent_messages(*args, **kwargs):  # noqa: ARG001
+        yield Msg(
+            name="assistant",
+            role="assistant",
+            content='{"name":"agent.status","arguments":{}}',
+        ), True
+
+    monkeypatch.setattr(
+        runner_module,
+        "_stream_agent_messages",
+        _fake_stream_agent_messages,
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "_active_provider_is_host_ai",
+        lambda: True,
+    )
+
+    events = []
+    async for msg, last in runner_module._stream_agent_messages_with_visible_fallback(
+        _FakeAgent(),
+        [SimpleNamespace(content="hello")],
+        timeout_seconds=1,
+        stream_state={},
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert events == [("Recovered after malformed tool JSON.", True)]
+
+
+@pytest.mark.asyncio
+async def test_stream_does_not_stop_on_reasoning_message_last(monkeypatch):
+    """A per-message last reasoning chunk must not end the full agent turn."""
+    from agentscope.message import Msg
+
+    class _FakeAgent:
+        pass
+
+    async def _fake_stream_agent_messages(*args, **kwargs):  # noqa: ARG001
+        yield Msg(
+            name="assistant",
+            role="assistant",
+            content=[{"type": "thinking", "thinking": "internal"}],
+        ), True
+        yield Msg(
+            name="assistant",
+            role="assistant",
+            content="Real final answer.",
+        ), True
+
+    async def _fail_recovery(*args, **kwargs):  # noqa: ANN001, ARG001
+        raise AssertionError("recovery should not run")
+
+    monkeypatch.setattr(
+        runner_module,
+        "_stream_agent_messages",
+        _fake_stream_agent_messages,
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "_try_host_ai_visible_answer_retry",
+        _fail_recovery,
+    )
+
+    events = []
+    async for msg, last in runner_module._stream_agent_messages_with_visible_fallback(
+        _FakeAgent(),
+        [SimpleNamespace(content="hello")],
+        timeout_seconds=1,
+        stream_state={},
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert events == [("Real final answer.", True)]
+
+
+@pytest.mark.asyncio
+async def test_stream_skips_raw_tool_json_then_keeps_real_answer(monkeypatch):
+    """A malformed per-message raw tool-call JSON must not hide later text."""
+    from agentscope.message import Msg
+
+    class _FakeAgent:
+        pass
+
+    async def _fake_stream_agent_messages(*args, **kwargs):  # noqa: ARG001
+        yield Msg(
+            name="assistant",
+            role="assistant",
+            content='{"name":"agent.status","arguments":{}}',
+        ), True
+        yield Msg(
+            name="assistant",
+            role="assistant",
+            content="Tool result summarized for the user.",
+        ), True
+
+    async def _fail_recovery(*args, **kwargs):  # noqa: ANN001, ARG001
+        raise AssertionError("recovery should not run")
+
+    monkeypatch.setattr(
+        runner_module,
+        "_stream_agent_messages",
+        _fake_stream_agent_messages,
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "_try_host_ai_visible_answer_retry",
+        _fail_recovery,
+    )
+
+    events = []
+    async for msg, last in runner_module._stream_agent_messages_with_visible_fallback(
+        _FakeAgent(),
+        [SimpleNamespace(content="hello")],
+        timeout_seconds=1,
+        stream_state={},
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert events == [("Tool result summarized for the user.", True)]

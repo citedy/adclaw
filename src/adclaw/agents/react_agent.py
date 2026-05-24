@@ -53,6 +53,7 @@ from .tools import (
 )
 from .tools.aom_query import create_aom_query_tool
 from .tools.skill_patcher import patch_skill_script, TOOL_SPEC as _PATCHER_TOOL_SPEC
+from ..providers.store import get_active_llm_config
 from .utils import process_file_and_media_blocks_in_message
 from ..config import load_config
 from ..constant import (
@@ -65,6 +66,20 @@ if TYPE_CHECKING:
     from ..agents.memory import MemoryManager
 
 logger = logging.getLogger(__name__)
+
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
+
+
+def _host_ai_shell_tool_enabled() -> bool:
+    """Return whether generic shell execution is allowed for Host AI chat."""
+    value = os.getenv("ADCLAW_HOST_AI_ALLOW_SHELL_TOOL", "").strip().lower()
+    if value in _TRUTHY_ENV_VALUES:
+        return True
+    try:
+        active = get_active_llm_config()
+    except Exception:
+        return False
+    return getattr(active, "provider_id", "") != "adclaw-host-ai"
 
 # Valid namesake strategies for tool registration
 NamesakeStrategy = Literal["override", "skip", "raise", "rename"]
@@ -216,10 +231,11 @@ class AdClawAgent(ReActAgent):
         toolkit = Toolkit()
 
         # Register built-in tools
-        toolkit.register_tool_function(
-            execute_shell_command,
-            namesake_strategy=namesake_strategy,
-        )
+        if _host_ai_shell_tool_enabled():
+            toolkit.register_tool_function(
+                execute_shell_command,
+                namesake_strategy=namesake_strategy,
+            )
         toolkit.register_tool_function(
             read_file,
             namesake_strategy=namesake_strategy,
@@ -272,9 +288,6 @@ class AdClawAgent(ReActAgent):
         Args:
             toolkit: Toolkit to register skills to
         """
-        # Check skills initialization
-        ensure_skills_initialized()
-
         working_skills_dir = get_working_skills_dir()
         available_skills = list_available_skills()
         skill_names = (
@@ -282,6 +295,10 @@ class AdClawAgent(ReActAgent):
             if self._persona_skill_names
             else available_skills
         )
+        if not self._persona_skill_names:
+            # Persona-pinned skills can resolve directly from built-ins even
+            # when active_skills is empty; warning in that path is noise.
+            ensure_skills_initialized()
 
         self._broken_skills = []
         for skill_name in skill_names:
