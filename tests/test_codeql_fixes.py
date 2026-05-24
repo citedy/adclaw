@@ -240,12 +240,16 @@ class TestEnvLineLengthLimit:
             {
                 "CITEDY_API_KEY": "citedy_agent_secret",
                 "ADCLAW_HOST_AI_BASE_URL": "https://real.adclaw.app/api/host-ai/v1",
+                "GOOGLE_AUTH_URL": "https://accounts.google.com/o/oauth2/v2/auth",
+                "AUTH_TOKEN": "session-token",
             },
         )
         values = {item.key: item.value for item in listed}
 
         assert values["CITEDY_API_KEY"] == envs_router._MASKED_SECRET_VALUE
         assert values["ADCLAW_HOST_AI_BASE_URL"] == "https://real.adclaw.app/api/host-ai/v1"
+        assert values["GOOGLE_AUTH_URL"] == "https://accounts.google.com/o/oauth2/v2/auth"
+        assert values["AUTH_TOKEN"] == envs_router._MASKED_SECRET_VALUE
 
         with patch(
             "adclaw.app.routers.envs.load_envs",

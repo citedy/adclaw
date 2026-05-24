@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/envs", tags=["envs"])
 _MASKED_SECRET_VALUE = "********"
 _SECRET_KEY_RE = re.compile(
-    r"(?:^|_)(?:API_)?(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH)(?:_|$)"
-    r"|AUTHORIZATION",
+    r"(?:^|_)(?:API_)?(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)(?:_|$)"
+    r"|(?:^|_)(?:AUTH|AUTHORIZATION)(?:_(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)|$)",
     re.IGNORECASE,
 )
 

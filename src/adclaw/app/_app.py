@@ -518,8 +518,12 @@ async def _agent_process_sse_generator(request: dict):
                 return
             except asyncio.CancelledError:
                 raise
-            except Exception:
-                logger.exception("Agent process stream failed")
+            except Exception as exc:
+                logger.error(
+                    "Agent process stream failed: %s",
+                    type(exc).__name__,
+                    exc_info=False,
+                )
                 for event in _safe_error_event(request, last_sequence + 1):
                     yield _sse_event(event)
                 return

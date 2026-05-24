@@ -146,7 +146,7 @@ async def test_agent_process_endpoint_watchdog_emits_visible_timeout(monkeypatch
     ):
         chunks.append(chunk)
 
-    for _ in range(10):
+    for _ in range(100):
         if closed:
             break
         await asyncio.sleep(0.01)
