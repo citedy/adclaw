@@ -278,6 +278,7 @@ class AgentQueryTimeoutError(TimeoutError):
 
 
 QUERY_TIMEOUT_EPSILON_SECONDS = 0.05
+QUERY_TIMEOUT_CLEANUP_SECONDS = 2.0
 
 
 def _agent_query_timeout_message(timeout_seconds: float) -> str:
@@ -299,12 +300,22 @@ def _persona_mcp_client_keys(persona):
 async def _raise_agent_query_timeout(agent, stream, timeout_seconds: float, exc):
     """Stop a query stream and raise a customer-safe timeout error."""
     try:
-        await stream.aclose()
+        await asyncio.wait_for(
+            stream.aclose(),
+            timeout=QUERY_TIMEOUT_CLEANUP_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Agent stream close timed out after query timeout")
     except Exception:
         logger.debug("Agent stream close failed after query timeout", exc_info=True)
 
     try:
-        await agent.interrupt()
+        await asyncio.wait_for(
+            agent.interrupt(),
+            timeout=QUERY_TIMEOUT_CLEANUP_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Agent interrupt timed out after query timeout")
     except Exception:
         logger.warning("Agent interrupt failed after query timeout", exc_info=True)
 
@@ -948,7 +959,18 @@ class AgentRunner(Runner):
         except asyncio.CancelledError:
             session_state_loaded = False
             if agent is not None:
-                await agent.interrupt()
+                try:
+                    await asyncio.wait_for(
+                        agent.interrupt(),
+                        timeout=QUERY_TIMEOUT_CLEANUP_SECONDS,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning("Agent interrupt timed out after cancellation")
+                except Exception:
+                    logger.warning(
+                        "Agent interrupt failed after cancellation",
+                        exc_info=True,
+                    )
             raise
         except Exception as e:
             if isinstance(e, AgentQueryTimeoutError):
@@ -1021,14 +1043,6 @@ class AgentRunner(Runner):
             logger.exception(f"Error in query handler: {e}{path_hint}")
             if debug_dump_path:
                 setattr(e, "debug_dump_path", debug_dump_path)
-                if hasattr(e, "add_note"):
-                    e.add_note(
-                        f"(Details:  {debug_dump_path})",
-                    )
-                suffix = f"\n(Details:  {debug_dump_path})"
-                e.args = (
-                    (f"{e.args[0]}{suffix}" if e.args else suffix.strip()),
-                ) + e.args[1:]
             raise
         finally:
             if agent is not None and session_state_loaded:

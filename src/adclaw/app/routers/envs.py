@@ -14,6 +14,12 @@ from ...envs import load_envs, save_envs, delete_env_var
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/envs", tags=["envs"])
+_MASKED_SECRET_VALUE = "********"
+_SECRET_KEY_RE = re.compile(
+    r"(?:^|_)(?:API_)?(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)(?:_|$)"
+    r"|(?:^|_)(?:AUTH|AUTHORIZATION)(?:_(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)|$)",
+    re.IGNORECASE,
+)
 
 
 # ------------------------------------------------------------------
@@ -35,6 +41,39 @@ class EnvKeyRef(BaseModel):
     plugin: str
     description: str
     configured: bool = False
+
+
+def _is_secret_key(key: str) -> bool:
+    """Return True for env names whose values must not be returned to clients."""
+    return bool(_SECRET_KEY_RE.search(key))
+
+
+def _safe_env_value(key: str, value: str) -> str:
+    """Mask secret values while preserving configured/not-configured state."""
+    if value and _is_secret_key(key):
+        return _MASKED_SECRET_VALUE
+    return value
+
+
+def _env_var_list(envs: Dict[str, str]) -> List[EnvVar]:
+    """Return env vars in stable order with secret values redacted."""
+    return [
+        EnvVar(key=k, value=_safe_env_value(k, v))
+        for k, v in sorted(envs.items())
+    ]
+
+
+def _clean_env_replacement(body: Dict[str, str]) -> Dict[str, str]:
+    """Prepare a full env replacement without overwriting masked secrets."""
+    existing = load_envs()
+    cleaned: Dict[str, str] = {}
+    for raw_key, raw_value in body.items():
+        key = raw_key.strip()
+        value = raw_value
+        if _is_secret_key(key) and value == _MASKED_SECRET_VALUE and key in existing:
+            value = existing[key]
+        cleaned[key] = value
+    return cleaned
 
 
 class BulkImportRequest(BaseModel):
@@ -60,7 +99,7 @@ class BulkImportRequest(BaseModel):
 async def list_envs() -> List[EnvVar]:
     """Return all configured env vars."""
     envs = load_envs()
-    return [EnvVar(key=k, value=v) for k, v in sorted(envs.items())]
+    return _env_var_list(envs)
 
 
 @router.put(
@@ -81,9 +120,9 @@ async def batch_save_envs(
                 400,
                 detail="Key cannot be empty",
             )
-    cleaned = {k.strip(): v for k, v in body.items()}
+    cleaned = _clean_env_replacement(body)
     save_envs(cleaned)
-    return [EnvVar(key=k, value=v) for k, v in sorted(cleaned.items())]
+    return _env_var_list(cleaned)
 
 
 @router.delete(
@@ -100,7 +139,7 @@ async def delete_env(key: str) -> List[EnvVar]:
             detail=f"Env var '{key}' not found",
         )
     envs = delete_env_var(key)
-    return [EnvVar(key=k, value=v) for k, v in sorted(envs.items())]
+    return _env_var_list(envs)
 
 
 # ------------------------------------------------------------------
@@ -216,4 +255,4 @@ async def bulk_import(body: BulkImportRequest) -> List[EnvVar]:
         envs = parsed
 
     save_envs(envs)
-    return [EnvVar(key=k, value=v) for k, v in sorted(envs.items())]
+    return _env_var_list(envs)

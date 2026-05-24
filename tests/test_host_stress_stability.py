@@ -122,6 +122,66 @@ def test_refresh_persisted_envs_for_query_swallows_loader_errors(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_agent_process_endpoint_watchdog_emits_visible_timeout(monkeypatch):
+    from adclaw.app import _app as app_module
+
+    closed = False
+
+    class FakeRunner:
+        async def stream_query(self, request):  # noqa: ARG002
+            nonlocal closed
+            try:
+                await asyncio.sleep(30)
+                yield {"unreachable": True}
+            finally:
+                closed = True
+
+    monkeypatch.setattr(app_module, "runner", FakeRunner())
+    monkeypatch.setattr(app_module, "_agent_process_timeout_seconds", lambda: 0.05)
+    monkeypatch.setattr(app_module, "_AGENT_PROCESS_HEARTBEAT_SECONDS", 0.01)
+
+    chunks = []
+    async for chunk in app_module._agent_process_sse_generator(
+        {"id": "response_test", "session_id": "session_test"},
+    ):
+        chunks.append(chunk)
+
+    for _ in range(100):
+        if closed:
+            break
+        await asyncio.sleep(0.01)
+    body = "".join(chunks)
+    assert chunks[0].startswith(": adclaw-agent-process-start")
+    assert "stopped it safely" in body
+    assert '"object":"message"' in body
+    assert '"object":"response"' in body
+    assert closed is True
+
+
+@pytest.mark.asyncio
+async def test_agent_process_endpoint_error_event_redacts_exception(monkeypatch):
+    from adclaw.app import _app as app_module
+
+    class FakeRunner:
+        async def stream_query(self, request):  # noqa: ARG002
+            raise RuntimeError("provider leaked sk-test-secret")
+            yield {"unreachable": True}
+
+    monkeypatch.setattr(app_module, "runner", FakeRunner())
+    monkeypatch.setattr(app_module, "_agent_process_timeout_seconds", lambda: 1)
+
+    chunks = []
+    async for chunk in app_module._agent_process_sse_generator(
+        {"id": "response_test", "session_id": "session_test"},
+    ):
+        chunks.append(chunk)
+
+    body = "".join(chunks)
+    assert "adclaw_agent_process_error" in body
+    assert "sk-test-secret" not in body
+
+
+@pytest.mark.asyncio
 async def test_stream_agent_messages_timeout_interrupts_agent(monkeypatch):
     class FakeAgent:
         interrupted = False

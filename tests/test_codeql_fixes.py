@@ -232,6 +232,35 @@ class TestEnvLineLengthLimit:
         assert "ANOTHER" in keys, "Another normal key should be imported"
         assert "HUGE_KEY" not in keys, "Long line should be skipped"
 
+    def test_env_responses_mask_secret_values_and_preserve_placeholders(self):
+        """Secret env values should not be returned or overwritten by masks."""
+        from adclaw.app.routers import envs as envs_router
+
+        listed = envs_router._env_var_list(
+            {
+                "CITEDY_API_KEY": "citedy_agent_secret",
+                "ADCLAW_HOST_AI_BASE_URL": "https://real.adclaw.app/api/host-ai/v1",
+                "GOOGLE_AUTH_URL": "https://accounts.google.com/o/oauth2/v2/auth",
+                "AUTH_TOKEN": "session-token",
+            },
+        )
+        values = {item.key: item.value for item in listed}
+
+        assert values["CITEDY_API_KEY"] == envs_router._MASKED_SECRET_VALUE
+        assert values["ADCLAW_HOST_AI_BASE_URL"] == "https://real.adclaw.app/api/host-ai/v1"
+        assert values["GOOGLE_AUTH_URL"] == "https://accounts.google.com/o/oauth2/v2/auth"
+        assert values["AUTH_TOKEN"] == envs_router._MASKED_SECRET_VALUE
+
+        with patch(
+            "adclaw.app.routers.envs.load_envs",
+            return_value={"CITEDY_API_KEY": "citedy_agent_secret"},
+        ):
+            cleaned = envs_router._clean_env_replacement(
+                {"CITEDY_API_KEY": envs_router._MASKED_SECRET_VALUE},
+            )
+
+        assert cleaned["CITEDY_API_KEY"] == "citedy_agent_secret"
+
 
 # --- Workflow permissions test ---
 
