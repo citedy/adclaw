@@ -14,6 +14,7 @@ from adclaw.app.runner import runner as runner_module
 def isolated_host_ai_direct_env(monkeypatch):
     """Keep hosted direct-chat tests independent from machine envs.json."""
     monkeypatch.delenv("ADCLAW_HOST_AI_DIRECT_CHAT", raising=False)
+    monkeypatch.delenv("ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS", raising=False)
     monkeypatch.delenv("ADCLAW_HOST_AI_DIRECT_ALLOWED_HOSTS", raising=False)
     monkeypatch.delenv("CITEDY_API_KEY", raising=False)
     try:
@@ -453,6 +454,54 @@ async def test_host_ai_direct_chat_times_out_without_sticky_commit(
         chunks.append(chunk)
 
     body = "".join(chunks)
+    assert "stopped it safely" in body
+    assert "session_test" not in FakeRunner._session_persona_map
+
+
+@pytest.mark.asyncio
+async def test_host_ai_direct_chat_uses_default_timeout_when_env_missing(
+    monkeypatch,
+):
+    from adclaw.app import _app as app_module
+
+    class FakeRunner:
+        _session_persona_map = {}
+
+    captured_timeout = None
+
+    async def hanging_completion(cfg, messages, timeout_seconds):  # noqa: ARG001
+        nonlocal captured_timeout
+        captured_timeout = timeout_seconds
+        await asyncio.sleep(1)
+        yield "too late"
+
+    monkeypatch.setenv("ADCLAW_HOST_AI_DIRECT_CHAT", "true")
+    monkeypatch.setattr(app_module, "_HOST_AI_DIRECT_DEFAULT_TIMEOUT_SECONDS", 0.01)
+    monkeypatch.setattr(app_module, "runner", FakeRunner())
+    monkeypatch.setattr(app_module, "load_config", _hosted_persona_config)
+    monkeypatch.setattr(
+        app_module,
+        "_active_host_ai_direct_config",
+        lambda: app_module._HostAiDirectConfig(
+            base_url="https://real.adclaw.app/api/host-ai/v1",
+            api_key="ach_test-token",
+            model="@cf/test/model",
+        ),
+    )
+    monkeypatch.setattr(
+        app_module,
+        "_stream_host_ai_direct_completion",
+        hanging_completion,
+    )
+
+    chunks = []
+    async for chunk in app_module._agent_process_sse_generator(
+        _agent_scope_request("@seo-specialist missing timeout env"),
+    ):
+        chunks.append(chunk)
+
+    body = "".join(chunks)
+    assert captured_timeout == 0.01
     assert "stopped it safely" in body
     assert "session_test" not in FakeRunner._session_persona_map
 
