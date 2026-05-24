@@ -67,6 +67,7 @@ def test_host_ai_remote_model_gets_safe_max_tokens(monkeypatch):
             self.model_name = model_name
             self.kwargs = kwargs
 
+    monkeypatch.delenv("ADCLAW_HOST_AI_MAX_OUTPUT_TOKENS", raising=False)
     monkeypatch.delenv("ADCLAW_HOST_AI_MAX_TOKENS", raising=False)
     llm_cfg = SimpleNamespace(
         provider_id="adclaw-host-ai",
@@ -77,7 +78,7 @@ def test_host_ai_remote_model_gets_safe_max_tokens(monkeypatch):
 
     model = _create_remote_model_instance(llm_cfg, FakeChatModel)
 
-    assert model.kwargs["generate_kwargs"] == {"max_tokens": 768}
+    assert model.kwargs["generate_kwargs"] == {"max_tokens": 4096}
 
 
 def test_host_ai_remote_model_uses_canonical_max_output_tokens(monkeypatch):
@@ -120,3 +121,87 @@ def test_non_host_ai_remote_model_does_not_get_host_generation_cap():
     model = _create_remote_model_instance(llm_cfg, FakeChatModel)
 
     assert "generate_kwargs" not in model.kwargs
+
+
+def test_tool_result_string_is_truncated_for_host_ai_context(monkeypatch):
+    from adclaw.agents.model_factory import _create_file_block_support_formatter
+
+    class FakeFormatter:
+        @staticmethod
+        def convert_tool_result_to_string(output):
+            return str(output), []
+
+    monkeypatch.setenv("ADCLAW_HOST_AI_ENABLED", "true")
+    monkeypatch.setenv("ADCLAW_LLM_TOOL_RESULT_MAX_CHARS", "160")
+    formatter = _create_file_block_support_formatter(FakeFormatter)
+    raw = "A" * 200 + "TAIL"
+
+    text, data = formatter.convert_tool_result_to_string(raw)
+
+    assert data == []
+    assert len(text) <= 160
+    assert text.startswith("A")
+    assert text.endswith("TAIL")
+    assert "tool result truncated from 204 to 160 chars" in text
+
+
+def test_parent_tool_result_conversion_is_truncated(monkeypatch):
+    from adclaw.agents.model_factory import _create_file_block_support_formatter
+
+    class FakeFormatter:
+        @staticmethod
+        def convert_tool_result_to_string(output):
+            return "B" * 220 + "END", [("file.txt", {"type": "file"})]
+
+    monkeypatch.setenv("ADCLAW_HOST_AI_ENABLED", "true")
+    monkeypatch.setenv("ADCLAW_LLM_TOOL_RESULT_MAX_CHARS", "180")
+    formatter = _create_file_block_support_formatter(FakeFormatter)
+
+    text, data = formatter.convert_tool_result_to_string([{"type": "text"}])
+
+    assert data == [("file.txt", {"type": "file"})]
+    assert len(text) <= 180
+    assert text.endswith("END")
+    assert "tool result truncated from 223 to 180 chars" in text
+
+
+def test_tool_result_string_is_not_truncated_for_byo_provider(monkeypatch):
+    from adclaw.agents.model_factory import _create_file_block_support_formatter
+
+    class FakeFormatter:
+        @staticmethod
+        def convert_tool_result_to_string(output):
+            return str(output), []
+
+    monkeypatch.delenv("ADCLAW_HOST_AI_ENABLED", raising=False)
+    monkeypatch.delenv("ADCLAW_HOST_AI_BASE_URL", raising=False)
+    monkeypatch.setenv("ADCLAW_LLM_TOOL_RESULT_MAX_CHARS", "160")
+    formatter = _create_file_block_support_formatter(FakeFormatter)
+    raw = "A" * 200 + "TAIL"
+
+    text, data = formatter.convert_tool_result_to_string(raw)
+
+    assert data == []
+    assert text == raw
+
+
+def test_file_block_fallback_tool_result_is_truncated(monkeypatch):
+    from adclaw.agents.model_factory import _create_file_block_support_formatter
+
+    class FakeFormatter:
+        @staticmethod
+        def convert_tool_result_to_string(output):
+            raise ValueError("Unsupported block type: file")
+
+    monkeypatch.setenv("ADCLAW_HOST_AI_ENABLED", "true")
+    monkeypatch.setenv("ADCLAW_LLM_TOOL_RESULT_MAX_CHARS", "220")
+    formatter = _create_file_block_support_formatter(FakeFormatter)
+    long_name = "deck-" + ("X" * 260) + ".pptx"
+    block = {"type": "file", "name": long_name, "path": "/tmp/deck.pptx"}
+
+    text, data = formatter.convert_tool_result_to_string([block])
+
+    assert data == [("/tmp/deck.pptx", block)]
+    assert len(text) <= 220
+    assert "tool result truncated" in text
+    assert "/tmp/deck.pptx" in text

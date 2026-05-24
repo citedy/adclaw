@@ -59,12 +59,18 @@ _HOST_AI_LIMIT_MARKERS = (
     "adclaw_host_ai_limit_reached",
     "host_ai_limit_reached",
 )
+_HOST_AI_TRANSIENT_MARKERS = (
+    "host_ai_output_budget_exhausted",
+    "host_ai_no_visible_output",
+)
 
 _TRUTHY_ENV_VALUES = ("1", "true", "yes", "on")
 _MANAGED_QUERY_ENV_KEYS = (
     "ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS",
     "ADCLAW_HOST_AI_MAX_OUTPUT_TOKENS",
     "ADCLAW_HOST_AI_MAX_TOKENS",
+    "ADCLAW_LLM_TOOL_RESULT_MAX_CHARS",
+    "ADCLAW_HOST_AI_TOOL_RESULT_TRUNCATION",
 )
 
 
@@ -204,12 +210,27 @@ def _is_host_ai_limit_error(exc: Exception) -> bool:
     return status_code == 429 and "host ai" in text and "limit" in text
 
 
+def _is_host_ai_transient_error(exc: Exception) -> bool:
+    """Return true when managed Host AI failed to produce usable output."""
+    text = _exception_search_text(exc)
+    return any(marker in text for marker in _HOST_AI_TRANSIENT_MARKERS)
+
+
 def _host_ai_limit_message() -> str:
     """Customer-facing copy for the hosted monthly Host AI cap."""
     return (
         "Included AdClaw Host AI messages for this billing period are used. "
         "Connect your own LLM key in Settings -> Models to continue now, "
         "or wait for the next billing period when the included messages reset."
+    )
+
+
+def _host_ai_transient_message() -> str:
+    """Customer-facing copy for managed Host AI empty/truncated answers."""
+    return (
+        "Included AdClaw Host AI could not finish a visible answer. "
+        "Retry once with a shorter request, or connect your own LLM key "
+        "in Settings -> Models if it repeats."
     )
 
 
@@ -670,7 +691,10 @@ class AgentRunner(Runner):
                     resolve_fallback_chain,
                 )
                 host_ai_limit_reached = _is_host_ai_limit_error(first_err)
-                non_host_provider_error_seen = not host_ai_limit_reached
+                host_ai_transient_seen = _is_host_ai_transient_error(first_err)
+                non_host_provider_error_seen = not (
+                    host_ai_limit_reached or host_ai_transient_seen
+                )
 
                 from agentscope.message import Msg
 
@@ -681,11 +705,22 @@ class AgentRunner(Runner):
                         content=_host_ai_limit_message(),
                     )
 
+                def _yield_host_ai_transient_msg():
+                    return Msg(
+                        name="system",
+                        role="assistant",
+                        content=_host_ai_transient_message(),
+                    )
+
                 fallback_cfg = get_fallback_config()
                 if not fallback_cfg.enabled:
                     if host_ai_limit_reached:
                         assistant_text = _host_ai_limit_message()
                         yield _yield_host_ai_limit_msg(), True
+                        return
+                    if host_ai_transient_seen:
+                        assistant_text = _host_ai_transient_message()
+                        yield _yield_host_ai_transient_msg(), True
                         return
                     raise
 
@@ -694,6 +729,10 @@ class AgentRunner(Runner):
                     if host_ai_limit_reached:
                         assistant_text = _host_ai_limit_message()
                         yield _yield_host_ai_limit_msg(), True
+                        return
+                    if host_ai_transient_seen:
+                        assistant_text = _host_ai_transient_message()
+                        yield _yield_host_ai_transient_msg(), True
                         return
                     raise
 
@@ -721,6 +760,10 @@ class AgentRunner(Runner):
                     if host_ai_limit_reached:
                         assistant_text = _host_ai_limit_message()
                         yield _yield_host_ai_limit_msg(), True
+                        return
+                    if host_ai_transient_seen:
+                        assistant_text = _host_ai_transient_message()
+                        yield _yield_host_ai_transient_msg(), True
                         return
                     raise
 
@@ -796,11 +839,21 @@ class AgentRunner(Runner):
                         raise
                     except _OAIAPIError as fb_err:
                         fb_host_ai_limit_reached = _is_host_ai_limit_error(fb_err)
+                        fb_host_ai_transient_seen = _is_host_ai_transient_error(
+                            fb_err,
+                        )
                         host_ai_limit_reached = (
                             host_ai_limit_reached
                             or fb_host_ai_limit_reached
                         )
-                        if not fb_host_ai_limit_reached:
+                        host_ai_transient_seen = (
+                            host_ai_transient_seen
+                            or fb_host_ai_transient_seen
+                        )
+                        if not (
+                            fb_host_ai_limit_reached
+                            or fb_host_ai_transient_seen
+                        ):
                             non_host_provider_error_seen = True
                         logger.warning(
                             "Fallback model %s failed with API error: %s",
@@ -812,6 +865,8 @@ class AgentRunner(Runner):
                 exhausted_content = (
                     _host_ai_limit_message()
                     if host_ai_limit_reached and not non_host_provider_error_seen
+                    else _host_ai_transient_message()
+                    if host_ai_transient_seen and not non_host_provider_error_seen
                     else (
                         f"All {len(resolved_chain)} fallback model(s) "
                         "also failed. Please check your provider configurations."
