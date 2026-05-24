@@ -97,6 +97,17 @@ def test_refresh_persisted_envs_for_query_overwrites_managed_guardrail(monkeypat
     assert runner_module._env_float("ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS", 0.0) == 55
 
 
+def test_model_client_timeout_uses_query_timeout_cap():
+    assert runner_module._model_client_timeout_seconds(55, None) == 54
+    assert runner_module._model_client_timeout_seconds(55, 120) == 54
+    assert runner_module._model_client_timeout_seconds(55, 10) == 10
+
+
+def test_model_client_timeout_preserves_unmanaged_provider_timeout():
+    assert runner_module._model_client_timeout_seconds(0, None) is None
+    assert runner_module._model_client_timeout_seconds(0, 30) == 30
+
+
 def test_refresh_persisted_envs_for_query_swallows_loader_errors(monkeypatch):
     def fake_load_envs_into_environ():
         raise RuntimeError("env store unavailable")
