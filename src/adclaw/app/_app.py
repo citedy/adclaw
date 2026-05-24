@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name,unused-argument
 import asyncio
+import json
 import mimetypes
 import os
 import sys
@@ -10,10 +11,18 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from agentscope_runtime.engine.app import AgentApp
+from agentscope_runtime.engine.schemas.agent_schemas import (
+    AgentResponse,
+    Message,
+    MessageType,
+    SequenceNumberGenerator,
+    TextContent,
+)
 
 from .runner import AgentRunner
+from .runner.runner import _agent_query_timeout_message
 from ..config import (  # pylint: disable=no-name-in-module
     load_config,
     update_last_dispatch,
@@ -333,6 +342,217 @@ def read_root():
 def get_version():
     """Return the current AdClaw version."""
     return {"version": __version__}
+
+
+_AGENT_PROCESS_TIMEOUT_ENV = "ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS"
+_AGENT_PROCESS_HEARTBEAT_SECONDS = 10.0
+_AGENT_PROCESS_CLEANUP_SECONDS = 2.0
+
+
+def _agent_process_timeout_seconds() -> float:
+    """Return the hosted chat timeout from persisted env vars."""
+    try:
+        load_envs_into_environ()
+    except Exception:
+        logger.warning(
+            "Failed to refresh persisted env vars before agent process",
+            exc_info=True,
+        )
+    raw = os.environ.get(_AGENT_PROCESS_TIMEOUT_ENV, "0")
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        logger.warning(
+            "Invalid %s=%r; disabling endpoint timeout",
+            _AGENT_PROCESS_TIMEOUT_ENV,
+            raw,
+        )
+        return 0.0
+
+
+def _sse_json(data: str) -> str:
+    return f"data: {data}\n\n"
+
+
+def _sse_event(event) -> str:
+    if hasattr(event, "model_dump_json"):
+        return _sse_json(event.model_dump_json())
+    if hasattr(event, "json"):
+        return _sse_json(event.json())
+    return _sse_json(json.dumps(event, ensure_ascii=False, default=str))
+
+
+def _timeout_events(request: dict, timeout_seconds: float, start_sequence: int):
+    """Build protocol-compatible visible timeout events."""
+    seq = SequenceNumberGenerator(start=start_sequence)
+    content_text = _agent_query_timeout_message(timeout_seconds)
+    message = Message(
+        type=MessageType.MESSAGE,
+        role="assistant",
+    )
+    content = TextContent(
+        index=0,
+        msg_id=message.id,
+        text=content_text,
+    ).completed()
+    response = AgentResponse(
+        id=request.get("id"),
+        session_id=request.get("session_id"),
+    )
+
+    yield seq.yield_with_sequence(message.in_progress())
+    yield seq.yield_with_sequence(content)
+    message.content = [content]
+    yield seq.yield_with_sequence(message.completed())
+    response.add_new_message(message)
+    yield seq.yield_with_sequence(response.completed())
+
+
+async def _cleanup_agent_process_stream(agen, next_task, reason: str) -> None:
+    """Best-effort bounded cleanup for a stalled or disconnected agent stream."""
+    if next_task is not None and not next_task.done():
+        next_task.cancel()
+        try:
+            await asyncio.wait_for(next_task, _AGENT_PROCESS_CLEANUP_SECONDS)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            logger.debug(
+                "Agent process next chunk cleanup failed after %s",
+                reason,
+                exc_info=True,
+            )
+
+    try:
+        await asyncio.wait_for(agen.aclose(), _AGENT_PROCESS_CLEANUP_SECONDS)
+    except RuntimeError:
+        # The async generator can still be closing from the cancelled __anext__.
+        logger.debug("Agent process stream already closing after %s", reason)
+    except Exception:
+        logger.debug(
+            "Agent process stream close failed after %s",
+            reason,
+            exc_info=True,
+        )
+
+
+def _safe_error_event(request: dict, start_sequence: int):
+    """Build a customer-safe generic failure event without raw exception text."""
+    seq = SequenceNumberGenerator(start=start_sequence)
+    response = AgentResponse(
+        id=request.get("id"),
+        session_id=request.get("session_id"),
+    )
+    from agentscope_runtime.engine.schemas.agent_schemas import Error
+
+    yield seq.yield_with_sequence(
+        response.failed(
+            Error(
+                code="adclaw_agent_process_error",
+                message=(
+                    "AdClaw could not finish this request. Retry once, "
+                    "or start a fresh chat if it repeats."
+                ),
+            ),
+        ),
+    )
+
+
+async def _agent_process_sse_generator(request: dict):
+    """Stream chat through an AdClaw-owned SSE watchdog.
+
+    The upstream AgentScope route can leave clients with no terminal event when
+    setup, adapter, or provider first-byte work stalls. This wrapper owns the
+    `/api/agent/process` boundary: it commits the stream immediately, enforces
+    a single request deadline, and emits a visible final message on timeout.
+    """
+    timeout_seconds = _agent_process_timeout_seconds()
+    deadline = (
+        asyncio.get_running_loop().time() + timeout_seconds
+        if timeout_seconds > 0
+        else None
+    )
+    heartbeat_seconds = _AGENT_PROCESS_HEARTBEAT_SECONDS
+    agen = runner.stream_query(request)
+    next_task = None
+    last_sequence = -1
+    cleanup_scheduled = False
+
+    yield ": adclaw-agent-process-start\n\n"
+
+    try:
+        while True:
+            if next_task is None:
+                next_task = asyncio.create_task(agen.__anext__())
+
+            if deadline is None:
+                wait_seconds = None
+            else:
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    cleanup_scheduled = True
+                    asyncio.create_task(
+                        _cleanup_agent_process_stream(
+                            agen,
+                            next_task,
+                            "timeout",
+                        ),
+                    )
+                    for event in _timeout_events(
+                        request,
+                        timeout_seconds,
+                        last_sequence + 1,
+                    ):
+                        yield _sse_event(event)
+                    return
+                wait_seconds = min(heartbeat_seconds, remaining)
+
+            done, _ = await asyncio.wait({next_task}, timeout=wait_seconds)
+            if not done:
+                yield ": adclaw-agent-process-heartbeat\n\n"
+                continue
+
+            try:
+                chunk = next_task.result()
+            except StopAsyncIteration:
+                return
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Agent process stream failed")
+                for event in _safe_error_event(request, last_sequence + 1):
+                    yield _sse_event(event)
+                return
+
+            sequence_number = getattr(chunk, "sequence_number", None)
+            if isinstance(sequence_number, int):
+                last_sequence = max(last_sequence, sequence_number)
+            yield _sse_event(chunk)
+            next_task = None
+    except asyncio.CancelledError:
+        cleanup_scheduled = True
+        asyncio.create_task(
+            _cleanup_agent_process_stream(agen, next_task, "client disconnect"),
+        )
+        raise
+    finally:
+        if not cleanup_scheduled and next_task is not None and not next_task.done():
+            asyncio.create_task(
+                _cleanup_agent_process_stream(agen, next_task, "generator exit"),
+            )
+
+
+@app.post("/api/agent/process", include_in_schema=False)
+async def adclaw_agent_process(request: dict):
+    """Run the console chat stream with AdClaw-owned timeout semantics."""
+    return StreamingResponse(
+        _agent_process_sse_generator(request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 app.include_router(api_router, prefix="/api")
