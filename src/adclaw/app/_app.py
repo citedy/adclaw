@@ -359,6 +359,7 @@ _HOST_AI_DIRECT_LEGACY_MAX_OUTPUT_ENV = "ADCLAW_HOST_AI_MAX_TOKENS"
 _HOST_AI_DIRECT_DEFAULT_MAX_OUTPUT = 512
 _HOST_AI_DIRECT_ALLOWED_HOSTS_ENV = "ADCLAW_HOST_AI_DIRECT_ALLOWED_HOSTS"
 _HOST_AI_DIRECT_DEFAULT_ALLOWED_HOSTS = ("real.adclaw.app",)
+_HOST_AI_DIRECT_DEFAULT_TIMEOUT_SECONDS = 55.0
 _HOST_AI_TOKEN_PREFIX = "ach_"
 _TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
@@ -979,8 +980,10 @@ async def _agent_process_sse_generator(request: dict):
     a single request deadline, and emits a visible final message on timeout.
     """
     request = _request_with_stable_response_id(request)
-    timeout_seconds = _agent_process_timeout_seconds()
     direct_enabled = _host_ai_direct_chat_enabled()
+    timeout_seconds = _agent_process_timeout_seconds()
+    if direct_enabled and timeout_seconds <= 0:
+        timeout_seconds = _HOST_AI_DIRECT_DEFAULT_TIMEOUT_SECONDS
     direct_cfg = _active_host_ai_direct_config() if direct_enabled else None
 
     yield ": adclaw-agent-process-start\n\n"
