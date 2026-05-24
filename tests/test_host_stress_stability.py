@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 
 import pytest
@@ -157,6 +158,53 @@ async def test_agent_process_endpoint_watchdog_emits_visible_timeout(monkeypatch
     assert "stopped it safely" in body
     assert '"object":"message"' in body
     assert '"object":"response"' in body
+    assert closed is True
+
+
+@pytest.mark.asyncio
+async def test_agent_process_endpoint_assigns_stable_response_id(monkeypatch):
+    from adclaw.app import _app as app_module
+
+    closed = False
+    seen_request_id = None
+
+    class FakeRunner:
+        async def stream_query(self, request):
+            nonlocal closed, seen_request_id
+            seen_request_id = request.get("id")
+            try:
+                await asyncio.sleep(30)
+                yield {"unreachable": True}
+            finally:
+                closed = True
+
+    monkeypatch.setattr(app_module, "runner", FakeRunner())
+    monkeypatch.setattr(app_module, "_agent_process_timeout_seconds", lambda: 0.05)
+    monkeypatch.setattr(app_module, "_AGENT_PROCESS_HEARTBEAT_SECONDS", 0.01)
+
+    chunks = []
+    async for chunk in app_module._agent_process_sse_generator(
+        {"session_id": "session_test"},
+    ):
+        chunks.append(chunk)
+
+    for _ in range(100):
+        if closed:
+            break
+        await asyncio.sleep(0.01)
+
+    response_ids = []
+    for chunk in chunks:
+        for line in chunk.splitlines():
+            if not line.startswith("data: "):
+                continue
+            payload = json.loads(line.removeprefix("data: "))
+            if payload.get("object") == "response":
+                response_ids.append(payload.get("id"))
+
+    assert len(set(response_ids)) == 1
+    assert seen_request_id == response_ids[0]
+    assert response_ids[0].startswith("response_")
     assert closed is True
 
 
