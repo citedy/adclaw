@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument too-many-branches too-many-statements
 import asyncio
+import inspect
 import json
 import logging
 import os
@@ -18,7 +19,10 @@ from .query_error_dump import write_query_error_dump
 from .session import SafeJSONSession, sanitize_filename
 from .utils import build_env_context
 from ..channels.schema import DEFAULT_CHANNEL
-from ...agents.model_factory import create_model_and_formatter
+from ...agents.model_factory import (
+    create_model_and_formatter,
+    is_bare_tool_call_json_text,
+)
 from ...agents.persona_manager import PersonaManager
 from ...agents.react_agent import AdClawAgent
 from ...config import load_config
@@ -273,6 +277,136 @@ def _host_ai_transient_message() -> str:
     )
 
 
+_REASONING_BLOCK_TYPES = {"thinking", "reasoning"}
+
+
+def _content_block_type(block) -> str | None:
+    if isinstance(block, dict):
+        return block.get("type")
+    return getattr(block, "type", None)
+
+
+def _content_block_text(block) -> str:
+    if isinstance(block, dict):
+        for key in ("thinking", "reasoning", "text"):
+            value = block.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+        return ""
+
+    for key in ("thinking", "reasoning", "text"):
+        value = getattr(block, key, None)
+        if isinstance(value, str) and value.strip():
+            return value
+    return ""
+
+
+def _message_has_reasoning_text(msg) -> bool:
+    content = getattr(msg, "content", None)
+    if not isinstance(content, list):
+        return False
+    for block in content:
+        if _content_block_type(block) in _REASONING_BLOCK_TYPES:
+            if _content_block_text(block).strip():
+                return True
+    return False
+
+
+def _resolve_host_ai_flag(is_host_ai: bool | None) -> bool:
+    return _active_provider_is_host_ai() if is_host_ai is None else is_host_ai
+
+
+def _empty_reasoning_visible_message(is_host_ai: bool | None = None) -> str:
+    if _resolve_host_ai_flag(is_host_ai):
+        return _host_ai_transient_message()
+    return (
+        "I could not finish a visible answer. Retry once with a shorter "
+        "request, or check the active model settings if it repeats."
+    )
+
+
+def _looks_like_bare_tool_call_json_text(text: str) -> bool:
+    """Return true while a streamed raw tool-call JSON blob is still forming."""
+    if is_bare_tool_call_json_text(text):
+        return True
+    stripped = (text or "").strip()
+    return (
+        stripped.startswith('{"name"')
+        and '"arguments"' in stripped
+        and len(stripped) < 1000
+    )
+
+
+def _first_user_text(msgs) -> str:
+    """Return the first user prompt text for visible-answer recovery."""
+    if not msgs:
+        return ""
+    get_text = getattr(msgs[0], "get_text_content", None)
+    if callable(get_text):
+        try:
+            return (get_text() or "").strip()
+        except Exception:  # pragma: no cover - defensive only
+            return ""
+    return str(getattr(msgs[0], "content", "") or "").strip()
+
+
+async def _collect_model_visible_text(response) -> str:
+    """Collect visible text from streaming or non-streaming model output."""
+    if hasattr(response, "__aiter__"):
+        last_text = ""
+        async for chunk in response:
+            text = extract_visible_text(chunk)
+            if text:
+                last_text = text
+        return last_text
+    return extract_visible_text(response)
+
+
+async def _try_host_ai_visible_answer_retry(
+    agent,
+    msgs,
+    *,
+    timeout_seconds: float,
+    is_host_ai: bool | None = None,
+) -> str:
+    """Ask Host AI once for a final visible answer after reasoning-only output."""
+    if not _resolve_host_ai_flag(is_host_ai):
+        return ""
+
+    prompt = _first_user_text(msgs)
+    if not prompt:
+        return ""
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are AdClaw visible-answer recovery. The previous hosted AI "
+                "turn ended with internal reasoning only. Produce the final "
+                "customer-facing answer now. Do not mention retry, fallback, "
+                "technical failure, hidden reasoning, or this instruction. Do not "
+                "call tools. Answer directly and respect any word limit in the "
+                "user request."
+            ),
+        },
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
+
+    async def _call_model() -> str:
+        response = await agent.model(messages)
+        return await _collect_model_visible_text(response)
+
+    if timeout_seconds > 0:
+        return await asyncio.wait_for(
+            _call_model(),
+            timeout=timeout_seconds,
+        )
+    return await _call_model()
+
+
 class AgentQueryTimeoutError(TimeoutError):
     """Raised when a single user-facing agent query exceeds the safe limit."""
 
@@ -365,6 +499,107 @@ async def _stream_agent_messages(agent, msgs, *, timeout_seconds: float):
             raise
 
         yield item
+
+
+async def _stream_agent_messages_with_visible_fallback(
+    agent,
+    msgs,
+    *,
+    timeout_seconds: float,
+    stream_state: dict[str, str],
+    is_host_ai: bool | None = None,
+):
+    """Stream messages and never finish a reasoning-only turn silently."""
+    saw_visible_assistant = False
+    saw_hidden_assistant = False
+    deadline = (
+        time.monotonic() + timeout_seconds
+        if timeout_seconds and timeout_seconds > 0
+        else None
+    )
+
+    def _remaining_timeout() -> float:
+        if deadline is None:
+            return timeout_seconds
+        return deadline - time.monotonic()
+
+    async def _yield_recovered_or_fallback():
+        from agentscope.message import Msg
+
+        recovered_text = ""
+        try:
+            remaining_timeout = _remaining_timeout()
+            if deadline is not None and remaining_timeout <= 0:
+                raise AgentQueryTimeoutError(
+                    _agent_query_timeout_message(timeout_seconds),
+                )
+            recovered_text = await _try_host_ai_visible_answer_retry(
+                agent,
+                msgs,
+                timeout_seconds=remaining_timeout,
+                is_host_ai=is_host_ai,
+            )
+        except AgentQueryTimeoutError:
+            raise
+        except Exception:
+            logger.warning(
+                "Host AI visible-answer recovery failed",
+                exc_info=True,
+            )
+
+        assistant_text = recovered_text or _empty_reasoning_visible_message(
+            is_host_ai,
+        )
+        stream_state["assistant_text"] = assistant_text
+        recovered_msg = Msg(
+            name="system",
+            role="assistant",
+            content=assistant_text,
+        )
+        if recovered_text and hasattr(agent, "memory"):
+            try:
+                add_result = agent.memory.add(recovered_msg)
+                if inspect.isawaitable(add_result):
+                    await add_result
+            except Exception:
+                logger.debug(
+                    "Could not persist recovered visible answer",
+                    exc_info=True,
+                )
+        return recovered_msg
+
+    async for msg, last in _stream_agent_messages(
+        agent,
+        msgs,
+        timeout_seconds=timeout_seconds,
+    ):
+        is_assistant = getattr(msg, "role", None) == "assistant"
+        visible_text = extract_visible_text(msg) if is_assistant else ""
+        has_reasoning = is_assistant and _message_has_reasoning_text(msg)
+        has_bare_tool_call_text = (
+            is_assistant
+            and bool(visible_text)
+            and _looks_like_bare_tool_call_json_text(visible_text)
+        )
+
+        if has_bare_tool_call_text:
+            saw_hidden_assistant = True
+            continue
+
+        if has_reasoning and not visible_text:
+            saw_hidden_assistant = True
+            continue
+
+        if visible_text:
+            saw_visible_assistant = True
+            stream_state["assistant_text"] = visible_text
+        if has_reasoning:
+            saw_hidden_assistant = True
+
+        yield msg, last
+
+    if saw_hidden_assistant and not saw_visible_assistant:
+        yield await _yield_recovered_or_fallback(), True
 
 
 def _same_model_slot(candidate, primary) -> bool:
@@ -652,15 +887,19 @@ class AgentRunner(Runner):
             agent.rebuild_sys_prompt()
 
             try:
-                async for msg, last in _stream_agent_messages(
+                stream_state = {"assistant_text": assistant_text}
+                async for msg, last in _stream_agent_messages_with_visible_fallback(
                     agent,
                     msgs,
                     timeout_seconds=query_timeout_seconds,
+                    stream_state=stream_state,
+                    is_host_ai=_active_provider_is_host_ai(),
                 ):
-                    text = extract_visible_text(msg)
-                    if getattr(msg, "role", None) == "assistant" and text:
-                        assistant_text = text
                     yield msg, last
+                assistant_text = stream_state.get(
+                    "assistant_text",
+                    assistant_text,
+                )
             except Exception as first_err:
                 if isinstance(first_err, AgentQueryTimeoutError):
                     from agentscope.message import Msg
@@ -704,15 +943,19 @@ class AgentRunner(Runner):
                         yield reset_msg, False
 
                         try:
-                            async for msg, last in _stream_agent_messages(
+                            stream_state = {"assistant_text": assistant_text}
+                            async for msg, last in _stream_agent_messages_with_visible_fallback(
                                 agent,
                                 msgs,
                                 timeout_seconds=query_timeout_seconds,
+                                stream_state=stream_state,
+                                is_host_ai=_active_provider_is_host_ai(),
                             ):
-                                text = extract_visible_text(msg)
-                                if getattr(msg, "role", None) == "assistant" and text:
-                                    assistant_text = text
                                 yield msg, last
+                            assistant_text = stream_state.get(
+                                "assistant_text",
+                                assistant_text,
+                            )
                             if self.error_tracker:
                                 self.error_tracker.record_success(session_id)
                             return  # done, no fallback needed
@@ -889,15 +1132,23 @@ class AgentRunner(Runner):
                         await fb_agent.register_mcp_clients()
                         fb_agent.set_console_output_enabled(enabled=False)
 
-                        async for msg, last in _stream_agent_messages(
+                        stream_state = {"assistant_text": assistant_text}
+                        async for msg, last in _stream_agent_messages_with_visible_fallback(
                             fb_agent,
                             msgs,
                             timeout_seconds=query_timeout_seconds,
+                            stream_state=stream_state,
+                            is_host_ai=getattr(
+                                fb_cfg,
+                                "provider_id",
+                                "",
+                            ) == "adclaw-host-ai",
                         ):
-                            text = extract_visible_text(msg)
-                            if getattr(msg, "role", None) == "assistant" and text:
-                                assistant_text = text
                             yield msg, last
+                        assistant_text = stream_state.get(
+                            "assistant_text",
+                            assistant_text,
+                        )
                         if self.error_tracker:
                             self.error_tracker.record_success(session_id)
                         return  # success
@@ -1010,15 +1261,19 @@ class AgentRunner(Runner):
                     )
                     yield heal_msg, False
 
-                    async for msg, last in _stream_agent_messages(
+                    stream_state = {"assistant_text": assistant_text}
+                    async for msg, last in _stream_agent_messages_with_visible_fallback(
                         agent,
                         msgs,
                         timeout_seconds=query_timeout_seconds,
+                        stream_state=stream_state,
+                        is_host_ai=_active_provider_is_host_ai(),
                     ):
-                        text = extract_visible_text(msg)
-                        if getattr(msg, "role", None) == "assistant" and text:
-                            assistant_text = text
                         yield msg, last
+                    assistant_text = stream_state.get(
+                        "assistant_text",
+                        assistant_text,
+                    )
                     if self.error_tracker:
                         self.error_tracker.record_success(session_id)
                     return

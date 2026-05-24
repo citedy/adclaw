@@ -10,6 +10,7 @@ Example:
 """
 
 import logging
+import json
 import os
 from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Type
 
@@ -34,6 +35,9 @@ _HOST_AI_PROVIDER_ID = "adclaw-host-ai"
 _HOST_AI_DEFAULT_MAX_TOKENS = 4096
 _HOST_AI_MAX_OUTPUT_TOKENS_ENV = "ADCLAW_HOST_AI_MAX_OUTPUT_TOKENS"
 _HOST_AI_LEGACY_MAX_TOKENS_ENV = "ADCLAW_HOST_AI_MAX_TOKENS"
+_HOST_AI_REASONING_EFFORT_ENV = "ADCLAW_HOST_AI_REASONING_EFFORT"
+_HOST_AI_DEFAULT_REASONING_EFFORT = "low"
+_HOST_AI_REASONING_EFFORTS = {"low", "medium", "high"}
 _LLM_TOOL_RESULT_MAX_CHARS_ENV = "ADCLAW_LLM_TOOL_RESULT_MAX_CHARS"
 _LLM_TOOL_RESULT_DEFAULT_MAX_CHARS = 6000
 _TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
@@ -46,6 +50,82 @@ _LOCAL_FILE_URL_FIELDS = (
     "audio_url",
     "url",
 )
+_REASONING_BLOCK_TYPES = {"thinking", "reasoning"}
+
+
+def _content_block_type(block) -> str | None:
+    if isinstance(block, dict):
+        return block.get("type")
+    return getattr(block, "type", None)
+
+
+def _is_reasoning_content_block(block) -> bool:
+    return _content_block_type(block) in _REASONING_BLOCK_TYPES
+
+
+def _content_block_text(block) -> str:
+    if isinstance(block, dict):
+        value = block.get("text")
+        return value if isinstance(value, str) else ""
+    value = getattr(block, "text", None)
+    return value if isinstance(value, str) else ""
+
+
+def is_bare_tool_call_json_text(text: str) -> bool:
+    """Return true for raw tool-call JSON accidentally emitted as text."""
+    if not isinstance(text, str):
+        return False
+    stripped = text.strip()
+    if not stripped:
+        return False
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError:
+        return False
+    if not isinstance(parsed, dict):
+        return False
+    if set(parsed) - {"name", "arguments"}:
+        return False
+    name = parsed.get("name")
+    arguments = parsed.get("arguments")
+    if isinstance(arguments, str):
+        try:
+            arguments = json.loads(arguments)
+        except json.JSONDecodeError:
+            return False
+    return isinstance(name, str) and bool(name.strip()) and isinstance(arguments, dict)
+
+
+def _assistant_text_content(msg) -> str:
+    if getattr(msg, "role", None) != "assistant":
+        return ""
+
+    content = getattr(msg, "content", None)
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+
+    parts = []
+    for block in content:
+        if _content_block_type(block) != "text":
+            return ""
+        parts.append(_content_block_text(block))
+    return "".join(parts)
+
+
+def _strip_bare_tool_call_text_messages(msgs):
+    """Drop assistant messages that are only malformed visible tool-call JSON."""
+    cleaned_msgs = []
+    for msg in msgs:
+        text = _assistant_text_content(msg)
+        if text and is_bare_tool_call_json_text(text):
+            logger.debug(
+                "Dropping bare tool-call JSON text before LLM formatting",
+            )
+            continue
+        cleaned_msgs.append(msg)
+    return cleaned_msgs
 
 
 def _is_missing_local_file_url(url: str) -> bool:
@@ -108,6 +188,40 @@ def _strip_missing_local_files(msgs):
     return msgs
 
 
+def _strip_reasoning_blocks(msgs):
+    """Remove provider reasoning blocks before formatting LLM history.
+
+    Some reasoning models emit AgentScope ``thinking`` blocks. Those are useful
+    as transient stream events, but they are not valid durable chat history for
+    every OpenAI-compatible provider. Persisting them can make the next request
+    fail or make the model spend another turn on hidden reasoning.
+    """
+    cleaned_msgs = []
+    for msg in msgs:
+        content = getattr(msg, "content", None)
+        if not isinstance(content, list):
+            cleaned_msgs.append(msg)
+            continue
+
+        cleaned = [
+            block for block in content
+            if not _is_reasoning_content_block(block)
+        ]
+        if len(cleaned) == len(content):
+            cleaned_msgs.append(msg)
+            continue
+        if not cleaned:
+            logger.debug(
+                "Dropping reasoning-only message before LLM formatting",
+            )
+            continue
+
+        msg.content = cleaned
+        cleaned_msgs.append(msg)
+
+    return cleaned_msgs
+
+
 def _env_positive_int(name: str, default: int) -> int:
     """Return a positive integer env value, or a safe default."""
     value = os.getenv(name)
@@ -144,6 +258,30 @@ def _host_ai_generate_kwargs(provider_id: str) -> dict:
             _HOST_AI_DEFAULT_MAX_TOKENS,
         ),
     }
+
+
+def _host_ai_reasoning_effort(provider_id: str, model_name: str) -> str | None:
+    """Return bounded reasoning effort for managed gpt-oss Host AI models."""
+    if provider_id != _HOST_AI_PROVIDER_ID:
+        return None
+    if "gpt-oss" not in (model_name or "").lower():
+        return None
+
+    value = os.getenv(
+        _HOST_AI_REASONING_EFFORT_ENV,
+        _HOST_AI_DEFAULT_REASONING_EFFORT,
+    ).strip().lower()
+    if value in {"", "none", "off", "false", "0"}:
+        return None
+    if value not in _HOST_AI_REASONING_EFFORTS:
+        logger.warning(
+            "Invalid %s=%r; using %s",
+            _HOST_AI_REASONING_EFFORT_ENV,
+            value,
+            _HOST_AI_DEFAULT_REASONING_EFFORT,
+        )
+        return _HOST_AI_DEFAULT_REASONING_EFFORT
+    return value
 
 
 def _host_ai_tool_result_truncation_enabled() -> bool:
@@ -236,10 +374,13 @@ def _create_file_block_support_formatter(
             This prevents OpenAI API errors from improperly paired
             tool messages and removes references to missing local files.
             """
+            msgs = _strip_reasoning_blocks(msgs)
+            msgs = _strip_bare_tool_call_text_messages(msgs)
             msgs = _sanitize_tool_messages(msgs)
             msgs = _strip_missing_local_files(msgs)
             messages = await super()._format(msgs)
-            return _strip_top_level_message_name(messages)
+            messages = _strip_top_level_message_name(messages)
+            return _normalize_assistant_tool_call_content(messages)
 
         @staticmethod
         def convert_tool_result_to_string(
@@ -334,6 +475,26 @@ def _strip_top_level_message_name(
     """
     for message in messages:
         message.pop("name", None)
+    return messages
+
+
+def _normalize_assistant_tool_call_content(
+    messages: list[dict],
+) -> list[dict]:
+    """Use empty string content for assistant tool-call history messages.
+
+    Cloudflare Workers AI accepts the first assistant tool-call response with
+    ``content: null``, but rejects that same shape when it appears in the next
+    request's message history. OpenAI-compatible providers accept an empty
+    string for assistant tool-call messages, so normalize to that durable form.
+    """
+    for message in messages:
+        if (
+            message.get("role") == "assistant"
+            and message.get("tool_calls")
+            and message.get("content") is None
+        ):
+            message["content"] = ""
     return messages
 
 
@@ -481,6 +642,15 @@ def _create_remote_model_instance(
     )
     if generate_kwargs:
         model_kwargs["generate_kwargs"] = generate_kwargs
+    reasoning_effort = _host_ai_reasoning_effort(
+        llm_cfg.provider_id if llm_cfg else "",
+        model_name,
+    )
+    if reasoning_effort is not None and issubclass(
+        chat_model_class,
+        OpenAIChatModel,
+    ):
+        model_kwargs["reasoning_effort"] = reasoning_effort
 
     # Instantiate model
     model = chat_model_class(model_name, **model_kwargs)

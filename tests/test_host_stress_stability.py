@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from adclaw.agents.react_agent import AdClawAgent
+from adclaw.agents import react_agent as react_agent_module
 from adclaw.app.mcp.manager import MCPClientManager
 from adclaw.app.runner import runner as runner_module
 
@@ -31,6 +32,48 @@ class FakeToolkit:
 
     def register_agent_skill(self, path):
         self.registered.append(Path(path).name)
+
+
+class CapturingToolkit:
+    def __init__(self):
+        self.registered = []
+
+    def register_tool_function(self, function, namesake_strategy=None):  # noqa: ARG002
+        self.registered.append(function.__name__)
+
+
+def test_host_ai_toolkit_skips_generic_shell(monkeypatch):
+    monkeypatch.delenv("ADCLAW_HOST_AI_ALLOW_SHELL_TOOL", raising=False)
+    monkeypatch.setattr(react_agent_module, "Toolkit", CapturingToolkit)
+    monkeypatch.setattr(
+        react_agent_module,
+        "get_active_llm_config",
+        lambda: SimpleNamespace(provider_id="adclaw-host-ai"),
+    )
+    agent = AdClawAgent.__new__(AdClawAgent)
+    agent._persona_manager = None
+
+    toolkit = agent._create_toolkit()
+
+    assert "execute_shell_command" not in toolkit.registered
+    assert "read_file" in toolkit.registered
+
+
+def test_host_ai_toolkit_denies_shell_when_provider_lookup_fails(monkeypatch):
+    monkeypatch.delenv("ADCLAW_HOST_AI_ALLOW_SHELL_TOOL", raising=False)
+    monkeypatch.setattr(react_agent_module, "Toolkit", CapturingToolkit)
+    monkeypatch.setattr(
+        react_agent_module,
+        "get_active_llm_config",
+        lambda: (_ for _ in ()).throw(RuntimeError("provider store down")),
+    )
+    agent = AdClawAgent.__new__(AdClawAgent)
+    agent._persona_manager = None
+
+    toolkit = agent._create_toolkit()
+
+    assert "execute_shell_command" not in toolkit.registered
+    assert "read_file" in toolkit.registered
 
 
 def test_persona_selected_skills_register_from_builtin(monkeypatch, tmp_path):

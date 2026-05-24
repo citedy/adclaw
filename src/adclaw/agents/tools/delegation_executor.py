@@ -7,7 +7,38 @@ logger = logging.getLogger(__name__)
 DELEGATION_FAILED_PREFIX = "Delegation failed:"
 
 
-def execute_delegation(persona: PersonaConfig, task: str, persona_manager: PersonaManager) -> str:
+def _text_from_content(content) -> str:
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+            elif getattr(block, "type", None) == "text":
+                parts.append(getattr(block, "text", ""))
+        return "".join(parts)
+    return str(content)
+
+
+async def _collect_model_text(response) -> str:
+    if hasattr(response, "__aiter__"):
+        last_text = ""
+        async for chunk in response:
+            text = _text_from_content(getattr(chunk, "content", ""))
+            if text:
+                last_text = text
+        return last_text
+    return _text_from_content(getattr(response, "content", response))
+
+
+async def execute_delegation(
+    persona: PersonaConfig,
+    task: str,
+    persona_manager: PersonaManager,
+) -> str:
     """Execute a delegated task by creating a sub-agent with persona config.
 
     For MVP, uses a simple one-shot LLM call with the persona's system prompt.
@@ -59,8 +90,8 @@ def execute_delegation(persona: PersonaConfig, task: str, persona_manager: Perso
         )
         sys_msg = Msg(name="system", content=sys_prompt, role="system")
 
-        response = chat_model([sys_msg, user_msg])
-        return response.content if hasattr(response, 'content') else str(response)
+        response = await chat_model([sys_msg, user_msg])
+        return await _collect_model_text(response)
     except Exception as e:
         logger.exception("Delegation execution failed for persona %s", persona.id)
         return f"{DELEGATION_FAILED_PREFIX} Check server logs for details."
