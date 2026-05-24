@@ -34,6 +34,8 @@ from .prompt import (
 )
 from .skills_manager import (
     ensure_skills_initialized,
+    get_builtin_skills_dir,
+    get_customized_skills_dir,
     get_working_skills_dir,
     list_available_skills,
 )
@@ -129,6 +131,7 @@ class AdClawAgent(ReActAgent):
         self._persona = persona
         self._team_summary = team_summary
         self._persona_manager = persona_manager
+        self._persona_skill_names = tuple(getattr(persona, "skills", []) or [])
         self._heal_events: list = []
 
         self._prompt_pool = PersonaPromptPool(working_dir=Path(WORKING_DIR))
@@ -274,10 +277,15 @@ class AdClawAgent(ReActAgent):
 
         working_skills_dir = get_working_skills_dir()
         available_skills = list_available_skills()
+        skill_names = (
+            list(self._persona_skill_names)
+            if self._persona_skill_names
+            else available_skills
+        )
 
         self._broken_skills = []
-        for skill_name in available_skills:
-            skill_dir = working_skills_dir / skill_name
+        for skill_name in skill_names:
+            skill_dir = self._resolve_skill_dir(working_skills_dir, skill_name)
             if skill_dir.exists():
                 try:
                     toolkit.register_agent_skill(str(skill_dir))
@@ -291,6 +299,22 @@ class AdClawAgent(ReActAgent):
                     self._broken_skills.append(
                         (skill_name, skill_dir, str(e))
                     )
+
+    @staticmethod
+    def _resolve_skill_dir(working_skills_dir: Path, skill_name: str) -> Path:
+        """Return the best available directory for a selected skill."""
+        if Path(skill_name).name != skill_name or "/" in skill_name or "\\" in skill_name:
+            return working_skills_dir / "__invalid_skill_name__"
+
+        for base_dir in (
+            working_skills_dir,
+            get_customized_skills_dir(),
+            get_builtin_skills_dir(),
+        ):
+            candidate = base_dir / skill_name
+            if (candidate / "SKILL.md").exists():
+                return candidate
+        return working_skills_dir / skill_name
 
     def _build_sys_prompt(self) -> str:
         """Build system prompt using CachedPromptBuilder (v2).
