@@ -107,6 +107,32 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+def _model_client_timeout_seconds(
+    query_timeout_seconds: float,
+    configured_timeout_seconds: float | None = None,
+) -> float | None:
+    """Return a provider-client timeout bounded by the user query timeout.
+
+    The outer async stream timeout is not enough when a provider SDK blocks
+    while waiting for the first streamed token. In hosted mode we set the HTTP
+    client timeout slightly below the whole-query timeout so the runner can
+    surface a safe failure instead of leaving the chat request open forever.
+    """
+    configured = (
+        float(configured_timeout_seconds)
+        if configured_timeout_seconds is not None
+        and configured_timeout_seconds > 0
+        else None
+    )
+    if query_timeout_seconds <= 0:
+        return configured
+
+    query_cap = max(1.0, float(query_timeout_seconds) - 1.0)
+    if configured is None:
+        return query_cap
+    return min(configured, query_cap)
+
+
 def _refresh_persisted_envs_for_query() -> None:
     """Load envs.json values that may have been bootstrapped after startup.
 
@@ -214,6 +240,19 @@ def _is_host_ai_transient_error(exc: Exception) -> bool:
     """Return true when managed Host AI failed to produce usable output."""
     text = _exception_search_text(exc)
     return any(marker in text for marker in _HOST_AI_TRANSIENT_MARKERS)
+
+
+def _active_provider_is_host_ai() -> bool:
+    """Return true when the active model slot is managed AdClaw Host AI."""
+    try:
+        from ...providers.store import get_active_llm_config
+
+        return (
+            getattr(get_active_llm_config(), "provider_id", "")
+            == "adclaw-host-ai"
+        )
+    except (KeyError, ValueError, AttributeError):
+        return False
 
 
 def _host_ai_limit_message() -> str:
@@ -546,10 +585,11 @@ class AgentRunner(Runner):
             # Resolve timeout from fallback config
             from ...providers.store import get_fallback_config
             fallback_cfg = get_fallback_config()
-            _timeout = (
+            model_timeout_seconds = _model_client_timeout_seconds(
+                query_timeout_seconds,
                 fallback_cfg.timeout_seconds
                 if fallback_cfg.enabled
-                else None
+                else None,
             )
 
             agent = AdClawAgent(
@@ -562,7 +602,7 @@ class AgentRunner(Runner):
                 persona=persona,
                 team_summary=persona_mgr.get_team_summary() if persona_mgr.all_personas else "",
                 persona_manager=persona_mgr,
-                timeout_seconds=_timeout,
+                timeout_seconds=model_timeout_seconds,
             )
             await agent.register_mcp_clients()
             agent.set_console_output_enabled(enabled=False)
@@ -690,13 +730,30 @@ class AgentRunner(Runner):
                     get_fallback_config,
                     resolve_fallback_chain,
                 )
+                from agentscope.message import Msg
+
+                fallback_cfg = get_fallback_config()
+                if (
+                    not fallback_cfg.enabled
+                    and query_timeout_seconds > 0
+                    and isinstance(first_err, _OAITimeout)
+                    and _active_provider_is_host_ai()
+                ):
+                    assistant_text = _agent_query_timeout_message(
+                        query_timeout_seconds,
+                    )
+                    yield Msg(
+                        name="system",
+                        role="assistant",
+                        content=assistant_text,
+                    ), True
+                    return
+
                 host_ai_limit_reached = _is_host_ai_limit_error(first_err)
                 host_ai_transient_seen = _is_host_ai_transient_error(first_err)
                 non_host_provider_error_seen = not (
                     host_ai_limit_reached or host_ai_transient_seen
                 )
-
-                from agentscope.message import Msg
 
                 def _yield_host_ai_limit_msg():
                     return Msg(
@@ -712,7 +769,6 @@ class AgentRunner(Runner):
                         content=_host_ai_transient_message(),
                     )
 
-                fallback_cfg = get_fallback_config()
                 if not fallback_cfg.enabled:
                     if host_ai_limit_reached:
                         assistant_text = _host_ai_limit_message()
@@ -782,9 +838,13 @@ class AgentRunner(Runner):
 
                 for fb_cfg in resolved_chain:
                     try:
+                        fallback_timeout_seconds = _model_client_timeout_seconds(
+                            query_timeout_seconds,
+                            fallback_cfg.timeout_seconds,
+                        )
                         fb_model, fb_formatter = create_model_and_formatter(
                             fb_cfg,
-                            timeout_seconds=fallback_cfg.timeout_seconds,
+                            timeout_seconds=fallback_timeout_seconds,
                         )
 
                         notify_msg = Msg(
