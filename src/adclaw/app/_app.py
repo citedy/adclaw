@@ -382,6 +382,14 @@ def _sse_event(event) -> str:
     return _sse_json(json.dumps(event, ensure_ascii=False, default=str))
 
 
+def _stream_state_event(request: dict) -> AgentResponse:
+    """Build a protocol-safe no-output event to flush the SSE data path."""
+    return AgentResponse(
+        id=request.get("id"),
+        session_id=request.get("session_id"),
+    ).in_progress()
+
+
 def _timeout_events(request: dict, timeout_seconds: float, start_sequence: int):
     """Build protocol-compatible visible timeout events."""
     seq = SequenceNumberGenerator(start=start_sequence)
@@ -479,6 +487,7 @@ async def _agent_process_sse_generator(request: dict):
     cleanup_scheduled = False
 
     yield ": adclaw-agent-process-start\n\n"
+    yield _sse_event(_stream_state_event(request))
 
     try:
         while True:
@@ -510,6 +519,7 @@ async def _agent_process_sse_generator(request: dict):
             done, _ = await asyncio.wait({next_task}, timeout=wait_seconds)
             if not done:
                 yield ": adclaw-agent-process-heartbeat\n\n"
+                yield _sse_event(_stream_state_event(request))
                 continue
 
             try:
