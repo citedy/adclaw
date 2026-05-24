@@ -30,6 +30,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_HOST_AI_PROVIDER_ID = "adclaw-host-ai"
+_HOST_AI_DEFAULT_MAX_TOKENS = 768
+_HOST_AI_MAX_OUTPUT_TOKENS_ENV = "ADCLAW_HOST_AI_MAX_OUTPUT_TOKENS"
+_HOST_AI_LEGACY_MAX_TOKENS_ENV = "ADCLAW_HOST_AI_MAX_TOKENS"
+
 
 _LOCAL_FILE_URL_FIELDS = (
     "image_url",
@@ -98,6 +103,44 @@ def _strip_missing_local_files(msgs):
                 else (msg.get_text_content() or "[local file removed]")
             )
     return msgs
+
+
+def _env_positive_int(name: str, default: int) -> int:
+    """Return a positive integer env value, or a safe default."""
+    value = os.getenv(name)
+    if not value:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        logger.warning("Invalid %s=%r; using %d", name, value, default)
+        return default
+    if parsed <= 0:
+        logger.warning("Invalid %s=%r; using %d", name, value, default)
+        return default
+    return parsed
+
+
+def _host_ai_generate_kwargs(provider_id: str) -> dict:
+    """Apply bounded generation for managed Host AI only.
+
+    Hosted onboarding should be fast and predictable. Without an output cap,
+    some OpenAI-compatible Workers AI streams can spend tens of seconds on
+    hidden reasoning before producing a short visible answer.
+    """
+    if provider_id != _HOST_AI_PROVIDER_ID:
+        return {}
+    env_name = (
+        _HOST_AI_MAX_OUTPUT_TOKENS_ENV
+        if os.getenv(_HOST_AI_MAX_OUTPUT_TOKENS_ENV)
+        else _HOST_AI_LEGACY_MAX_TOKENS_ENV
+    )
+    return {
+        "max_tokens": _env_positive_int(
+            env_name,
+            _HOST_AI_DEFAULT_MAX_TOKENS,
+        ),
+    }
 
 
 def _strip_missing_images(msgs):
@@ -381,13 +424,19 @@ def _create_remote_model_instance(
             float(timeout_seconds), connect=10.0,
         )
 
-    # Instantiate model
-    model = chat_model_class(
-        model_name,
-        api_key=api_key,
-        stream=True,
-        client_kwargs=client_kwargs,
+    model_kwargs = {
+        "api_key": api_key,
+        "stream": True,
+        "client_kwargs": client_kwargs,
+    }
+    generate_kwargs = _host_ai_generate_kwargs(
+        llm_cfg.provider_id if llm_cfg else "",
     )
+    if generate_kwargs:
+        model_kwargs["generate_kwargs"] = generate_kwargs
+
+    # Instantiate model
+    model = chat_model_class(model_name, **model_kwargs)
 
     return model
 

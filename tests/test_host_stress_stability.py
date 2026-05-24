@@ -80,6 +80,36 @@ def test_empty_persona_mcp_clients_preserve_all_client_default():
     assert runner_module._persona_mcp_client_keys(Persona()) is None
 
 
+def test_refresh_persisted_envs_for_query_overwrites_managed_guardrail(monkeypatch):
+    monkeypatch.setenv("ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS", "10")
+
+    def fake_load_envs_into_environ():
+        return {"ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS": "55"}
+
+    monkeypatch.setattr(
+        runner_module,
+        "load_envs_into_environ",
+        fake_load_envs_into_environ,
+    )
+
+    runner_module._refresh_persisted_envs_for_query()
+
+    assert runner_module._env_float("ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS", 0.0) == 55
+
+
+def test_refresh_persisted_envs_for_query_swallows_loader_errors(monkeypatch):
+    def fake_load_envs_into_environ():
+        raise RuntimeError("env store unavailable")
+
+    monkeypatch.setattr(
+        runner_module,
+        "load_envs_into_environ",
+        fake_load_envs_into_environ,
+    )
+
+    runner_module._refresh_persisted_envs_for_query()
+
+
 @pytest.mark.asyncio
 async def test_stream_agent_messages_timeout_interrupts_agent(monkeypatch):
     class FakeAgent:

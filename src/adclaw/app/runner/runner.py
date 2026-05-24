@@ -31,6 +31,7 @@ from ...memory_agent.shared_persona import (
     capture_chat_memory,
     extract_visible_text,
 )
+from ...envs import load_envs_into_environ
 
 if TYPE_CHECKING:
     from ...agents.memory import MemoryManager
@@ -60,6 +61,11 @@ _HOST_AI_LIMIT_MARKERS = (
 )
 
 _TRUTHY_ENV_VALUES = ("1", "true", "yes", "on")
+_MANAGED_QUERY_ENV_KEYS = (
+    "ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS",
+    "ADCLAW_HOST_AI_MAX_OUTPUT_TOKENS",
+    "ADCLAW_HOST_AI_MAX_TOKENS",
+)
 
 
 def _env_truthy(name: str) -> bool:
@@ -93,6 +99,27 @@ def _env_float(name: str, default: float) -> float:
     except ValueError:
         logger.warning("Invalid %s=%r; using %.2f", name, value, default)
         return default
+
+
+def _refresh_persisted_envs_for_query() -> None:
+    """Load envs.json values that may have been bootstrapped after startup.
+
+    Hosted AdClaw writes managed secrets and runtime guardrails into
+    ``working.secret/envs.json`` from outside the Python process. A warm app
+    process may have imported before that file existed, so query-time refresh is
+    required for values like ``ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS``.
+    """
+    try:
+        envs = load_envs_into_environ()
+        for key in _MANAGED_QUERY_ENV_KEYS:
+            value = envs.get(key)
+            if value is not None:
+                os.environ[key] = value
+    except Exception:
+        logger.warning(
+            "Failed to refresh persisted env vars before agent query",
+            exc_info=True,
+        )
 
 
 class _MemoryManagerBootMetrics:
@@ -392,6 +419,7 @@ class AgentRunner(Runner):
             base_session_id = request.session_id
             user_id = request.user_id
             channel = getattr(request, "channel", DEFAULT_CHANNEL)
+            _refresh_persisted_envs_for_query()
 
             logger.info(
                 "Handle agent query:\n%s",
