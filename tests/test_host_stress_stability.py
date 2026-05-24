@@ -152,6 +152,8 @@ async def test_agent_process_endpoint_watchdog_emits_visible_timeout(monkeypatch
         await asyncio.sleep(0.01)
     body = "".join(chunks)
     assert chunks[0].startswith(": adclaw-agent-process-start")
+    assert '"object":"response"' in chunks[1]
+    assert '"status":"in_progress"' in chunks[1]
     assert "stopped it safely" in body
     assert '"object":"message"' in body
     assert '"object":"response"' in body
@@ -177,6 +179,7 @@ async def test_agent_process_endpoint_error_event_redacts_exception(monkeypatch)
         chunks.append(chunk)
 
     body = "".join(chunks)
+    assert '"status":"in_progress"' in chunks[1]
     assert "adclaw_agent_process_error" in body
     assert "sk-test-secret" not in body
 
