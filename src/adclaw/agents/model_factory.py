@@ -31,9 +31,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _HOST_AI_PROVIDER_ID = "adclaw-host-ai"
-_HOST_AI_DEFAULT_MAX_TOKENS = 768
+_HOST_AI_DEFAULT_MAX_TOKENS = 4096
 _HOST_AI_MAX_OUTPUT_TOKENS_ENV = "ADCLAW_HOST_AI_MAX_OUTPUT_TOKENS"
 _HOST_AI_LEGACY_MAX_TOKENS_ENV = "ADCLAW_HOST_AI_MAX_TOKENS"
+_LLM_TOOL_RESULT_MAX_CHARS_ENV = "ADCLAW_LLM_TOOL_RESULT_MAX_CHARS"
+_LLM_TOOL_RESULT_DEFAULT_MAX_CHARS = 6000
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
 
 _LOCAL_FILE_URL_FIELDS = (
@@ -143,6 +146,44 @@ def _host_ai_generate_kwargs(provider_id: str) -> dict:
     }
 
 
+def _host_ai_tool_result_truncation_enabled() -> bool:
+    """Return true only for managed Host AI contexts."""
+    if os.getenv("ADCLAW_HOST_AI_TOOL_RESULT_TRUNCATION", "").lower() in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }:
+        return False
+    if os.getenv("ADCLAW_HOST_AI_ENABLED", "").lower() in _TRUTHY_ENV_VALUES:
+        return True
+    return os.getenv("ADCLAW_HOST_AI_BASE_URL", "").strip() != ""
+
+
+def _truncate_llm_tool_result_text(text: str) -> str:
+    """Cap Host AI tool-result text before it feeds the next LLM call."""
+    if not _host_ai_tool_result_truncation_enabled():
+        return text
+    max_chars = _env_positive_int(
+        _LLM_TOOL_RESULT_MAX_CHARS_ENV,
+        _LLM_TOOL_RESULT_DEFAULT_MAX_CHARS,
+    )
+    if len(text) <= max_chars:
+        return text
+
+    marker = (
+        f"\n\n[adclaw: tool result truncated from {len(text)} to "
+        f"{max_chars} chars before LLM context; retained head/tail]\n\n"
+    )
+    if max_chars <= len(marker) + 20:
+        return text[:max_chars]
+
+    budget = max_chars - len(marker)
+    head_len = max(1, int(budget * 0.7))
+    tail_len = max(1, budget - head_len)
+    return f"{text[:head_len]}{marker}{text[-tail_len:]}"
+
+
 def _strip_missing_images(msgs):
     """Backward-compatible alias for older tests/imports."""
     return _strip_missing_local_files(msgs)
@@ -215,13 +256,14 @@ def _create_file_block_support_formatter(
                 Tuple of (text_representation, multimodal_data)
             """
             if isinstance(output, str):
-                return output, []
+                return _truncate_llm_tool_result_text(output), []
 
             # Try parent class method first
             try:
-                return base_formatter_class.convert_tool_result_to_string(
+                text, data = base_formatter_class.convert_tool_result_to_string(
                     output,
                 )
+                return _truncate_llm_tool_result_text(text), data
             except ValueError as e:
                 if "Unsupported block type: file" not in str(e):
                     raise
@@ -263,10 +305,15 @@ def _create_file_block_support_formatter(
                 if len(textual_output) == 0:
                     return "", multimodal_data
                 elif len(textual_output) == 1:
-                    return textual_output[0], multimodal_data
+                    return (
+                        _truncate_llm_tool_result_text(textual_output[0]),
+                        multimodal_data,
+                    )
                 else:
                     return (
-                        "\n".join("- " + _ for _ in textual_output),
+                        _truncate_llm_tool_result_text(
+                            "\n".join("- " + _ for _ in textual_output),
+                        ),
                         multimodal_data,
                     )
 

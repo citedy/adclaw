@@ -1331,3 +1331,143 @@ async def test_query_handler_renders_host_ai_limit_without_generic_error(monkeyp
     assert "fallback model" not in str(events[0][0]).lower()
     assert runner.session.load_calls == 1
     assert runner.session.save_calls == 1
+
+
+async def test_query_handler_renders_host_ai_transient_without_dead_chat(monkeypatch):
+    """Host AI empty/truncated output should produce a stable retry message."""
+    import httpx
+    from openai import InternalServerError
+
+    from adclaw.providers import store as provider_store
+
+    class _FakeAgent:
+        def __init__(self, **kwargs) -> None:
+            self.model = SimpleNamespace(
+                model_name="@cf/google/gemma-4-26b-a4b-it",
+            )
+            self._env_context = kwargs.get("env_context")
+            self._mcp_clients = kwargs.get("mcp_clients", [])
+            self._namesake_strategy = "skip"
+            self._persona = kwargs.get("persona")
+            self._team_summary = kwargs.get("team_summary", "")
+
+        async def register_mcp_clients(self) -> None:
+            return
+
+        def set_console_output_enabled(self, enabled: bool) -> None:  # noqa: ARG002
+            return
+
+        def rebuild_sys_prompt(self) -> None:
+            return
+
+        def __call__(self, msgs):  # noqa: ANN001
+            return self
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.load_calls = 0
+            self.save_calls = 0
+
+        async def load_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.load_calls += 1
+
+        async def save_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            self.save_calls += 1
+
+    class _FakePersonaManager:
+        all_personas = []
+
+        def __init__(self, **kwargs) -> None:  # noqa: ARG002
+            return
+
+        def ensure_dirs(self) -> None:
+            return
+
+        def resolve_tag(self, msg_text: str):  # noqa: ANN201, ARG002
+            return None
+
+        def get_coordinator(self):  # noqa: ANN201
+            return None
+
+        def get_team_summary(self) -> str:
+            return ""
+
+    class _DummyInputMsg:
+        content = "hello"
+
+        def get_text_content(self) -> str:
+            return "hello"
+
+    cfg = SimpleNamespace(
+        agents=SimpleNamespace(
+            running=SimpleNamespace(max_iters=1, max_input_length=2048),
+            personas=[],
+        ),
+    )
+    response = httpx.Response(
+        502,
+        request=httpx.Request(
+            "POST",
+            "https://real.adclaw.app/api/host-ai/v1/chat/completions",
+        ),
+    )
+    transient_error = InternalServerError(
+        "host_ai_output_budget_exhausted",
+        response=response,
+        body={"error": {"code": "host_ai_output_budget_exhausted"}},
+    )
+
+    async def _fake_stream_printing_messages(*, agents, coroutine_task):  # noqa: ARG001
+        if False:
+            yield None
+        raise transient_error
+
+    async def _empty_context(**kwargs) -> str:  # noqa: ARG001
+        return ""
+
+    async def _noop_capture(**kwargs) -> None:  # noqa: ARG001
+        return
+
+    monkeypatch.setattr(runner_module, "AdClawAgent", _FakeAgent)
+    monkeypatch.setattr(runner_module, "PersonaManager", _FakePersonaManager)
+    monkeypatch.setattr(runner_module, "load_config", lambda: cfg)
+    monkeypatch.setattr(
+        runner_module,
+        "build_env_context",
+        lambda **kwargs: "env",
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "stream_printing_messages",
+        _fake_stream_printing_messages,
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "get_fallback_config",
+        lambda: SimpleNamespace(enabled=False, timeout_seconds=1),
+    )
+
+    runner = AgentRunner()
+    runner.session = _FakeSession()
+    runner._build_shared_persona_memory_context = _empty_context
+    runner._capture_chat_memory = _noop_capture
+
+    request = SimpleNamespace(
+        session_id="s1",
+        user_id="u1",
+        channel="telegram",
+    )
+
+    events = []
+    async for msg, last in runner.query_handler(
+        [_DummyInputMsg()],
+        request=request,
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert len(events) == 1
+    assert events[0][1] is True
+    assert "could not finish a visible answer" in str(events[0][0])
+    assert "fallback model" not in str(events[0][0]).lower()
+    assert runner.session.load_calls == 1
+    assert runner.session.save_calls == 1
