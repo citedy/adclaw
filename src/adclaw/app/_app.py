@@ -390,6 +390,16 @@ def _stream_state_event(request: dict) -> AgentResponse:
     ).in_progress()
 
 
+def _request_with_stable_response_id(request: dict) -> dict:
+    """Ensure synthetic stream events share one response identity."""
+    if request.get("id"):
+        return request
+    return {
+        **request,
+        "id": AgentResponse(session_id=request.get("session_id")).id,
+    }
+
+
 def _timeout_events(request: dict, timeout_seconds: float, start_sequence: int):
     """Build protocol-compatible visible timeout events."""
     seq = SequenceNumberGenerator(start=start_sequence)
@@ -474,6 +484,7 @@ async def _agent_process_sse_generator(request: dict):
     `/api/agent/process` boundary: it commits the stream immediately, enforces
     a single request deadline, and emits a visible final message on timeout.
     """
+    request = _request_with_stable_response_id(request)
     timeout_seconds = _agent_process_timeout_seconds()
     deadline = (
         asyncio.get_running_loop().time() + timeout_seconds
