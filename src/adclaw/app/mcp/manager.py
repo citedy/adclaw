@@ -11,7 +11,7 @@ import asyncio
 import inspect
 import logging
 import sys
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, TYPE_CHECKING
 
 from agentscope.mcp import HttpStatefulClient, StdIOStatefulClient
 
@@ -156,16 +156,27 @@ class MCPClientManager:
                     exc_info=True,
                 )
 
-    async def get_clients(self) -> List[Any]:
+    async def get_clients(self, keys: Iterable[str] | None = None) -> List[Any]:
         """Get list of all active MCP clients.
 
         This method is called by the runner on each query to get
         the latest set of clients.
 
+        Args:
+            keys: Optional config keys to include. ``None`` returns all
+                connected clients.
+
         Returns:
             List of connected MCP client instances
         """
         async with self._lock:
+            if keys is not None:
+                allowed = set(keys)
+                return [
+                    client
+                    for key, client in self._clients.items()
+                    if key in allowed and client is not None
+                ]
             return [
                 client
                 for client in self._clients.values()

@@ -186,6 +186,89 @@ def _host_ai_limit_message() -> str:
     )
 
 
+class AgentQueryTimeoutError(TimeoutError):
+    """Raised when a single user-facing agent query exceeds the safe limit."""
+
+
+QUERY_TIMEOUT_EPSILON_SECONDS = 0.05
+
+
+def _agent_query_timeout_message(timeout_seconds: float) -> str:
+    """Return customer-safe copy for a stopped long-running request."""
+    seconds = int(timeout_seconds)
+    return (
+        f"This request took longer than {seconds} seconds, so I stopped it "
+        "safely instead of leaving the chat hanging. Try a shorter request, "
+        "or start a fresh task if this keeps happening."
+    )
+
+
+def _persona_mcp_client_keys(persona):
+    """Return selected MCP client keys, preserving legacy all-client defaults."""
+    selected_mcp_clients = getattr(persona, "mcp_clients", None)
+    return selected_mcp_clients or None
+
+
+async def _raise_agent_query_timeout(agent, stream, timeout_seconds: float, exc):
+    """Stop a query stream and raise a customer-safe timeout error."""
+    try:
+        await stream.aclose()
+    except Exception:
+        logger.debug("Agent stream close failed after query timeout", exc_info=True)
+
+    try:
+        await agent.interrupt()
+    except Exception:
+        logger.warning("Agent interrupt failed after query timeout", exc_info=True)
+
+    raise AgentQueryTimeoutError(
+        _agent_query_timeout_message(timeout_seconds),
+    ) from exc
+
+
+async def _stream_agent_messages(agent, msgs, *, timeout_seconds: float):
+    """Stream AgentScope messages with an optional whole-query timeout."""
+
+    stream = stream_printing_messages(
+        agents=[agent],
+        coroutine_task=agent(msgs),
+    )
+
+    if timeout_seconds <= 0:
+        async for item in stream:
+            yield item
+        return
+
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_seconds
+
+    while True:
+        remaining = deadline - loop.time()
+        if remaining <= 0:
+            await _raise_agent_query_timeout(
+                agent,
+                stream,
+                timeout_seconds,
+                TimeoutError(),
+            )
+
+        try:
+            item = await asyncio.wait_for(stream.__anext__(), timeout=remaining)
+        except StopAsyncIteration:
+            return
+        except TimeoutError as exc:
+            if loop.time() >= deadline - QUERY_TIMEOUT_EPSILON_SECONDS:
+                await _raise_agent_query_timeout(
+                    agent,
+                    stream,
+                    timeout_seconds,
+                    exc,
+                )
+            raise
+
+        yield item
+
+
 def _same_model_slot(candidate, primary) -> bool:
     """Return True when a fallback slot points at the current provider/model."""
     if candidate is None or primary is None:
@@ -302,6 +385,7 @@ class AgentRunner(Runner):
         user_text = ""
         base_session_id = ""
         persona_id_for_memory = "default"
+        query_timeout_seconds = 0.0
 
         try:
             session_id = request.session_id
@@ -324,14 +408,13 @@ class AgentRunner(Runner):
                 ),
             )
 
-            # Get MCP clients from manager (hot-reloadable)
-            mcp_clients = []
-            if self._mcp_manager is not None:
-                mcp_clients = await self._mcp_manager.get_clients()
-
             config = load_config()
             max_iters = config.agents.running.max_iters
             max_input_length = config.agents.running.max_input_length
+            query_timeout_seconds = _env_float(
+                "ADCLAW_AGENT_QUERY_TIMEOUT_SECONDS",
+                0.0,
+            )
 
             # --- Persona routing ---
             persona_mgr = PersonaManager(
@@ -368,6 +451,18 @@ class AgentRunner(Runner):
                 self._session_persona_map[request.session_id] = persona.id
                 persona_id_for_memory = persona.id
                 session_id = sanitize_filename(f"{persona.id}::{session_id}")
+
+            # Get only the MCP clients selected for the routed persona. This
+            # keeps hosted chat prompts small and prevents one persona from
+            # seeing tools that belong to another persona.
+            mcp_clients = []
+            if self._mcp_manager is not None:
+                if persona is not None:
+                    mcp_clients = await self._mcp_manager.get_clients(
+                        _persona_mcp_client_keys(persona),
+                    )
+                else:
+                    mcp_clients = await self._mcp_manager.get_clients()
 
             shared_memory_context = await self._build_shared_persona_memory_context(
                 base_session_id=base_session_id,
@@ -457,15 +552,29 @@ class AgentRunner(Runner):
             agent.rebuild_sys_prompt()
 
             try:
-                async for msg, last in stream_printing_messages(
-                    agents=[agent],
-                    coroutine_task=agent(msgs),
+                async for msg, last in _stream_agent_messages(
+                    agent,
+                    msgs,
+                    timeout_seconds=query_timeout_seconds,
                 ):
                     text = extract_visible_text(msg)
                     if getattr(msg, "role", None) == "assistant" and text:
                         assistant_text = text
                     yield msg, last
             except Exception as first_err:
+                if isinstance(first_err, AgentQueryTimeoutError):
+                    from agentscope.message import Msg
+                    assistant_text = str(first_err)
+                    session_state_loaded = False
+                    if self.error_tracker:
+                        self.error_tracker.record_failure(session_id)
+                    yield Msg(
+                        name="system",
+                        role="assistant",
+                        content=assistant_text,
+                    ), True
+                    return
+
                 from openai import (
                     APIConnectionError as _OAIConnErr,
                     APIError as _OAIAPIError,
@@ -495,9 +604,10 @@ class AgentRunner(Runner):
                         yield reset_msg, False
 
                         try:
-                            async for msg, last in stream_printing_messages(
-                                agents=[agent],
-                                coroutine_task=agent(msgs),
+                            async for msg, last in _stream_agent_messages(
+                                agent,
+                                msgs,
+                                timeout_seconds=query_timeout_seconds,
                             ):
                                 text = extract_visible_text(msg)
                                 if getattr(msg, "role", None) == "assistant" and text:
@@ -637,9 +747,10 @@ class AgentRunner(Runner):
                         await fb_agent.register_mcp_clients()
                         fb_agent.set_console_output_enabled(enabled=False)
 
-                        async for msg, last in stream_printing_messages(
-                            agents=[fb_agent],
-                            coroutine_task=fb_agent(msgs),
+                        async for msg, last in _stream_agent_messages(
+                            fb_agent,
+                            msgs,
+                            timeout_seconds=query_timeout_seconds,
                         ):
                             text = extract_visible_text(msg)
                             if getattr(msg, "role", None) == "assistant" and text:
@@ -692,10 +803,24 @@ class AgentRunner(Runner):
                 self.error_tracker.record_success(session_id)
 
         except asyncio.CancelledError:
+            session_state_loaded = False
             if agent is not None:
                 await agent.interrupt()
             raise
         except Exception as e:
+            if isinstance(e, AgentQueryTimeoutError):
+                from agentscope.message import Msg
+                assistant_text = str(e)
+                session_state_loaded = False
+                if self.error_tracker:
+                    self.error_tracker.record_failure(session_id)
+                yield Msg(
+                    name="system",
+                    role="assistant",
+                    content=assistant_text,
+                ), True
+                return
+
             # --- Auto-recovery: retry with clean session for state errors ---
             if (
                 session_state_loaded
@@ -720,9 +845,10 @@ class AgentRunner(Runner):
                     )
                     yield heal_msg, False
 
-                    async for msg, last in stream_printing_messages(
-                        agents=[agent],
-                        coroutine_task=agent(msgs),
+                    async for msg, last in _stream_agent_messages(
+                        agent,
+                        msgs,
+                        timeout_seconds=query_timeout_seconds,
                     ):
                         text = extract_visible_text(msg)
                         if getattr(msg, "role", None) == "assistant" and text:
