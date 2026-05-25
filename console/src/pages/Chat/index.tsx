@@ -155,11 +155,13 @@ interface CustomWindow extends Window {
 declare const window: CustomWindow;
 
 type OptionsConfig = DefaultConfig;
-type LiveChatStage = "thinking" | "tools" | "writing" | "error";
+type LiveChatStage = "thinking" | "tools" | "writing" | "waking" | "error";
 
 const LIVE_STATUS_SLOW_SECONDS = 12;
 const LIVE_STATUS_LONG_SECONDS = 45;
 const LIVE_STATUS_SUCCESS_CLEAR_DELAY_MS = 900;
+const WORKSPACE_WAKE_POLL_INTERVAL_MS = 5000;
+const WORKSPACE_WAKE_MAX_POLLS = 36;
 // The AgentScope stream consumer only parses the body on 2xx responses.
 // Synthetic chat failures use SSE with 200 so the UI renders a failed bubble.
 const STREAM_FAILURE_STATUS = 200;
@@ -180,6 +182,18 @@ interface StreamFailureMetadata {
 interface StreamEventInspection {
   stage: LiveChatStage | null;
   hasRenderableOutput: boolean;
+}
+
+interface WorkspaceWakePayload {
+  code?: string;
+  message?: string;
+  wake_url?: string;
+  status_url?: string;
+  return_to?: string;
+  retry_after_seconds?: number;
+  state?: {
+    status?: string;
+  };
 }
 
 interface RuntimeSession {
@@ -221,6 +235,107 @@ function displayPersonaName(personas: Persona[], personaId: string | null) {
 
 function isUserCancellation(signal?: AbortSignal): boolean {
   return signal?.aborted === true;
+}
+
+function isWorkspaceWakeCode(code: unknown): boolean {
+  return code === "workspace_sleeping" || code === "workspace_waking";
+}
+
+function isWorkspaceWakePayload(value: unknown): value is WorkspaceWakePayload {
+  if (typeof value !== "object" || value === null) return false;
+  return isWorkspaceWakeCode((value as WorkspaceWakePayload).code);
+}
+
+async function workspaceWakePayloadFromResponse(
+  response: Response,
+): Promise<WorkspaceWakePayload | null> {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return null;
+  if (![202, 409].includes(response.status)) return null;
+
+  try {
+    const payload = (await response.clone().json()) as unknown;
+    return isWorkspaceWakePayload(payload) ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
+function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) {
+    return Promise.reject(new DOMException("Aborted", "AbortError"));
+  }
+
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(resolve, ms);
+    const onAbort = () => {
+      window.clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+async function wakeWorkspaceForQueuedMessage(
+  payload: WorkspaceWakePayload,
+  signal: AbortSignal | undefined,
+  onStatus: (detail: string) => void,
+): Promise<void> {
+  if (!payload.status_url) {
+    throw new Error("Workspace wake status URL is missing.");
+  }
+
+  if (payload.code === "workspace_sleeping") {
+    if (!payload.wake_url) {
+      throw new Error("Workspace wake URL is missing.");
+    }
+
+    onStatus("Your office is sleeping. Reopening it now.");
+    const wakeResponse = await fetch(payload.wake_url, {
+      method: "POST",
+      headers: { accept: "application/json" },
+      signal,
+    });
+
+    if (![200, 202, 409].includes(wakeResponse.status)) {
+      throw new Error("Wake request was rejected. Retry from the dashboard.");
+    }
+  }
+
+  for (let attempt = 0; attempt < WORKSPACE_WAKE_MAX_POLLS; attempt += 1) {
+    const statusResponse = await fetch(payload.status_url, {
+      headers: { accept: "application/json" },
+      signal,
+    });
+
+    if (statusResponse.ok) {
+      const statusPayload = (await statusResponse.json()) as {
+        state?: { status?: string };
+      };
+      const status = statusPayload.state?.status;
+
+      if (status === "running") {
+        onStatus("Office is ready. Sending your message now.");
+        return;
+      }
+
+      if (status === "error") {
+        throw new Error("Workspace wake failed. Retry from the dashboard.");
+      }
+
+      onStatus(
+        status === "starting"
+          ? "Still reopening your office. Usually 1-2 minutes."
+          : "Preparing your office before sending the message.",
+      );
+    }
+
+    await sleepWithAbort(WORKSPACE_WAKE_POLL_INTERVAL_MS, signal);
+  }
+
+  throw new Error(
+    "Wake is taking longer than expected. Retry from the dashboard.",
+  );
 }
 
 function encodeStreamFailure(
@@ -536,6 +651,7 @@ function inspectStreamEvent(eventText: string): StreamEventInspection {
 function liveDetailForStage(stage: LiveChatStage) {
   if (stage === "tools") return "Checking workspace tools and Citedy services.";
   if (stage === "writing") return "Writing the answer now.";
+  if (stage === "waking") return "Reopening your private AdClaw office.";
   if (stage === "error") return "AdClaw could not finish the answer.";
   return "Thinking through the request.";
 }
@@ -591,6 +707,8 @@ function LiveProgressStatus({ status }: { status: LiveChatStatus }) {
           <div className={styles.liveProgressTitle}>
             {status.stage === "error"
               ? `${status.personaName} needs a retry`
+              : status.stage === "waking"
+              ? "Reopening your AdClaw office"
               : `${status.personaName} is working`}
           </div>
           <div className={styles.liveProgressDetail}>{liveDetail}</div>
@@ -795,15 +913,17 @@ export default function ChatPage() {
       }
 
       const url = optionsConfig?.api?.baseURL || getApiUrl("/agent/process");
-      let response: Response;
-
-      try {
-        response = await fetch(url, {
+      const sendAgentRequest = () =>
+        fetch(url, {
           method: "POST",
           headers,
           body: JSON.stringify(requestBody),
           signal: data.signal,
         });
+      let response: Response;
+
+      try {
+        response = await sendAgentRequest();
       } catch (error) {
         if (isUserCancellation(data.signal)) {
           clearLiveStatusNow(requestId);
@@ -818,6 +938,40 @@ export default function ChatPage() {
           "Connection interrupted",
           "Connection interrupted before AdClaw could start answering. Retry once.",
         );
+      }
+
+      const wakePayload = await workspaceWakePayloadFromResponse(response);
+      if (wakePayload) {
+        try {
+          updateLiveStatus(requestId, {
+            stage: "waking",
+            detail:
+              wakePayload.message ||
+              "Your AdClaw office is sleeping. Reopening it now.",
+          });
+          await wakeWorkspaceForQueuedMessage(
+            wakePayload,
+            data.signal,
+            (detail) =>
+              updateLiveStatus(requestId, {
+                stage: "waking",
+                detail,
+              }),
+          );
+          response = await sendAgentRequest();
+        } catch (error) {
+          if (isUserCancellation(data.signal)) {
+            clearLiveStatusNow(requestId);
+            throw error;
+          }
+
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Workspace wake failed. Retry from the dashboard.";
+          failLiveStatus(requestId, message);
+          return createStreamFailureResponse("Workspace wake failed", message);
+        }
       }
 
       if (!response.ok) {
