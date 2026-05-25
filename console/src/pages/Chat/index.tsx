@@ -162,6 +162,13 @@ const LIVE_STATUS_LONG_SECONDS = 45;
 const LIVE_STATUS_SUCCESS_CLEAR_DELAY_MS = 900;
 const WORKSPACE_WAKE_POLL_INTERVAL_MS = 5000;
 const WORKSPACE_WAKE_MAX_POLLS = 36;
+const WORKSPACE_WAKE_TITLE = "Waking your marketing office";
+const WORKSPACE_WAKE_DETAIL =
+  "Your message is saved. We will send it as soon as AdClaw is ready. Usually 1-2 minutes.";
+const WORKSPACE_WAKE_LONG_DETAIL =
+  "Still waking your marketing office. Your message is saved and will be sent automatically.";
+const WORKSPACE_WAKE_READY_DETAIL =
+  "AdClaw is ready. Sending your saved message now.";
 // The AgentScope stream consumer only parses the body on 2xx responses.
 // Synthetic chat failures use SSE with 200 so the UI renders a failed bubble.
 const STREAM_FAILURE_STATUS = 200;
@@ -300,7 +307,7 @@ async function wakeWorkspaceForQueuedMessage(
       throw new Error("Workspace wake URL is missing.");
     }
 
-    onStatus("Your office is sleeping. Reopening it now.");
+    onStatus(WORKSPACE_WAKE_DETAIL);
     const wakeResponse = await fetch(payload.wake_url, {
       method: "POST",
       headers: { accept: "application/json" },
@@ -327,7 +334,7 @@ async function wakeWorkspaceForQueuedMessage(
       const status = statusPayload.state?.status;
 
       if (status === "running") {
-        onStatus("Office is ready. Sending your message now.");
+        onStatus(WORKSPACE_WAKE_READY_DETAIL);
         return;
       }
 
@@ -337,8 +344,8 @@ async function wakeWorkspaceForQueuedMessage(
 
       onStatus(
         status === "starting"
-          ? "Still reopening your office. Usually 1-2 minutes."
-          : "Preparing your office before sending the message.",
+          ? WORKSPACE_WAKE_LONG_DETAIL
+          : WORKSPACE_WAKE_DETAIL,
       );
     } else if ([401, 403].includes(statusResponse.status)) {
       throw new Error("Your AdClaw session expired. Sign in and retry.");
@@ -673,7 +680,7 @@ function inspectStreamEvent(eventText: string): StreamEventInspection {
 function liveDetailForStage(stage: LiveChatStage) {
   if (stage === "tools") return "Checking workspace tools and Citedy services.";
   if (stage === "writing") return "Writing the answer now.";
-  if (stage === "waking") return "Reopening your private AdClaw office.";
+  if (stage === "waking") return WORKSPACE_WAKE_DETAIL;
   if (stage === "error") return "AdClaw could not finish the answer.";
   return "Thinking through the request.";
 }
@@ -682,7 +689,7 @@ function liveDetailForElapsed(status: LiveChatStatus, elapsedSeconds: number) {
   if (status.stage === "error") return status.detail;
   if (status.stage === "waking") {
     if (elapsedSeconds > LIVE_STATUS_LONG_SECONDS) {
-      return "Still reopening your office. This can take 1-2 minutes after sleep.";
+      return WORKSPACE_WAKE_LONG_DETAIL;
     }
     return status.detail;
   }
@@ -736,7 +743,7 @@ function LiveProgressStatus({ status }: { status: LiveChatStatus }) {
             {status.stage === "error"
               ? `${status.personaName} needs a retry`
               : status.stage === "waking"
-              ? "Reopening your AdClaw office"
+              ? WORKSPACE_WAKE_TITLE
               : `${status.personaName} is working`}
           </div>
           <div className={styles.liveProgressDetail}>{liveDetail}</div>
@@ -979,9 +986,7 @@ export default function ChatPage() {
         try {
           updateLiveStatus(requestId, {
             stage: "waking",
-            detail:
-              wakePayload.message ||
-              "Your AdClaw office is sleeping. Reopening it now.",
+            detail: WORKSPACE_WAKE_DETAIL,
           });
           await wakeWorkspaceForQueuedMessage(
             wakePayload,
