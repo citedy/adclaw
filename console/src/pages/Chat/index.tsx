@@ -294,6 +294,7 @@ async function wakeWorkspaceForQueuedMessage(
     const wakeResponse = await fetch(payload.wake_url, {
       method: "POST",
       headers: { accept: "application/json" },
+      credentials: "same-origin",
       signal,
     });
 
@@ -305,6 +306,7 @@ async function wakeWorkspaceForQueuedMessage(
   for (let attempt = 0; attempt < WORKSPACE_WAKE_MAX_POLLS; attempt += 1) {
     const statusResponse = await fetch(payload.status_url, {
       headers: { accept: "application/json" },
+      credentials: "same-origin",
       signal,
     });
 
@@ -327,6 +329,16 @@ async function wakeWorkspaceForQueuedMessage(
         status === "starting"
           ? "Still reopening your office. Usually 1-2 minutes."
           : "Preparing your office before sending the message.",
+      );
+    } else if ([401, 403].includes(statusResponse.status)) {
+      throw new Error("Your AdClaw session expired. Sign in and retry.");
+    } else if (statusResponse.status === 404) {
+      throw new Error(
+        "Workspace wake status is unavailable. Retry from the dashboard.",
+      );
+    } else if (statusResponse.status >= 400) {
+      throw new Error(
+        "Workspace wake status failed. Retry from the dashboard.",
       );
     }
 
@@ -658,6 +670,12 @@ function liveDetailForStage(stage: LiveChatStage) {
 
 function liveDetailForElapsed(status: LiveChatStatus, elapsedSeconds: number) {
   if (status.stage === "error") return status.detail;
+  if (status.stage === "waking") {
+    if (elapsedSeconds > LIVE_STATUS_LONG_SECONDS) {
+      return "Still reopening your office. This can take 1-2 minutes after sleep.";
+    }
+    return status.detail;
+  }
 
   if (elapsedSeconds > LIVE_STATUS_LONG_SECONDS) {
     return "Still working. Long article or tool work can take a few minutes.";
