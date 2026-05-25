@@ -246,6 +246,16 @@ function isWorkspaceWakePayload(value: unknown): value is WorkspaceWakePayload {
   return isWorkspaceWakeCode((value as WorkspaceWakePayload).code);
 }
 
+function isHostedSleepingModelPreflightError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("workspace_sleeping") ||
+    message.includes("workspace_waking") ||
+    message.includes("Your AdClaw office is sleeping") ||
+    message.includes("Your AdClaw office is waking")
+  );
+}
+
 async function workspaceWakePayloadFromResponse(
   response: Response,
 ): Promise<WorkspaceWakePayload | null> {
@@ -861,8 +871,14 @@ export default function ChatPage() {
           return handleModelError();
         }
       } catch (error) {
-        console.error("Failed to check model configuration:", error);
-        return handleModelError();
+        if (isHostedSleepingModelPreflightError(error)) {
+          console.info(
+            "Hosted workspace is sleeping during model preflight; continuing to agent wake flow.",
+          );
+        } else {
+          console.error("Failed to check model configuration:", error);
+          return handleModelError();
+        }
       }
 
       const { input, biz_params } = data;
