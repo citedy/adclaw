@@ -311,18 +311,18 @@ Keep recommendations specific. Don't say "send an SMS at the right time" — say
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md). Key SMS tools:
+For implementation details, compare the local [SMS platform reference](references/platforms.md). Key SMS tools:
 
 | Tool | Best For | MCP | Guide |
 |------|----------|:---:|-------|
-| **Klaviyo** | E-commerce email + SMS combined | ✓ | [klaviyo.md](../../tools/integrations/klaviyo.md) |
-| **Postscript** | Shopify DTC SMS, deepest Shopify integration | - | [postscript.md](../../tools/integrations/postscript.md) |
-| **Attentive** | Mid-market+ DTC SMS, full-service | - | [attentive.md](../../tools/integrations/attentive.md) |
-| **Twilio** | Raw API for custom builds, transactional, dev-first | - | [twilio.md](../../tools/integrations/twilio.md) |
-| **Plivo** | Twilio alternative, lower per-send cost | - | [plivo.md](../../tools/integrations/plivo.md) |
-| **AudienceTap** | AI-forward DTC, on-pack QR opt-in | - | [audiencetap.md](../../tools/integrations/audiencetap.md) |
-| **Brevo** | EU email + SMS, SMB-friendly | ✓ | [brevo.md](../../tools/integrations/brevo.md) |
-| **Customer.io** | Behavior-based SMS automation | - | [customer-io.md](../../tools/integrations/customer-io.md) |
+| **Klaviyo** | E-commerce email + SMS combined | ✓ | [Platform notes](references/platforms.md#klaviyo-sms) |
+| **Postscript** | Shopify DTC SMS, deepest Shopify integration | - | [Platform notes](references/platforms.md#postscript) |
+| **Attentive** | Mid-market+ DTC SMS, full-service | - | [Platform notes](references/platforms.md#attentive) |
+| **Twilio** | Raw API for custom builds, transactional, dev-first | - | [Platform notes](references/platforms.md#twilio) |
+| **Plivo** | Twilio alternative, lower per-send cost | - | [Platform notes](references/platforms.md#plivo) |
+| **AudienceTap** | AI-forward DTC, on-pack QR opt-in | - | [Platform notes](references/platforms.md#audiencetap) |
+| **Brevo** | EU email + SMS, SMB-friendly | ✓ | [Platform notes](references/platforms.md#brevo-formerly-sendinblue) |
+| **Customer.io** | Behavior-based SMS automation | - | [Platform notes](references/platforms.md#customerio) |
 
 ---
 
