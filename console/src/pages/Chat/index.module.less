@@ -23,32 +23,28 @@
 }
 
 .liveProgress {
-  position: absolute;
-  left: 50%;
-  bottom: 92px;
-  z-index: 20;
-  width: min(560px, calc(100% - 48px));
+  width: 100%;
+  margin: 6px 0 8px;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
 .liveProgressInner {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid rgba(203, 213, 225, 0.72);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
+  gap: 8px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--citedy-slate-700, #334155);
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .liveProgressPulse {
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   background: #16a34a;
   box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.42);
@@ -57,8 +53,8 @@
 }
 
 .liveProgressError {
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   background: #f97316;
   box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.16);
@@ -66,6 +62,9 @@
 }
 
 .liveProgressText {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -78,7 +77,6 @@
 }
 
 .liveProgressDetail {
-  margin-top: 2px;
   font-size: 12px;
   line-height: 1.35;
   color: var(--citedy-slate-500, #64748b);
@@ -123,10 +121,9 @@
 
 @media (prefers-color-scheme: dark) {
   .liveProgressInner {
-    border-color: rgba(71, 85, 105, 0.78);
-    background: rgba(15, 23, 42, 0.9);
+    background: transparent;
     color: var(--citedy-slate-300, #cbd5e1);
-    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+    box-shadow: none;
   }
 
   .liveProgressTitle {
@@ -145,13 +142,17 @@
 
 @media (max-width: 640px) {
   .liveProgress {
-    bottom: 84px;
-    width: calc(100% - 24px);
+    margin-bottom: 8px;
   }
 
   .liveProgressInner {
+    align-items: center;
+  }
+
+  .liveProgressText {
     align-items: flex-start;
-    border-radius: 18px;
+    flex-direction: column;
+    gap: 1px;
   }
 
   .liveProgressElapsed {

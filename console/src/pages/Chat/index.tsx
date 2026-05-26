@@ -758,6 +758,45 @@ function LiveProgressStatus({ status }: { status: LiveChatStatus }) {
   );
 }
 
+function getChatScrollElement(root: HTMLElement | null): HTMLElement | null {
+  if (!root) return null;
+
+  const messageLists = Array.from(
+    root.querySelectorAll<HTMLElement>('[class*="chat-anywhere-message-list"]'),
+  );
+
+  return (
+    messageLists.find(
+      (element) => element.scrollHeight > element.clientHeight,
+    ) ??
+    messageLists.find((element) =>
+      String(element.className).includes("bubble-list-wrapper"),
+    ) ??
+    null
+  );
+}
+
+function isNearChatBottom(element: HTMLElement): boolean {
+  return element.scrollHeight - element.scrollTop - element.clientHeight < 160;
+}
+
+function scrollChatToBottom(
+  root: HTMLElement | null,
+  behavior: ScrollBehavior = "smooth",
+) {
+  const scrollElement = getChatScrollElement(root);
+  if (!scrollElement) return;
+
+  scrollElement.scrollTo({
+    top: scrollElement.scrollHeight,
+    behavior,
+  });
+
+  window.requestAnimationFrame(() => {
+    scrollElement.scrollTop = scrollElement.scrollHeight;
+  });
+}
+
 export default function ChatPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -768,7 +807,9 @@ export default function ChatPage() {
   const [liveChatStatus, setLiveChatStatus] = useState<LiveChatStatus | null>(
     null,
   );
+  const chatStageRef = useRef<HTMLDivElement>(null);
   const clearStatusTimers = useRef<number[]>([]);
+  const forceFollowUntilRef = useRef(0);
   const [optionsConfig] = useLocalStorageState<OptionsConfig>(
     "agent-scope-runtime-webui-options",
     {
@@ -792,6 +833,55 @@ export default function ChatPage() {
       clearStatusTimers.current = [];
     };
   }, []);
+
+  useEffect(() => {
+    const root = chatStageRef.current;
+    if (!root) return;
+
+    const followIfNeeded = (behavior: ScrollBehavior = "smooth") => {
+      const scrollElement = getChatScrollElement(root);
+      if (!scrollElement) return;
+
+      if (
+        Date.now() < forceFollowUntilRef.current ||
+        isNearChatBottom(scrollElement)
+      ) {
+        scrollChatToBottom(root, behavior);
+      }
+    };
+
+    const mutationObserver = new MutationObserver(() => followIfNeeded());
+    mutationObserver.observe(root, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+
+    const resizeObserver = new ResizeObserver(() => followIfNeeded());
+    resizeObserver.observe(root);
+
+    followIfNeeded("instant");
+
+    return () => {
+      mutationObserver.disconnect();
+      resizeObserver.disconnect();
+    };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (liveChatStatus) {
+      forceFollowUntilRef.current = Date.now() + 15_000;
+      scrollChatToBottom(chatStageRef.current);
+      return;
+    }
+
+    forceFollowUntilRef.current = Date.now() + 1_500;
+    const timer = window.setTimeout(() => {
+      scrollChatToBottom(chatStageRef.current, "instant");
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [liveChatStatus?.requestId, liveChatStatus?.stage]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -1173,18 +1263,28 @@ export default function ChatPage() {
       sender: {
         ...optionsConfig?.sender,
         beforeUI: (
-          <PersonaSelector
-            personas={personas}
-            selected={selectedPersona}
-            onSelect={setSelectedPersona}
-          />
+          <>
+            <PersonaSelector
+              personas={personas}
+              selected={selectedPersona}
+              onSelect={setSelectedPersona}
+            />
+            {liveChatStatus && <LiveProgressStatus status={liveChatStatus} />}
+          </>
         ),
       },
       customToolRenderConfig: {
         "weather search mock": Weather,
       },
     } as unknown as IAgentScopeRuntimeWebUIOptions;
-  }, [optionsConfig, selectedPersona, activeTab, personas, currentSessionId]);
+  }, [
+    optionsConfig,
+    liveChatStatus,
+    selectedPersona,
+    activeTab,
+    personas,
+    currentSessionId,
+  ]);
 
   return (
     <div
@@ -1202,9 +1302,8 @@ export default function ChatPage() {
           onTabChange={handleTabChange}
         />
       )}
-      <div className={styles.chatStage}>
+      <div className={styles.chatStage} ref={chatStageRef}>
         <AgentScopeRuntimeWebUI key={activeTab} options={options} />
-        {liveChatStatus && <LiveProgressStatus status={liveChatStatus} />}
       </div>
 
       <Modal open={showModelPrompt} closable={false} footer={null} width={480}>
