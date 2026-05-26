@@ -47,7 +47,7 @@ You do **not** need a Citedy account to use AdClaw — Citedy MCP is opt-in.
 
 If you prefer to wire it up yourself:
 
-1. **New Project → Deploy from GitHub repo** → `Citedy/adclaw`. Or **Deploy from Docker Image** → `nttylock/adclaw:1.0.6`.
+1. **New Project → Deploy from GitHub repo** → `Citedy/adclaw`. Or **Deploy from Docker Image** → `nttylock/adclaw:1.0.26`.
 2. **Settings → Networking** → expose port `8088`, generate the public domain.
 3. **Settings → Build** → confirm builder is **Dockerfile** with path `deploy/Dockerfile` (read from `railway.json` automatically).
 4. **Settings → Deploy**:
@@ -86,11 +86,11 @@ If you only attach one, pick `/app/working` and accept that LLM keys live inside
 
 | Tag | Image size | Idle RAM | Best for |
 |---|---|---|---|
-| `nttylock/adclaw:1.0.6` (default pin) | ~4.2 GB | 600–800 MB | Full feature set — Chromium for browser/scraping/social skills |
-| `nttylock/adclaw:1.0.6-browser` | ~4.1 GB | similar | Browser-only, no Feishu/DingTalk channels |
-| `nttylock/adclaw:1.0.6-core` | ~2.7 GB | 250–400 MB | Lightweight — no Chromium, no desktop tools |
+| `nttylock/adclaw:1.0.26` (default pin) | ~4.2 GB | 600–800 MB | Full feature set — Chromium for browser/scraping/social skills |
+| `nttylock/adclaw:1.0.26-browser` | ~4.1 GB | similar | Browser-only, no Feishu/DingTalk channels |
+| `nttylock/adclaw:1.0.26-core` | ~2.7 GB | 250–400 MB | Lightweight — no Chromium, no desktop tools |
 
-Switch by editing **Settings → Source** to use a Docker Image source instead of GitHub repo, then set the image to `nttylock/adclaw:1.0.6-core`. Build is skipped — deploy is ~30 s.
+Switch by editing **Settings → Source** to use a Docker Image source instead of GitHub repo, then set the image to `nttylock/adclaw:1.0.26-core`. Build is skipped — deploy is ~30 s.
 
 ## Post-deploy workflow
 

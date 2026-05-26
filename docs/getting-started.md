@@ -5,7 +5,7 @@ AdClaw is an AI marketing assistant powered by [Citedy](https://www.citedy.com).
 ## Quick Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/nttylock/AdClaw/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Citedy/adclaw/main/install.sh | bash
 ```
 
 Or with Docker Compose:
@@ -27,7 +27,7 @@ docker run -d --name adclaw \
   -v adclaw-data:/app/working \
   -e CITEDY_API_KEY=your_citedy_agent_key \
   -e TELEGRAM_BOT_TOKEN=your_telegram_bot_token \
-  nttylock/adclaw:1.0.6
+  nttylock/adclaw:1.0.26
 ```
 
 The release workflow publishes images for both `linux/amd64` and
