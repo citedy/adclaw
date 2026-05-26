@@ -16,6 +16,29 @@ interface MCPClientCardProps {
   onMouseLeave: () => void;
 }
 
+const ACRONYMS: Record<string, string> = {
+  ai: "AI",
+  api: "API",
+  ga4: "GA4",
+  gsc: "GSC",
+  llm: "LLM",
+  mcp: "MCP",
+  seo: "SEO",
+  xai: "xAI",
+};
+
+function normalizeMcpDisplayName(rawName: string): string {
+  const normalized = rawName.trim().replace(/[_\s-]?mcp$/i, "");
+  const words = normalized.split(/[_\s-]+/).filter(Boolean);
+  const title = words
+    .map((word) => {
+      const lower = word.toLowerCase();
+      return ACRONYMS[lower] || lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+  return title ? `${title} MCP` : rawName;
+}
+
 export function MCPClientCard({
   client,
   onToggle,
@@ -31,6 +54,7 @@ export function MCPClientCard({
   const [editedJson, setEditedJson] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const displayName = normalizeMcpDisplayName(client.name || client.key);
 
   // Determine if MCP client is remote or local based on command
   const isRemote =
@@ -96,8 +120,8 @@ export function MCPClientCard({
             <span className={styles.fileIcon}>
               <Server style={{ color: "#3b82f6", fontSize: 20 }} />
             </span>
-            <Tooltip title={client.name}>
-              <h3 className={styles.mcpTitle}>{client.name}</h3>
+            <Tooltip title={`Config name: ${client.name}`}>
+              <h3 className={styles.mcpTitle}>{displayName}</h3>
             </Tooltip>
             <span
               className={`${styles.typeBadge} ${
@@ -176,7 +200,7 @@ export function MCPClientCard({
       </Modal>
 
       <Modal
-        title={`${client.name} - Configuration`}
+        title={`${displayName} - Configuration`}
         open={jsonModalOpen}
         onCancel={() => setJsonModalOpen(false)}
         footer={

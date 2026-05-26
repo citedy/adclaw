@@ -25,7 +25,9 @@ type NormalizedMCPClientPayload = {
 interface CitedyStatus {
   configured: boolean;
   api_key_prefix?: string;
+  status?: string;
   balance?: { credits: number; status: string } | null;
+  error?: string;
   developer_url: string;
   billing_url: string;
 }
@@ -88,6 +90,20 @@ function normalizeClientData(
     env: rawData.env || {},
     cwd: (rawData.cwd || "").toString(),
   };
+}
+
+function citedyStatusLine(status: CitedyStatus): string {
+  if (!status.configured) {
+    return "API key not configured — connect Citedy to unlock 70+ marketing tools";
+  }
+  const keyLabel = `API key: ${status.api_key_prefix || "configured"}`;
+  if (status.balance) {
+    return `${keyLabel} | Balance: ${status.balance.credits} credits`;
+  }
+  if (status.status === "invalid") {
+    return `${keyLabel} | Reconnect required — balance unavailable`;
+  }
+  return `${keyLabel} | Balance unavailable`;
 }
 
 function MCPPage() {
@@ -254,11 +270,7 @@ function MCPPage() {
                 </a>
               </h3>
               <p style={{ margin: "4px 0 0", color: "#475569", fontSize: 13 }}>
-                {citedyStatus.configured
-                  ? `API Key: ${citedyStatus.api_key_prefix || "configured"}`
-                  : "API key not configured — get a free key to unlock 59 marketing tools"}
-                {citedyStatus.balance &&
-                  ` | Balance: ${citedyStatus.balance.credits} credits`}
+                {citedyStatusLine(citedyStatus)}
               </p>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -275,10 +287,17 @@ function MCPPage() {
               {citedyStatus.configured && (
                 <Button
                   onClick={() =>
-                    window.open(citedyStatus.billing_url, "_blank")
+                    window.open(
+                      citedyStatus.status === "invalid"
+                        ? citedyStatus.developer_url
+                        : citedyStatus.billing_url,
+                      "_blank",
+                    )
                   }
                 >
-                  Top Up Balance
+                  {citedyStatus.status === "invalid"
+                    ? "Reconnect Key"
+                    : "Top Up Balance"}
                 </Button>
               )}
             </div>

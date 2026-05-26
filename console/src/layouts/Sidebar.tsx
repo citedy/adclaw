@@ -74,7 +74,9 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   const [citedyBalance, setCitedyBalance] = useState<{
     configured: boolean;
     credits?: number;
+    status?: string;
     billing_url?: string;
+    developer_url?: string;
   } | null>(null);
   const collapsed = isNarrowViewport || desktopCollapsed;
   const useCompactPopupMenu = isNarrowViewport && collapsed;
@@ -93,7 +95,9 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
         setCitedyBalance({
           configured: res.configured,
           credits: res.balance?.credits,
+          status: res.status,
           billing_url: res.billing_url,
+          developer_url: res.developer_url,
         });
       })
       .catch(() => {});
@@ -372,6 +376,8 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
               <Wallet size={14} />
               {citedyBalance.credits != null
                 ? `${citedyBalance.credits} credits`
+                : citedyBalance.status === "invalid"
+                ? "Reconnect Citedy"
                 : "Citedy"}
             </span>
             <Button
@@ -381,13 +387,16 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
               icon={<ExternalLink size={12} />}
               onClick={() =>
                 window.open(
-                  citedyBalance.billing_url ||
-                    "https://www.citedy.com/dashboard/billing",
+                  citedyBalance.status === "invalid"
+                    ? citedyBalance.developer_url ||
+                        "https://www.citedy.com/developer"
+                    : citedyBalance.billing_url ||
+                        "https://www.citedy.com/dashboard/billing",
                   "_blank",
                 )
               }
             >
-              Top Up
+              {citedyBalance.status === "invalid" ? "Fix" : "Top Up"}
             </Button>
           </div>
         </div>

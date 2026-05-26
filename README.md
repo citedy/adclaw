@@ -237,7 +237,7 @@ Create a team of specialized AI agents, each with its own personality, LLM, skil
 
 | Skill | Description |
 |-------|-------------|
-| citedy-seo-agent | Full-stack SEO agent with 59 tools |
+| citedy-seo-agent | Full-stack SEO agent with 70+ marketing tools |
 | citedy-content-writer | Blog autopilot — articles, illustrations, voice-over |
 | citedy-content-ingestion | Ingest YouTube, PDFs, web pages, audio |
 | citedy-trend-scout | Scout X/Twitter and Reddit for trends |
