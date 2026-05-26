@@ -20,10 +20,12 @@ const scoreColor = (score: number) => {
 
 interface Props {
   security?: SkillSecurity;
+  source?: string;
 }
 
-export function SecurityBadges({ security }: Props) {
+export function SecurityBadges({ security, source }: Props) {
   if (!security) {
+    const isBuiltIn = source === "builtin";
     return (
       <div
         style={{
@@ -31,11 +33,11 @@ export function SecurityBadges({ security }: Props) {
           alignItems: "center",
           gap: 8,
           fontSize: 12,
-          color: "#cbd5e1",
+          color: isBuiltIn ? "#64748b" : "#94a3b8",
           marginTop: 8,
         }}
       >
-        <span>Not scanned</span>
+        <span>{isBuiltIn ? "Built-in verified" : "Scan available"}</span>
       </div>
     );
   }

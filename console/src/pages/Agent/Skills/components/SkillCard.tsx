@@ -27,6 +27,11 @@ interface SkillCardProps {
 }
 
 const MAX_DESC_LEN = 90;
+const SOURCE_LABELS: Record<string, string> = {
+  builtin: "Built-in",
+  customized: "Customized",
+  active: "Active",
+};
 
 function extractDescription(content: string): string {
   // Parse description from YAML frontmatter: "description: ..." or multi-line "description: >\n  ..."
@@ -171,9 +176,9 @@ export function SkillCard({
           </div>
         </div>
 
-        <div className={styles.infoSection}>
-          <div className={styles.infoLabel}>{t("skills.source")}</div>
-          <code className={styles.infoCode}>{skill.source}</code>
+        <div className={styles.sourcePill}>
+          <span>{t("skills.source")}</span>
+          <strong>{SOURCE_LABELS[skill.source] || skill.source}</strong>
         </div>
 
         <div className={styles.infoSection}>
@@ -185,7 +190,7 @@ export function SkillCard({
           </span>
         </div>
 
-        <SecurityBadges security={skill.security} />
+        <SecurityBadges security={skill.security} source={skill.source} />
       </div>
 
       <div className={styles.cardFooter}>

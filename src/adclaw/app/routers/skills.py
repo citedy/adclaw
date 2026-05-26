@@ -67,9 +67,23 @@ class HubInstallRequest(BaseModel):
 router = APIRouter(prefix="/skills", tags=["skills"])
 
 
+def _effective_skills(skills: list[SkillInfo]) -> list[SkillInfo]:
+    """Return customer-visible skills, preferring customized overrides."""
+    source_rank = {"builtin": 0, "customized": 1, "active": 2}
+    effective: dict[str, SkillInfo] = {}
+    for skill in skills:
+        current = effective.get(skill.name)
+        if current is None or source_rank.get(skill.source, 0) >= source_rank.get(
+            current.source,
+            0,
+        ):
+            effective[skill.name] = skill
+    return list(effective.values())
+
+
 @router.get("")
 async def list_skills() -> list[SkillSpec]:
-    all_skills = SkillService.list_all_skills()
+    all_skills = _effective_skills(SkillService.list_all_skills())
 
     available_skills = list_available_skills()
     skills_spec = []

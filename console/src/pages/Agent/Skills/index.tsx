@@ -219,11 +219,13 @@ function SkillsPage() {
             })
             .map((skill) => (
               <SkillCard
-                key={skill.name}
+                key={`${skill.source}:${skill.name}`}
                 skill={skill}
-                isHover={hoverKey === skill.name}
+                isHover={hoverKey === `${skill.source}:${skill.name}`}
                 onClick={() => handleEdit(skill)}
-                onMouseEnter={() => setHoverKey(skill.name)}
+                onMouseEnter={() =>
+                  setHoverKey(`${skill.source}:${skill.name}`)
+                }
                 onMouseLeave={() => setHoverKey(null)}
                 onToggleEnabled={(e) => handleToggleEnabled(skill, e)}
                 onDelete={(e) => handleDelete(skill, e)}

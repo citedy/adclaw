@@ -4,7 +4,7 @@
 import logging
 import os
 from urllib.request import Request, urlopen
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 import json
 
 from fastapi import APIRouter, HTTPException
@@ -18,6 +18,7 @@ router = APIRouter(prefix="/citedy", tags=["citedy"])
 CITEDY_API_BASE = "https://www.citedy.com"
 CITEDY_DEVELOPER_URL = "https://www.citedy.com/developer"
 CITEDY_BILLING_URL = "https://www.citedy.com/dashboard/billing"
+CITEDY_MCP_DESCRIPTION = "Citedy SEO & Marketing Tools (70+ tools)"
 
 
 def _get_citedy_api_key() -> str:
@@ -65,11 +66,28 @@ async def citedy_status():
             "developer_url": CITEDY_DEVELOPER_URL,
             "billing_url": CITEDY_BILLING_URL,
         }
+    except HTTPError as e:
+        logger.warning("Citedy status rejected API key: HTTP %s", e.code)
+        reconnect_required = e.code in (401, 403)
+        return {
+            "configured": True,
+            "api_key_prefix": api_key[:20] + "..." if len(api_key) > 20 else api_key,
+            "status": "invalid" if reconnect_required else "unavailable",
+            "balance": None,
+            "error": (
+                "Citedy key needs reconnect"
+                if reconnect_required
+                else "Could not connect to Citedy API"
+            ),
+            "developer_url": CITEDY_DEVELOPER_URL,
+            "billing_url": CITEDY_BILLING_URL,
+        }
     except URLError as e:
         logger.warning("Failed to fetch Citedy status: %s", e)
         return {
             "configured": True,
             "api_key_prefix": api_key[:20] + "..." if len(api_key) > 20 else api_key,
+            "status": "unavailable",
             "balance": None,
             "error": "Could not connect to Citedy API",
             "developer_url": CITEDY_DEVELOPER_URL,
@@ -80,6 +98,7 @@ async def citedy_status():
         return {
             "configured": True,
             "api_key_prefix": api_key[:20] + "..." if len(api_key) > 20 else api_key,
+            "status": "unavailable",
             "balance": None,
             "error": f"Could not check Citedy status ({type(e).__name__})",
             "developer_url": CITEDY_DEVELOPER_URL,
@@ -109,7 +128,7 @@ async def save_citedy_api_key(body: dict):
         config = load_config()
         config.mcp.clients["citedy"] = MCPClientConfig(
             name="citedy_mcp",
-            description="Citedy SEO & Marketing Tools (59 tools)",
+            description=CITEDY_MCP_DESCRIPTION,
             enabled=True,
             transport="streamable_http",
             url="https://mcp.citedy.com/mcp",
