@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument too-many-branches too-many-statements
 import asyncio
+import copy
 import inspect
 import json
 import logging
@@ -602,6 +603,82 @@ async def _stream_agent_messages_with_visible_fallback(
         yield await _yield_recovered_or_fallback(), True
 
 
+async def _ensure_assistant_reply_in_memory(agent, assistant_text: str) -> None:
+    """Ensure the visible assistant reply is persisted before session save."""
+    text = (assistant_text or "").strip()
+    memory = getattr(agent, "memory", None)
+    if not text or memory is None or not hasattr(memory, "add"):
+        return
+
+    try:
+        get_memory = getattr(memory, "get_memory", None)
+        if callable(get_memory):
+            existing = get_memory()
+            if inspect.isawaitable(existing):
+                existing = await existing
+            for msg in reversed(list(existing or [])):
+                role = getattr(msg, "role", None)
+                if role == "user":
+                    break
+                if role != "assistant":
+                    continue
+                if extract_visible_text(msg) == text:
+                    return
+
+        from agentscope.message import Msg
+
+        name = getattr(agent, "name", None) or "assistant"
+        add_result = memory.add(
+            Msg(
+                name=name,
+                role="assistant",
+                content=[{"type": "text", "text": text}],
+            ),
+        )
+        if inspect.isawaitable(add_result):
+            await add_result
+    except Exception:
+        logger.warning(
+            "Could not persist visible assistant reply before session save",
+            exc_info=True,
+        )
+
+
+async def _copy_agent_memory(source_agent, target_agent) -> None:
+    """Copy loaded chat memory into a fallback agent before retrying."""
+    source_memory = getattr(source_agent, "memory", None)
+    target_memory = getattr(target_agent, "memory", None)
+    if source_memory is None or target_memory is None:
+        return
+
+    try:
+        if hasattr(source_memory, "state_dict") and hasattr(
+            target_memory,
+            "load_state_dict",
+        ):
+            target_memory.load_state_dict(
+                copy.deepcopy(source_memory.state_dict()),
+            )
+            return
+
+        get_memory = getattr(source_memory, "get_memory", None)
+        add = getattr(target_memory, "add", None)
+        if not callable(get_memory) or not callable(add):
+            return
+        messages = get_memory()
+        if inspect.isawaitable(messages):
+            messages = await messages
+        for message in copy.deepcopy(list(messages or [])):
+            add_result = add(message)
+            if inspect.isawaitable(add_result):
+                await add_result
+    except Exception:
+        logger.warning(
+            "Could not copy session memory into fallback agent",
+            exc_info=True,
+        )
+
+
 def _same_model_slot(candidate, primary) -> bool:
     """Return True when a fallback slot points at the current provider/model."""
     if candidate is None or primary is None:
@@ -1111,10 +1188,6 @@ class AgentRunner(Runner):
                         )
                         yield notify_msg, False
 
-                        # Fallback agent is created without loading session
-                        # state. This is intentional: loading the same history
-                        # that may have caused the primary failure could trigger
-                        # the same error on the fallback provider.
                         fb_agent = AdClawAgent(
                             env_context=getattr(agent, "_env_context", None),
                             mcp_clients=getattr(agent, "_mcp_clients", []),
@@ -1129,6 +1202,7 @@ class AgentRunner(Runner):
                             model=fb_model,
                             formatter=fb_formatter,
                         )
+                        await _copy_agent_memory(agent, fb_agent)
                         await fb_agent.register_mcp_clients()
                         fb_agent.set_console_output_enabled(enabled=False)
 
@@ -1149,6 +1223,7 @@ class AgentRunner(Runner):
                             "assistant_text",
                             assistant_text,
                         )
+                        await _copy_agent_memory(fb_agent, agent)
                         if self.error_tracker:
                             self.error_tracker.record_success(session_id)
                         return  # success
@@ -1301,6 +1376,7 @@ class AgentRunner(Runner):
             raise
         finally:
             if agent is not None and session_state_loaded:
+                await _ensure_assistant_reply_in_memory(agent, assistant_text)
                 await self.session.save_session_state(
                     session_id=session_id,
                     user_id=user_id,

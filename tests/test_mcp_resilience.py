@@ -1032,9 +1032,205 @@ async def test_query_handler_uses_model_factory_for_provider_fallback(monkeypatc
     assert runner.session.save_calls == 1
 
 
+@pytest.mark.asyncio
+async def test_query_handler_persists_visible_assistant_reply_before_session_save(
+    monkeypatch,
+) -> None:
+    """Visible assistant replies must be present in persisted session memory."""
+    from agentscope.memory import InMemoryMemory
+    from agentscope.message import Msg
+
+    from adclaw.providers import store as provider_store
+
+    class _FakeAgent:
+        def __init__(self, **kwargs) -> None:  # noqa: ARG002
+            self.memory = InMemoryMemory()
+
+        async def register_mcp_clients(self) -> None:
+            return
+
+        def set_console_output_enabled(self, enabled: bool) -> None:  # noqa: ARG002
+            return
+
+        def rebuild_sys_prompt(self) -> None:
+            return
+
+        def __call__(self, msgs):  # noqa: ANN001
+            return self
+
+    class _FakeSession:
+        def __init__(self) -> None:
+            self.saved_messages = []
+
+        async def load_session_state(self, **kwargs) -> None:  # noqa: ARG002
+            return
+
+        async def save_session_state(self, **kwargs) -> None:
+            agent = kwargs["agent"]
+            self.saved_messages = await agent.memory.get_memory()
+
+    class _FakePersonaManager:
+        all_personas = []
+
+        def __init__(self, **kwargs) -> None:  # noqa: ARG002
+            return
+
+        def ensure_dirs(self) -> None:
+            return
+
+        def resolve_tag(self, msg_text: str):  # noqa: ANN201, ARG002
+            return None
+
+        def get_coordinator(self):  # noqa: ANN201
+            return None
+
+        def get_team_summary(self) -> str:
+            return ""
+
+    class _DummyInputMsg:
+        content = "hello"
+
+        def get_text_content(self) -> str:
+            return "hello"
+
+    cfg = SimpleNamespace(
+        agents=SimpleNamespace(
+            running=SimpleNamespace(max_iters=1, max_input_length=2048),
+            personas=[],
+        ),
+    )
+
+    async def _fake_stream_printing_messages(*, agents, coroutine_task):  # noqa: ARG001
+        yield Msg(
+            name="assistant",
+            role="assistant",
+            content="VISIBLE_REPLY_417",
+        ), True
+
+    async def _empty_context(**kwargs) -> str:  # noqa: ARG001
+        return ""
+
+    async def _noop_capture(**kwargs) -> None:  # noqa: ARG001
+        return
+
+    monkeypatch.setattr(runner_module, "AdClawAgent", _FakeAgent)
+    monkeypatch.setattr(runner_module, "PersonaManager", _FakePersonaManager)
+    monkeypatch.setattr(runner_module, "load_config", lambda: cfg)
+    monkeypatch.setattr(
+        runner_module,
+        "build_env_context",
+        lambda **kwargs: "env",
+    )
+    monkeypatch.setattr(
+        runner_module,
+        "stream_printing_messages",
+        _fake_stream_printing_messages,
+    )
+    monkeypatch.setattr(
+        provider_store,
+        "get_fallback_config",
+        lambda: SimpleNamespace(enabled=False, timeout_seconds=1),
+    )
+
+    runner = AgentRunner()
+    fake_session = _FakeSession()
+    runner.session = fake_session
+    runner._build_shared_persona_memory_context = _empty_context
+    runner._capture_chat_memory = _noop_capture
+
+    request = SimpleNamespace(
+        session_id="s1",
+        user_id="u1",
+        channel="console",
+    )
+
+    events = []
+    async for msg, last in runner.query_handler(
+        [_DummyInputMsg()],
+        request=request,
+    ):
+        events.append((getattr(msg, "content", ""), last))
+
+    assert events == [("VISIBLE_REPLY_417", True)]
+    assert [
+        (getattr(msg, "role", ""), runner_module.extract_visible_text(msg))
+        for msg in fake_session.saved_messages
+    ] == [("assistant", "VISIBLE_REPLY_417")]
+
+
+@pytest.mark.asyncio
+async def test_ensure_assistant_reply_dedupes_only_current_tail_turn() -> None:
+    """Repeated older assistant text must not suppress the current turn."""
+    from agentscope.memory import InMemoryMemory
+    from agentscope.message import Msg
+
+    memory = InMemoryMemory()
+    for msg in [
+        Msg(name="user", role="user", content="first request"),
+        Msg(name="assistant", role="assistant", content="Done"),
+        Msg(name="user", role="user", content="repeat request"),
+    ]:
+        add_result = memory.add(msg)
+        if asyncio.iscoroutine(add_result):
+            await add_result
+
+    agent = SimpleNamespace(memory=memory, name="assistant")
+
+    await runner_module._ensure_assistant_reply_in_memory(agent, "Done")
+
+    assert [
+        (getattr(msg, "role", ""), runner_module.extract_visible_text(msg))
+        for msg in await memory.get_memory()
+    ] == [
+        ("user", "first request"),
+        ("assistant", "Done"),
+        ("user", "repeat request"),
+        ("assistant", "Done"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_copy_agent_memory_adds_messages_one_by_one() -> None:
+    """Fallback memory copy must work with memory.add(message) implementations."""
+    from agentscope.message import Msg
+
+    source_messages = [
+        Msg(name="user", role="user", content="remember this"),
+        Msg(name="assistant", role="assistant", content="remembered"),
+    ]
+
+    class _SourceMemory:
+        async def get_memory(self):
+            return source_messages
+
+    class _TargetMemory:
+        def __init__(self) -> None:
+            self.messages = []
+
+        def add(self, message) -> None:
+            assert not isinstance(message, list)
+            self.messages.append(message)
+
+    target_memory = _TargetMemory()
+
+    await runner_module._copy_agent_memory(
+        SimpleNamespace(memory=_SourceMemory()),
+        SimpleNamespace(memory=target_memory),
+    )
+
+    assert [
+        (getattr(msg, "role", ""), runner_module.extract_visible_text(msg))
+        for msg in target_memory.messages
+    ] == [
+        ("user", "remember this"),
+        ("assistant", "remembered"),
+    ]
+
+
 async def test_query_handler_skips_duplicate_active_fallback(monkeypatch):
     """Fallback chain should not retry the active provider/model slot."""
     import httpx
+    from agentscope.memory import InMemoryMemory
     from agentscope.message import Msg
     from openai import APITimeoutError
 
@@ -1051,6 +1247,7 @@ async def test_query_handler_skips_duplicate_active_fallback(monkeypatch):
             self._namesake_strategy = "skip"
             self._persona = kwargs.get("persona")
             self._team_summary = kwargs.get("team_summary", "")
+            self.memory = InMemoryMemory()
 
         async def register_mcp_clients(self) -> None:
             return
@@ -1068,12 +1265,24 @@ async def test_query_handler_skips_duplicate_active_fallback(monkeypatch):
         def __init__(self) -> None:
             self.load_calls = 0
             self.save_calls = 0
+            self.saved_memory_texts = []
 
-        async def load_session_state(self, **kwargs) -> None:  # noqa: ARG002
+        async def load_session_state(self, **kwargs) -> None:
             self.load_calls += 1
+            await kwargs["agent"].memory.add(
+                Msg(
+                    name="Friday",
+                    role="assistant",
+                    content="remembered assistant context",
+                ),
+            )
 
-        async def save_session_state(self, **kwargs) -> None:  # noqa: ARG002
+        async def save_session_state(self, **kwargs) -> None:
             self.save_calls += 1
+            self.saved_memory_texts = [
+                runner_module.extract_visible_text(msg)
+                for msg in await kwargs["agent"].memory.get_memory()
+            ]
 
     class _FakePersonaManager:
         all_personas = []
@@ -1115,6 +1324,7 @@ async def test_query_handler_skips_duplicate_active_fallback(monkeypatch):
         model="gpt-4.1-mini",
     )
     factory_calls = []
+    fallback_memory_seen = []
     stream_calls = 0
 
     def _fake_create_model_and_formatter(model_cfg, timeout_seconds=None):
@@ -1128,6 +1338,10 @@ async def test_query_handler_skips_duplicate_active_fallback(monkeypatch):
             raise APITimeoutError(
                 request=httpx.Request("POST", "https://llm.example.test"),
             )
+        fallback_memory_seen.extend(
+            runner_module.extract_visible_text(msg)
+            for msg in await agents[0].memory.get_memory()
+        )
         yield Msg(name="assistant", role="assistant", content="fallback reply"), True
 
     async def _empty_context(**kwargs) -> str:  # noqa: ARG001
@@ -1191,6 +1405,8 @@ async def test_query_handler_skips_duplicate_active_fallback(monkeypatch):
     assert factory_calls == [(fallback, 1)]
     assert any("Switching to gpt-4.1-mini" in str(content) for content, _ in events)
     assert ("fallback reply", True) in events
+    assert "remembered assistant context" in fallback_memory_seen
+    assert "fallback reply" in runner.session.saved_memory_texts
 
 
 async def test_query_handler_renders_host_ai_limit_without_generic_error(monkeypatch):
