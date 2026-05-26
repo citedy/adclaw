@@ -1,6 +1,6 @@
 # Skills Library
 
-AdClaw ships with **113 built-in skills** across 10 categories. All skills are security-scanned (208-pattern static analysis + LLM audit).
+AdClaw ships with **121 built-in skills** across 10 categories. All skills are security-scanned (208-pattern static analysis + LLM audit).
 
 ---
 
@@ -8,7 +8,7 @@ AdClaw ships with **113 built-in skills** across 10 categories. All skills are s
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Marketing | 33 | CRO, copywriting, email, psychology, pricing, referral, launch |
+| Marketing | 43 | CRO, copywriting, email, psychology, pricing, referral, launch, media, SMS, community |
 | SEO | 19 | Audits, backlinks, technical, local, schema, programmatic, images |
 | Ads | 18 | Google, Meta, LinkedIn, TikTok, YouTube, Apple, Microsoft, creative |
 | Citedy | 6 | SEO autopilot, content writer, video shorts, trends, leads, ingestion |
@@ -17,7 +17,7 @@ AdClaw ships with **113 built-in skills** across 10 categories. All skills are s
 | Agency | 5 | Growth hacker, analytics reporter, app store optimizer, feedback synthesizer, trend researcher |
 | Office | 4 | PDF, DOCX, PPTX, XLSX |
 | Utility | 10 | Email, file reader, here.now publish, himalaya, cron, news, self-setup, skill-creator, GA4, GSC |
-| Platform | 7 | AgentHub worker, DingTalk channel, Google Ads API, browser_visible, marketing-mode, ads-shared, seo-shared |
+| Platform | 5 | AgentHub worker, DingTalk channel, Google Ads API, browser_visible, marketing-mode |
 
 ---
 
@@ -68,7 +68,7 @@ AdClaw ships with **113 built-in skills** across 10 categories. All skills are s
 | `ads-tiktok` | TikTok Ads analysis (creative, tracking, bidding) |
 | `ads-youtube` | YouTube Ads analysis (campaign types, creative, audience) |
 
-## Marketing Skills (33)
+## Marketing Skills (43)
 
 | Skill | Description |
 |-------|-------------|
@@ -77,18 +77,26 @@ AdClaw ships with **113 built-in skills** across 10 categories. All skills are s
 | `marketing-ad-creative` | Ad creative generation and iteration at scale |
 | `marketing-ai-seo` | Optimize for AI search engines (ChatGPT, Gemini, Perplexity) |
 | `marketing-analytics-tracking` | Analytics setup, event tracking, measurement |
+| `marketing-aso` | App Store and Google Play listing optimization |
 | `marketing-churn-prevention` | Reduce churn, cancellation flows, save offers |
+| `marketing-co-marketing` | Co-marketing partners and joint campaign planning |
 | `marketing-cold-email` | B2B cold email and follow-up sequences |
+| `marketing-community-marketing` | Community strategy, advocates, and community-led growth |
 | `marketing-competitor-alternatives` | Competitor comparison and alternative pages |
+| `marketing-competitor-profiling` | Competitor research and structured competitor profiles |
 | `marketing-content-strategy` | Content strategy planning and editorial calendar |
 | `marketing-copy-editing` | Edit and improve existing marketing copy |
 | `marketing-copywriting` | Write marketing copy for any page type |
+| `marketing-customer-research` | Customer research, ICP, VOC, and review mining |
+| `marketing-directory-submissions` | Directory submissions for launch discovery and backlinks |
 | `marketing-email-sequence` | Email sequences, drip campaigns, automated flows |
 | `marketing-form-cro` | Form optimization (lead capture, surveys, checkout) |
 | `marketing-free-tool-strategy` | Free tool planning for lead generation |
+| `marketing-image` | Marketing image generation, editing, and optimization |
 | `marketing-launch-strategy` | Product launch and feature announcement planning |
+| `marketing-lead-magnets` | Lead magnet strategy for gated content and downloads |
 | `marketing-marketing-ideas` | Marketing idea generation and brainstorming |
-| `marketing-marketing-psychology` | Apply behavioral science to marketing |
+| `marketing-psychology` | Apply behavioral science to marketing |
 | `marketing-onboarding-cro` | Post-signup onboarding and activation optimization |
 | `marketing-page-cro` | Landing page conversion rate optimization |
 | `marketing-paid-ads` | Paid advertising campaign help (Google, Meta, LinkedIn) |
@@ -104,7 +112,9 @@ AdClaw ships with **113 built-in skills** across 10 categories. All skills are s
 | `marketing-seo-audit` | SEO audit and diagnostics |
 | `marketing-signup-flow-cro` | Signup and registration flow optimization |
 | `marketing-site-architecture` | Site hierarchy, navigation, URL structure |
+| `marketing-sms` | SMS and MMS marketing flows and compliance |
 | `marketing-social-content` | Social media content creation and scheduling |
+| `marketing-video` | AI video generation and programmatic video workflows |
 
 ## Citedy Skills (6)
 

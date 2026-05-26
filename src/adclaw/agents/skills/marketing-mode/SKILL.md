@@ -1,8 +1,8 @@
 ---
 name: marketing-mode
-description: "Marketing Mode combines 23 comprehensive marketing skills covering strategy, psychology, content, SEO, conversion optimization, and paid growth. Use when users need marketing strategy, copywriting, SEO help, conversion optimization, paid advertising, or any marketing tactic."
+description: "Marketing Mode combines AdClaw's v2.0.1-aligned marketing skills covering strategy, psychology, content, SEO, conversion optimization, paid growth, media generation, community, SMS, and research. Use when users need marketing strategy, copywriting, SEO help, conversion optimization, paid advertising, or any marketing tactic."
 metadata:
-  version: 1.0.0
+  version: 2.0.1
   tags: ["marketing", "growth", "seo", "copywriting", "cro", "paid-ads", "strategy", "psychology", "launch", "pricing", "email", "social"]
   clawdbot:
     mode:
@@ -24,7 +24,7 @@ metadata:
 
 # Marketing Mode - Complete Marketing Knowledge Base
 
-You are a marketing strategist with expertise across 23 comprehensive marketing disciplines. Your goal is to help users find the right strategies, tactics, and frameworks for their specific situation, stage, and resources.
+You are a marketing strategist with expertise across AdClaw's v2.0.1-aligned marketing disciplines. Your goal is to help users find the right strategies, tactics, and frameworks for their specific situation, stage, and resources.
 
 ## Mode Activation
 
@@ -670,24 +670,24 @@ Customer as hero on a journey with your product as guide
 
 - **marketing-ideas**: 140+ tactical marketing ideas
 - **marketing-psychology**: 70+ mental models for persuasion
-- **launch-strategy**: 5-phase launch framework
-- **pricing-strategy**: Research and optimization methods
-- **seo-audit**: Technical and on-page SEO diagnosis
+- **launch**: 5-phase launch framework
+- **pricing**: Research and optimization methods
+- **marketing-seo-audit**: Technical and on-page SEO diagnosis
 - **programmatic-seo**: Building pages at scale
-- **schema-markup**: Structured data implementation
-- **competitor-alternatives**: Comparison page strategy
+- **schema**: Structured data implementation
+- **competitors**: Comparison page strategy
 - **copywriting**: Framework-driven copy
 - **copy-editing**: 7-sweep improvement process
-- **social-content**: Platform-specific strategies
-- **email-sequence**: Campaign types and templates
-- **page-cro**: Landing page optimization
-- **signup-flow-cro**: Form and signup optimization
+- **social**: Platform-specific strategies
+- **emails**: Campaign types and templates
+- **cro**: Landing page optimization
+- **signup**: Form and signup optimization
 - **form-cro**: Lead capture and conversion
-- **onboarding-cro**: Activation and retention
-- **paywall-cro**: Premium content strategy
-- **popup-cro**: Trigger-based conversion
-- **ab-test-setup**: Statistical rigor in testing
-- **paid-ads**: Channel-specific strategies
-- **analytics-tracking**: Measurement infrastructure
-- **referral-program**: Viral loop design
-- **free-tool-strategy**: Lead generation through tools
+- **onboarding**: Activation and retention
+- **paywalls**: Premium content strategy
+- **popups**: Trigger-based conversion
+- **ab-testing**: Statistical rigor in testing
+- **marketing-paid-ads**: Channel-specific strategies
+- **analytics**: Measurement infrastructure
+- **referrals**: Viral loop design
+- **free-tools**: Lead generation through tools

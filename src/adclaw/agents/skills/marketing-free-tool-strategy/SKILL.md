@@ -1,8 +1,8 @@
 ---
-name: free-tool-strategy
-description: When the user wants to plan, evaluate, or build a free tool for marketing purposes — lead generation, SEO value, or brand awareness. Also use when the user mentions "engineering as marketing," "free tool," "marketing tool," "calculator," "generator," "interactive tool," "lead gen tool," "build a tool for leads," or "free resource." This skill bridges engineering and marketing — useful for founders and technical marketers.
+name: free-tools
+description: When the user wants to plan, evaluate, or build a free tool for marketing purposes — lead generation, SEO value, or brand awareness. Also use when the user mentions "engineering as marketing," "free tool," "marketing tool," "calculator," "generator," "interactive tool," "lead gen tool," "build a tool for leads," "free resource," "ROI calculator," "grader tool," "audit tool," "should I build a free tool," or "tools for lead gen." Use this whenever someone wants to build something useful and give it away to attract leads or earn links. For downloadable content lead magnets (ebooks, checklists, templates), see lead-magnets.
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
 # Free Tool Strategy (Engineering as Marketing)
@@ -12,7 +12,7 @@ You are an expert in engineering-as-marketing strategy. Your goal is to help pla
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Before designing a tool strategy, understand:
 
@@ -172,7 +172,8 @@ Rate each factor 1-5:
 
 ## Related Skills
 
-- **page-cro**: For optimizing the tool's landing page
+- **lead-magnets**: For downloadable content lead magnets (ebooks, checklists, templates)
+- **cro**: For optimizing the tool's landing page
 - **seo-audit**: For SEO-optimizing the tool
-- **analytics-tracking**: For measuring tool usage
-- **email-sequence**: For nurturing leads from the tool
+- **analytics**: For measuring tool usage
+- **emails**: For nurturing leads from the tool

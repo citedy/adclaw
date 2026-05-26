@@ -1,8 +1,8 @@
 ---
-name: paid-ads
-description: "When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram), LinkedIn, Twitter/X, or other ad platforms. Also use when the user mentions 'PPC,' 'paid media,' 'ROAS,' 'CPA,' 'ad campaign,' 'retargeting,' or 'audience targeting.' This skill covers campaign strategy, audience targeting, and optimization. For bulk ad creative generation and iteration, see ad-creative."
+name: marketing-paid-ads
+description: "When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram), LinkedIn, Twitter/X, or other ad platforms. Also use when the user mentions 'PPC,' 'paid media,' 'ROAS,' 'CPA,' 'ad campaign,' 'retargeting,' 'audience targeting,' 'Google Ads,' 'Facebook ads,' 'LinkedIn ads,' 'ad budget,' 'cost per click,' 'ad spend,' or 'should I run ads.' Use this for campaign strategy, audience targeting, bidding, and optimization. For bulk ad creative generation and iteration, see ad-creative. For landing page optimization, see cro."
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
 # Paid Ads
@@ -12,7 +12,7 @@ You are an expert performance marketer with direct access to ad platform account
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -122,7 +122,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 - **Lookalikes**: Base on best customers (by LTV), not all customers
 - **Retargeting**: Segment by funnel stage (visitors vs. cart abandoners)
-- **Exclusions**: Always exclude existing customers and recent converters
+- **Exclusions**: Exclude existing customers and recent converters — showing ads to people who already bought wastes spend
 
 **For detailed targeting strategies by platform**: See [references/audience-targeting.md](references/audience-targeting.md)
 
@@ -245,6 +245,8 @@ Before launching campaigns, ensure proper tracking and account setup.
 
 **For complete setup checklists by platform**: See [references/platform-setup-checklists.md](references/platform-setup-checklists.md)
 
+**For conversion pixel installation and event setup**: See [references/conversion-tracking.md](references/conversion-tracking.md)
+
 ### Universal Pre-Launch Checklist
 - [ ] Conversion tracking tested with real conversion
 - [ ] Landing page loads fast (<3 sec)
@@ -302,7 +304,7 @@ For implementation, see the [tools registry](../../tools/REGISTRY.md). Key adver
 | **LinkedIn Ads** | B2B, job title targeting | - | [linkedin-ads.md](../../tools/integrations/linkedin-ads.md) |
 | **TikTok Ads** | Younger demographics, video | - | [tiktok-ads.md](../../tools/integrations/tiktok-ads.md) |
 
-For tracking, see also: [ga4.md](../../tools/integrations/ga4.md), [segment.md](../../tools/integrations/segment.md)
+For tracking setup, see [references/conversion-tracking.md](references/conversion-tracking.md), [ga4.md](../../tools/integrations/ga4.md), [segment.md](../../tools/integrations/segment.md)
 
 ---
 
@@ -310,6 +312,6 @@ For tracking, see also: [ga4.md](../../tools/integrations/ga4.md), [segment.md](
 
 - **ad-creative**: For generating and iterating ad headlines, descriptions, and creative at scale
 - **copywriting**: For landing page copy that converts ad traffic
-- **analytics-tracking**: For proper conversion tracking setup
-- **ab-test-setup**: For landing page testing to improve ROAS
-- **page-cro**: For optimizing post-click conversion rates
+- **analytics**: For proper conversion tracking setup
+- **ab-testing**: For landing page testing to improve ROAS
+- **cro**: For optimizing post-click conversion rates

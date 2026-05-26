@@ -1,6 +1,6 @@
 # Getting Started with AdClaw
 
-AdClaw is an AI marketing assistant powered by [Citedy](https://www.citedy.com). It comes with 130+ built-in skills (SEO, ads, content, social media, analytics, and more), 52 MCP tools, and works out of the box via Telegram or web chat.
+AdClaw is an AI marketing assistant powered by [Citedy](https://www.citedy.com). It comes with 121 built-in skills (SEO, ads, content, social media, analytics, and more), 52 MCP tools, and works out of the box via Telegram or web chat.
 
 ## Quick Install
 
@@ -27,15 +27,14 @@ docker run -d --name adclaw \
   -v adclaw-data:/app/working \
   -e CITEDY_API_KEY=your_citedy_agent_key \
   -e TELEGRAM_BOT_TOKEN=your_telegram_bot_token \
-  nttylock/adclaw:1.0.7
+  nttylock/adclaw:1.0.26
 ```
 
 The release workflow publishes images for both `linux/amd64` and
 `linux/arm64`. If you are testing local source changes before the next
 Docker release, use Docker Compose from this repo so the image is built on
-your machine. If you need a pinned published tag instead of the moving
-`latest`, use `nttylock/adclaw:1.0.7`, `nttylock/adclaw:1.0.7-browser`, or
-`nttylock/adclaw:1.0.7-core`.
+your machine. If you prefer the moving full-variant alias after the release is
+live, `nttylock/adclaw:latest` continues to track the current full line.
 
 ## First-Run Setup
 

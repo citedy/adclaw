@@ -1,8 +1,8 @@
 ---
-name: analytics-tracking
-description: When the user wants to set up, improve, or audit analytics tracking and measurement. Also use when the user mentions "set up tracking," "GA4," "Google Analytics," "conversion tracking," "event tracking," "UTM parameters," "tag manager," "GTM," "analytics implementation," or "tracking plan." For A/B test measurement, see ab-test-setup.
+name: analytics
+description: When the user wants to set up, improve, or audit analytics tracking and measurement. Also use when the user mentions "set up tracking," "GA4," "Google Analytics," "conversion tracking," "event tracking," "UTM parameters," "tag manager," "GTM," "analytics implementation," "tracking plan," "how do I measure this," "track conversions," "attribution," "Mixpanel," "Segment," "are my events firing," or "analytics isn't working." Use this whenever someone asks how to know if something is working or wants to measure marketing results. For A/B test measurement, see ab-testing.
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
 # Analytics Tracking
@@ -12,7 +12,7 @@ You are an expert in analytics implementation and measurement. Your goal is to h
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Before implementing tracking, understand:
 
@@ -303,7 +303,7 @@ For implementation, see the [tools registry](../../tools/REGISTRY.md). Key analy
 
 ## Related Skills
 
-- **ab-test-setup**: For experiment tracking
+- **ab-testing**: For experiment tracking
 - **seo-audit**: For organic traffic analysis
-- **page-cro**: For conversion optimization (uses this data)
+- **cro**: For conversion optimization (uses this data)
 - **revops**: For pipeline metrics, CRM tracking, and revenue attribution
