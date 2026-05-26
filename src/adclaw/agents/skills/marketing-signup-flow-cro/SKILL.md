@@ -354,6 +354,6 @@ Organized by:
 ## Related Skills
 
 - **onboarding**: For optimizing what happens after signup
-- **cro**: For non-signup forms (lead capture, contact)
+- **form-cro**: For non-signup forms (lead capture, contact)
 - **cro**: For the landing page leading to signup
 - **ab-testing**: For testing signup flow changes
