@@ -13,7 +13,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -39,6 +38,7 @@ _ENVS_JSON = _BOOTSTRAP_SECRET_DIR / "envs.json"
 _LEGACY_ENVS_JSON_CANDIDATES = (
     Path(__file__).resolve().parent / "envs.json",
     _BOOTSTRAP_WORKING_DIR / "envs.json",
+    _BOOTSTRAP_WORKING_DIR / ".secret" / "envs.json",
 )
 
 
@@ -63,9 +63,7 @@ def _prepare_secret_parent(path: Path) -> None:
 
 
 def _migrate_legacy_envs_json(path: Path) -> None:
-    """Copy old envs.json into secret dir once (best effort)."""
-    if path.is_file():
-        return
+    """Copy or merge old envs.json into secret dir once (best effort)."""
     if path.exists() and not path.is_file():
         logger.error(
             "envs.json path exists but is not a regular file: %s",
@@ -73,21 +71,64 @@ def _migrate_legacy_envs_json(path: Path) -> None:
         )
         return
 
+    marker = path.with_name(".envs-legacy-migrated")
+    if path.is_file() and marker.exists():
+        return
+
+    evaluated_legacy = False
     for legacy in _LEGACY_ENVS_JSON_CANDIDATES:
         if not legacy.is_file() or _same_path(legacy, path):
             continue
         try:
             _prepare_secret_parent(path)
-            shutil.copy2(legacy, path)
-            _chmod_best_effort(path, 0o600)
-            return
-        except OSError as exc:
+            if path.is_file():
+                _merge_legacy_envs(path, legacy)
+            else:
+                envs = _load_envs_file(legacy)
+                _write_envs_file(path, envs)
+                _chmod_best_effort(path, 0o600)
+            evaluated_legacy = True
+        except Exception as exc:
             logger.warning(
                 "Failed to migrate legacy envs.json from %s: %s",
                 legacy,
                 exc,
             )
             continue
+
+    if evaluated_legacy:
+        marker.touch(exist_ok=True)
+        _chmod_best_effort(marker, 0o600)
+
+
+def _load_envs_file(path: Path) -> dict[str, str]:
+    """Load an envs.json file without applying process environment changes."""
+    with open(path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    if not isinstance(data, dict):
+        return {}
+    return {k: str(v) for k, v in data.items()}
+
+
+def _write_envs_file(path: Path, envs: dict[str, str]) -> None:
+    """Write envs.json content without mutating process environment."""
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(envs, fh, indent=2, ensure_ascii=False)
+
+
+def _merge_legacy_envs(path: Path, legacy: Path) -> None:
+    """Merge missing env keys from a legacy envs.json into the new store."""
+    current = _load_envs_file(path)
+    old = _load_envs_file(legacy)
+    changed = False
+    for key, value in old.items():
+        if key not in current and value:
+            current[key] = value
+            changed = True
+    if not changed:
+        return
+    _write_envs_file(path, current)
+    _chmod_best_effort(path, 0o600)
 
 
 # Security-sensitive envs should come from process/system environment,
