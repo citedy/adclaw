@@ -254,16 +254,17 @@ export default function WelcomePage() {
         <div className={styles.heroSection}>
           <Paragraph className={styles.welcomeTitle}>
             <img
-              src="/adclaw-icon.webp"
-              alt=""
+              src="/adclaw-logo.svg"
+              alt="AdClaw"
               style={{
-                width: 28,
-                height: 28,
-                verticalAlign: -6,
-                marginRight: 8,
+                width: 108,
+                height: 27,
+                verticalAlign: -7,
+                marginRight: 10,
+                objectFit: "contain",
               }}
             />
-            <strong>Welcome to AdClaw</strong>
+            <strong>Welcome</strong>
           </Paragraph>
           <Paragraph className={styles.subtitle}>
             Your AI Marketing Assistant powered by Citedy.
