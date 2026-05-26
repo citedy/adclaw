@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shutil
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlsplit, urlunsplit
@@ -41,6 +40,7 @@ _PROVIDERS_JSON = SECRET_DIR / "providers.json"
 _LEGACY_PROVIDERS_JSON_CANDIDATES = (
     Path(__file__).resolve().parent / "providers.json",
     WORKING_DIR / "providers.json",
+    WORKING_DIR / ".secret" / "providers.json",
 )
 
 
@@ -65,9 +65,7 @@ def _prepare_secret_parent(path: Path) -> None:
 
 
 def _migrate_legacy_providers_json(path: Path) -> None:
-    """Copy old providers.json into secret dir once (best effort)."""
-    if path.is_file():
-        return
+    """Copy or merge old providers.json into secret dir once (best effort)."""
     if path.exists() and not path.is_file():
         logger.error(
             "providers.json path exists but is not a regular file: %s",
@@ -75,21 +73,33 @@ def _migrate_legacy_providers_json(path: Path) -> None:
         )
         return
 
+    marker = path.with_name(".providers-legacy-migrated")
+    if path.is_file() and marker.exists():
+        return
+
+    evaluated_legacy = False
     for legacy in _LEGACY_PROVIDERS_JSON_CANDIDATES:
         if not legacy.is_file() or _same_path(legacy, path):
             continue
         try:
             _prepare_secret_parent(path)
-            shutil.copy2(legacy, path)
-            _chmod_best_effort(path, 0o600)
-            return
-        except OSError as exc:
+            if path.is_file():
+                _merge_legacy_provider_state(path, legacy)
+            else:
+                data = _load_providers_data_from_path(legacy)
+                save_providers_json(data, path)
+            evaluated_legacy = True
+        except Exception as exc:
             logger.warning(
                 "Failed to migrate legacy providers.json from %s: %s",
                 legacy,
                 exc,
             )
             continue
+
+    if evaluated_legacy:
+        marker.touch(exist_ok=True)
+        _chmod_best_effort(marker, 0o600)
 
 
 def get_providers_json_path() -> Path:
@@ -220,6 +230,80 @@ def _parse_legacy_format(raw: dict):
         else ModelSlotConfig()
     )
     return providers, custom_providers, active_llm, FallbackConfig()
+
+
+def _load_providers_data_from_path(path: Path) -> ProvidersData:
+    """Load provider state from a specific legacy or canonical path."""
+    with open(path, "r", encoding="utf-8") as fh:
+        raw: dict = json.load(fh)
+    if "providers" in raw and isinstance(raw["providers"], dict):
+        providers, custom_providers, active_llm, fallback = _parse_new_format(raw)
+    else:
+        providers, custom_providers, active_llm, fallback = _parse_legacy_format(raw)
+    return ProvidersData(
+        providers=providers,
+        custom_providers=custom_providers,
+        active_llm=active_llm,
+        fallback=fallback,
+    )
+
+
+def _merge_legacy_provider_state(path: Path, legacy: Path) -> None:
+    """Merge old secret state into the new secret file without overwriting."""
+    current = _load_providers_data_from_path(path)
+    old = _load_providers_data_from_path(legacy)
+    changed = False
+
+    for pid, old_settings in old.providers.items():
+        settings = current.providers.setdefault(pid, ProviderSettings())
+        if old_settings.api_key and not settings.api_key:
+            settings.api_key = old_settings.api_key
+            changed = True
+        if old_settings.base_url and not settings.base_url:
+            settings.base_url = old_settings.base_url
+            changed = True
+        if old_settings.extra_models and not settings.extra_models:
+            settings.extra_models = old_settings.extra_models
+            changed = True
+        if old_settings.chat_model and not settings.chat_model:
+            settings.chat_model = old_settings.chat_model
+            changed = True
+
+    for pid, old_custom in old.custom_providers.items():
+        custom = current.custom_providers.get(pid)
+        if custom is None:
+            current.custom_providers[pid] = old_custom
+            changed = True
+            continue
+        if old_custom.api_key and not custom.api_key:
+            custom.api_key = old_custom.api_key
+            changed = True
+        if old_custom.base_url and not custom.base_url:
+            custom.base_url = old_custom.base_url
+            changed = True
+        if old_custom.models and not custom.models:
+            custom.models = old_custom.models
+            changed = True
+
+    if (
+        not current.active_llm.provider_id
+        and not current.active_llm.model
+        and old.active_llm.provider_id
+        and old.active_llm.model
+    ):
+        current.active_llm = old.active_llm
+        changed = True
+
+    if (
+        (not current.fallback.enabled or not current.fallback.chain)
+        and old.fallback.enabled
+        and old.fallback.chain
+    ):
+        current.fallback = old.fallback
+        changed = True
+
+    if changed:
+        save_providers_json(current, path)
 
 
 def _validate_active_llm(data: ProvidersData) -> None:

@@ -263,9 +263,14 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
               }}
             >
               <img
-                src="/logo.svg"
+                src="/adclaw-logo.svg"
                 alt="AdClaw"
-                style={{ height: 20, width: 20, display: "block" }}
+                style={{
+                  height: 26,
+                  width: 106,
+                  display: "block",
+                  objectFit: "contain",
+                }}
               />
               {version && (
                 <span
@@ -299,7 +304,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
           </>
         ) : isNarrowViewport ? (
           <img
-            src="/logo.svg"
+            src="/adclaw-symbol.svg"
             alt="AdClaw"
             style={{ height: 20, width: 20, display: "block" }}
           />
