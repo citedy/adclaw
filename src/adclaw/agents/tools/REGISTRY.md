@@ -18,6 +18,13 @@ Use these guides as routing notes for agents. If a first-party MCP, API wrapper,
 - [Amplitude](integrations/amplitude.md)
 - [PostHog](integrations/posthog.md)
 - [Segment](integrations/segment.md)
+- [SparkToro](integrations/sparktoro.md)
+
+## Content and CMS
+
+- [Contentful](integrations/contentful.md)
+- [Sanity](integrations/sanity.md)
+- [Strapi](integrations/strapi.md)
 
 ## Email, SMS, and CRM
 
