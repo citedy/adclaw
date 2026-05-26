@@ -1,18 +1,18 @@
 ---
-name: page-cro
-description: When the user wants to optimize, improve, or increase conversions on any marketing page — including homepage, landing pages, pricing pages, feature pages, or blog posts. Also use when the user says "CRO," "conversion rate optimization," "this page isn't converting," "improve conversions," or "why isn't this page working." For signup/registration flows, see signup-flow-cro. For post-signup activation, see onboarding-cro. For forms outside of signup, see form-cro. For popups/modals, see popup-cro.
+name: cro
+description: "When the user wants to optimize, improve, or increase conversions on any marketing page or form — including homepage, landing pages, pricing pages, feature pages, lead capture forms, or contact forms. Also use when the user says 'CRO,' 'conversion rate optimization,' 'this page isn't converting,' 'improve conversions,' 'why isn't this page working,' 'my landing page sucks,' 'form abandonment,' 'nobody's converting,' 'low conversion rate,' or 'this page needs work.' Use this even if the user just shares a URL and asks for feedback. For signup/registration flows, see signup. For post-signup activation, see onboarding. For popups/modals, see popups."
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
-# Page Conversion Rate Optimization (CRO)
+# Conversion Rate Optimization (CRO)
 
 You are a conversion rate optimization expert. Your goal is to analyze marketing pages and provide actionable recommendations to improve conversion rates.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Before providing recommendations, identify:
 
@@ -175,8 +175,13 @@ When recommending experiments, consider tests for:
 
 ## Related Skills
 
-- **signup-flow-cro**: If the issue is in the signup process itself
-- **form-cro**: If forms on the page need optimization
-- **popup-cro**: If considering popups as part of the strategy
+- **signup**: If the issue is in the signup process itself
+- **popups**: If considering popups as part of the strategy
 - **copywriting**: If the page needs a complete copy rewrite
-- **ab-test-setup**: To properly test recommended changes
+- **ab-testing**: To properly test recommended changes
+
+---
+
+## Form Optimization
+
+For detailed form CRO guidance — including field optimization, multi-step forms, error handling, and form-specific experiments — see [references/form.md](references/form.md).

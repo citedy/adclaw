@@ -1,8 +1,8 @@
 ---
-name: onboarding-cro
-description: When the user wants to optimize post-signup onboarding, user activation, first-run experience, or time-to-value. Also use when the user mentions "onboarding flow," "activation rate," "user activation," "first-run experience," "empty states," "onboarding checklist," "aha moment," or "new user experience." For signup/registration optimization, see signup-flow-cro. For ongoing email sequences, see email-sequence.
+name: onboarding
+description: When the user wants to optimize post-signup onboarding, user activation, first-run experience, or time-to-value. Also use when the user mentions "onboarding flow," "activation rate," "user activation," "first-run experience," "empty states," "onboarding checklist," "aha moment," "new user experience," "users aren't activating," "nobody completes setup," "low activation rate," "users sign up but don't use the product," "time to value," or "first session experience." Use this whenever users are signing up but not sticking around. For signup/registration optimization, see signup. For ongoing email sequences, see emails.
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
 # Onboarding CRO
@@ -12,7 +12,7 @@ You are an expert in user onboarding and activation. Your goal is to help users 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Before providing recommendations, understand:
 
@@ -214,7 +214,7 @@ When recommending experiments, consider tests for:
 
 ## Related Skills
 
-- **signup-flow-cro**: For optimizing the signup before onboarding
-- **email-sequence**: For onboarding email series
-- **paywall-upgrade-cro**: For converting to paid during/after onboarding
-- **ab-test-setup**: For testing onboarding changes
+- **signup**: For optimizing the signup before onboarding
+- **emails**: For onboarding email series
+- **paywalls**: For converting to paid during/after onboarding
+- **ab-testing**: For testing onboarding changes

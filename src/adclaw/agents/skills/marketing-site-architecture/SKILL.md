@@ -1,8 +1,8 @@
 ---
 name: site-architecture
-description: When the user wants to plan, map, or restructure their website's page hierarchy, navigation, URL structure, or internal linking. Also use when the user mentions "sitemap," "site map," "visual sitemap," "site structure," "page hierarchy," "information architecture," "IA," "navigation design," "URL structure," "breadcrumbs," "internal linking strategy," or "website planning." NOT for XML sitemaps (that's technical SEO — see seo-audit). For SEO audits, see seo-audit. For structured data, see schema-markup.
+description: When the user wants to plan, map, or restructure their website's page hierarchy, navigation, URL structure, or internal linking. Also use when the user mentions "sitemap," "site map," "visual sitemap," "site structure," "page hierarchy," "information architecture," "IA," "navigation design," "URL structure," "breadcrumbs," "internal linking strategy," "website planning," "what pages do I need," "how should I organize my site," or "site navigation." Use this whenever someone is planning what pages a website should have and how they connect. NOT for XML sitemaps (that's technical SEO — see seo-audit). For SEO audits, see seo-audit. For structured data, see schema.
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
 # Site Architecture
@@ -12,7 +12,7 @@ You are an information architecture expert. Your goal is to help plan website st
 ## Before Planning
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -186,7 +186,7 @@ Breadcrumbs should mirror the URL hierarchy. Every breadcrumb segment should be 
 
 - **Dates in blog URLs** — `/blog/2024/01/15/post-title` adds no value and makes URLs long. Use `/blog/post-title`.
 - **Over-nesting** — `/products/category/subcategory/item/detail` is too deep. Flatten where possible.
-- **Changing URLs without redirects** — Every old URL must 301 redirect to its new URL. No exceptions.
+- **Changing URLs without redirects** — Every old URL needs a 301 redirect to its new URL. Without them, you lose backlink equity and create broken pages for anyone with the old URL bookmarked or linked.
 - **IDs in URLs** — `/product/12345` is not human-readable. Use slugs.
 - **Query parameters for content** — `/blog?id=123` should be `/blog/post-title`.
 - **Inconsistent patterns** — Don't mix `/features/analytics` and `/product/automation`. Pick one parent.
@@ -352,6 +352,6 @@ Mermaid diagram showing page relationships and navigation zones. Use `graph TD` 
 - **content-strategy**: For planning what content to create and topic clusters
 - **programmatic-seo**: For building SEO pages at scale with templates and data
 - **seo-audit**: For technical SEO, on-page optimization, and indexation issues
-- **page-cro**: For optimizing individual pages for conversion
-- **schema-markup**: For implementing breadcrumb and site navigation structured data
-- **competitor-alternatives**: For comparison page frameworks and URL patterns
+- **cro**: For optimizing individual pages for conversion
+- **schema**: For implementing breadcrumb and site navigation structured data
+- **competitors**: For comparison page frameworks and URL patterns

@@ -1,8 +1,8 @@
 ---
-name: popup-cro
-description: When the user wants to create or optimize popups, modals, overlays, slide-ins, or banners for conversion purposes. Also use when the user mentions "exit intent," "popup conversions," "modal optimization," "lead capture popup," "email popup," "announcement banner," or "overlay." For forms outside of popups, see form-cro. For general page conversion optimization, see page-cro.
+name: popups
+description: When the user wants to create or optimize popups, modals, overlays, slide-ins, or banners for conversion purposes. Also use when the user mentions "exit intent," "popup conversions," "modal optimization," "lead capture popup," "email popup," "announcement banner," "overlay," "collect emails with a popup," "exit popup," "scroll trigger," "sticky bar," or "notification bar." Use this for any overlay or interrupt-style conversion element. For forms outside of popups, see cro. For general page conversion optimization, see cro.
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
 # Popup CRO
@@ -12,7 +12,7 @@ You are an expert in popup and modal optimization. Your goal is to create popups
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Before providing recommendations, understand:
 
@@ -182,7 +182,7 @@ Before providing recommendations, understand:
 - Leave space to close (visible X, click outside)
 
 ### Close Button
-- Always visible (top right is convention)
+- Keep visible (top right is convention) — users who can't find the close button will bounce entirely
 - Large enough to tap on mobile
 - "No thanks" text link as alternative
 - Click outside to close
@@ -447,7 +447,8 @@ Ideas to A/B test with expected outcomes
 
 ## Related Skills
 
-- **form-cro**: For optimizing the form inside the popup
-- **page-cro**: For the page context around popups
-- **email-sequence**: For what happens after popup conversion
-- **ab-test-setup**: For testing popup variations
+- **lead-magnets**: For planning lead magnets to promote via popups
+- **cro**: For optimizing the form inside the popup
+- **cro**: For the page context around popups
+- **emails**: For what happens after popup conversion
+- **ab-testing**: For testing popup variations

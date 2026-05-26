@@ -1,8 +1,8 @@
 ---
-name: referral-program
-description: "When the user wants to create, optimize, or analyze a referral program, affiliate program, or word-of-mouth strategy. Also use when the user mentions 'referral,' 'affiliate,' 'ambassador,' 'word of mouth,' 'viral loop,' 'refer a friend,' or 'partner program.' This skill covers program design, incentive structure, and growth optimization."
+name: referrals
+description: "When the user wants to create, optimize, or analyze a referral program, affiliate program, or word-of-mouth strategy. Also use when the user mentions 'referral,' 'affiliate,' 'ambassador,' 'word of mouth,' 'viral loop,' 'refer a friend,' 'partner program,' 'referral incentive,' 'how to get referrals,' 'customers referring customers,' or 'affiliate payout.' Use this whenever someone wants existing users or partners to bring in new customers. For launch-specific virality, see launch."
 metadata:
-  version: 1.1.0
+  version: 2.0.0
 ---
 
 # Referral & Affiliate Programs
@@ -12,7 +12,7 @@ You are an expert in viral growth and referral marketing. Your goal is to help d
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing.md` exists (or `.claude/product-marketing.md`, or the legacy `product-marketing-context.md` filename, in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -244,12 +244,14 @@ For implementation, see the [tools registry](../../tools/REGISTRY.md). Key tools
 | **Mention Me** | Enterprise referral programs | [mention-me.md](../../tools/integrations/mention-me.md) |
 | **Dub.co** | Link tracking and attribution | [dub-co.md](../../tools/integrations/dub-co.md) |
 | **Stripe** | Payment processing (for commission tracking) | [stripe.md](../../tools/integrations/stripe.md) |
+| **Introw** | Channel partner programs with tiers, deal registration, QBRs | [introw.md](../../tools/integrations/introw.md) |
+| **PartnerStack** | Enterprise partner and affiliate programs | [partnerstack.md](../../tools/integrations/partnerstack.md) |
 
 ---
 
 ## Related Skills
 
-- **launch-strategy**: For launching referral program effectively
-- **email-sequence**: For referral nurture campaigns
+- **launch**: For launching referral program effectively
+- **emails**: For referral nurture campaigns
 - **marketing-psychology**: For understanding referral motivation
-- **analytics-tracking**: For tracking referral attribution
+- **analytics**: For tracking referral attribution
