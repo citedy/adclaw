@@ -670,24 +670,24 @@ Customer as hero on a journey with your product as guide
 
 - **marketing-ideas**: 140+ tactical marketing ideas
 - **marketing-psychology**: 70+ mental models for persuasion
-- **launch-strategy**: 5-phase launch framework
-- **pricing-strategy**: Research and optimization methods
-- **seo-audit**: Technical and on-page SEO diagnosis
+- **launch**: 5-phase launch framework
+- **pricing**: Research and optimization methods
+- **marketing-seo-audit**: Technical and on-page SEO diagnosis
 - **programmatic-seo**: Building pages at scale
-- **schema-markup**: Structured data implementation
-- **competitor-alternatives**: Comparison page strategy
+- **schema**: Structured data implementation
+- **competitors**: Comparison page strategy
 - **copywriting**: Framework-driven copy
 - **copy-editing**: 7-sweep improvement process
-- **social-content**: Platform-specific strategies
-- **email-sequence**: Campaign types and templates
-- **page-cro**: Landing page optimization
-- **signup-flow-cro**: Form and signup optimization
+- **social**: Platform-specific strategies
+- **emails**: Campaign types and templates
+- **cro**: Landing page optimization
+- **signup**: Form and signup optimization
 - **form-cro**: Lead capture and conversion
-- **onboarding-cro**: Activation and retention
-- **paywall-cro**: Premium content strategy
-- **popup-cro**: Trigger-based conversion
-- **ab-test-setup**: Statistical rigor in testing
-- **paid-ads**: Channel-specific strategies
-- **analytics-tracking**: Measurement infrastructure
-- **referral-program**: Viral loop design
-- **free-tool-strategy**: Lead generation through tools
+- **onboarding**: Activation and retention
+- **paywalls**: Premium content strategy
+- **popups**: Trigger-based conversion
+- **ab-testing**: Statistical rigor in testing
+- **marketing-paid-ads**: Channel-specific strategies
+- **analytics**: Measurement infrastructure
+- **referrals**: Viral loop design
+- **free-tools**: Lead generation through tools
