@@ -91,3 +91,36 @@
 .skipSection {
   text-align: center;
 }
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 0 8px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--citedy-slate-100);
+  border: 1px solid var(--citedy-slate-200);
+  color: var(--citedy-slate-600);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.skipPillButton {
+  align-self: center;
+  background: transparent !important;
+  border: 1px solid var(--citedy-slate-200) !important;
+  box-shadow: none !important;
+  color: var(--citedy-slate-600) !important;
+  height: 32px;
+  padding-inline: 16px;
+
+  &:hover,
+  &:focus {
+    background: transparent !important;
+    border-color: var(--citedy-slate-300) !important;
+    color: var(--citedy-slate-900) !important;
+  }
+}

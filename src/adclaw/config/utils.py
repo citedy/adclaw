@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from ..constant import (
+    CITEDY_MCP_DESCRIPTION,
     HEARTBEAT_FILE,
     JOBS_FILE,
     CHATS_FILE,
@@ -334,6 +335,19 @@ def get_heartbeat_query_path() -> Path:
     return get_config_path().parent.joinpath(HEARTBEAT_FILE)
 
 
+def _migrate_citedy_mcp_description(config: Config) -> bool:
+    """Update stale Citedy MCP tool-count copy in persisted config."""
+    changed = False
+    for key, client in config.mcp.clients.items():
+        if key != "citedy" and client.name != "citedy_mcp":
+            continue
+        if "59 tools" not in (client.description or ""):
+            continue
+        client.description = CITEDY_MCP_DESCRIPTION
+        changed = True
+    return changed
+
+
 def load_config(config_path: Optional[Path] = None) -> Config:
     """Load config from file. Returns default Config if file is missing."""
     if config_path is None:
@@ -349,7 +363,10 @@ def load_config(config_path: Optional[Path] = None) -> Config:
             la["host"] = data.get("last_api_host")
         if "port" not in la and "last_api_port" in data:
             la["port"] = data.get("last_api_port")
-    return Config.model_validate(data)
+    config = Config.model_validate(data)
+    if _migrate_citedy_mcp_description(config):
+        save_config(config, config_path)
+    return config
 
 
 def save_config(config: Config, config_path: Optional[Path] = None) -> None:

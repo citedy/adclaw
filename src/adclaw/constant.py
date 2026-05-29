@@ -29,6 +29,8 @@ HEARTBEAT_DEFAULT_EVERY = "6h"
 HEARTBEAT_DEFAULT_TARGET = "main"
 HEARTBEAT_TARGET_LAST = "last"
 
+CITEDY_MCP_DESCRIPTION = "Citedy SEO & Marketing Tools (70+ tools)"
+
 # Env key for app log level (used by CLI and app load for reload child).
 LOG_LEVEL_ENV = "ADCLAW_LOG_LEVEL"
 

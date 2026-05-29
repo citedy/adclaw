@@ -56,7 +56,7 @@ AdClaw started as a CoPaw fork but was reworked extensively (~80% rewritten):
 - **AgentHub integration** — distributed tasks with karma economy
 - **here.now file publishing** — instant shareable links for any file
 - **Citedy MCP server** — 52 marketing tools (SEO, trends, competitor analysis, lead magnets)
-- **22 LLM providers, 100+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, MiniMax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more
+- **24 LLM providers, 150+ models** — OpenAI, Anthropic, Gemini, DashScope, Alibaba, Xiaomi, Z.AI, xAI, Mistral, DeepSeek, Groq, Together, OpenRouter, Cerebras, MiniMax, Baseten, Moonshot, Inception, ModelScope, Ollama, llama.cpp, MLX, Azure OpenAI, and custom providers
 - **LLM auto-fallback** — configurable chain with timeout; if primary model fails, auto-switch to backup
 - **OpenRouter routing** — auto, nitro, free, floor modes for optimal cost/speed
 - **English-only UI** — removed all Chinese text from console and runtime

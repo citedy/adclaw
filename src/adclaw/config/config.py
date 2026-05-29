@@ -5,6 +5,7 @@ from typing import Optional, Union, Dict, List, Literal
 from pydantic import BaseModel, Field, ConfigDict, model_validator, field_validator
 
 from ..constant import (
+    CITEDY_MCP_DESCRIPTION,
     HEARTBEAT_DEFAULT_EVERY,
     HEARTBEAT_DEFAULT_TARGET,
 )
@@ -335,7 +336,7 @@ class MCPConfig(BaseModel):
             ),
             "citedy": MCPClientConfig(
                 name="citedy_mcp",
-                description="Citedy SEO & Marketing Tools (70+ tools)",
+                description=CITEDY_MCP_DESCRIPTION,
                 enabled=bool(os.getenv("CITEDY_API_KEY")),
                 transport="streamable_http",
                 url="https://mcp.citedy.com/mcp",

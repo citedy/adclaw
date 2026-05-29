@@ -22,12 +22,7 @@ import {
 } from "lucide-react";
 import { request } from "../../api/request";
 import type { ProviderInfo } from "../../api/types/provider";
-import {
-  sortProviders,
-  XIAOMI_PARTNER_BADGE,
-  XIAOMI_PROVIDER_ID,
-  XIAOMI_TOKEN_PLAN_URL,
-} from "../../shared/providerMeta";
+import { sortProviders } from "../../shared/providerMeta";
 import styles from "./index.module.less";
 
 const { Title, Text, Paragraph } = Typography;
@@ -198,15 +193,20 @@ export default function WelcomePage() {
   };
 
   const providerHints: Record<string, React.ReactNode> = {
-    [XIAOMI_PROVIDER_ID]: (
-      <>
-        MiMo-V2.5-Pro, MiMo-V2.5, and MiMo-V2-Omni. One subscription unlocks the
-        MiMo Token Plan models.{" "}
-        <a href={XIAOMI_TOKEN_PLAN_URL} target="_blank" rel="noopener">
-          $6/month &rarr;
-        </a>
-      </>
-    ),
+    /*
+     * Xiaomi partner promo alert — re-enable when MiMo Token Plan partnership is active.
+     * Requires: XIAOMI_PROVIDER_ID, XIAOMI_TOKEN_PLAN_URL from shared/providerMeta.
+     *
+     * [XIAOMI_PROVIDER_ID]: (
+     *   <>
+     *     MiMo-V2.5-Pro, MiMo-V2.5, and MiMo-V2-Omni. One subscription unlocks the
+     *     MiMo Token Plan models.{" "}
+     *     <a href={XIAOMI_TOKEN_PLAN_URL} target="_blank" rel="noopener">
+     *       $6/month &rarr;
+     *     </a>
+     *   </>
+     * ),
+     */
     openrouter:
       "One key for all models — Claude, GPT, Gemini, Llama, etc. Get key at openrouter.ai",
     openai:
@@ -227,7 +227,8 @@ export default function WelcomePage() {
         </a>
       </>
     ),
-    "aliyun-codingplan": "Same models as Aliyun Intl but China endpoint.",
+    "aliyun-codingplan":
+      "Alibaba Coding Plan (China): own model list and sk-sp API keys. Endpoint coding.dashscope.aliyuncs.com.",
     ollama: "Run models locally. No API key needed. Install at ollama.com",
     zai: (
       <>
@@ -328,7 +329,11 @@ export default function WelcomePage() {
                 >
                   Save API Key
                 </Button>
-                <Button type="link" onClick={() => setCurrentStep(1)}>
+                <Button
+                  type="default"
+                  className={styles.skipPillButton}
+                  onClick={() => setCurrentStep(1)}
+                >
                   Skip for now
                 </Button>
               </Space>
@@ -392,25 +397,18 @@ export default function WelcomePage() {
                     label: (
                       <span>
                         <strong>{p.name}</strong>
-                        {p.id === XIAOMI_PROVIDER_ID && (
-                          <Text
-                            type="secondary"
-                            style={{
-                              marginLeft: 8,
-                              fontSize: 12,
-                              color: "#f5222d",
-                            }}
-                          >
-                            {XIAOMI_PARTNER_BADGE}
-                          </Text>
-                        )}
+                        {/*
+                         * Xiaomi "Partner" pill — re-enable when MiMo Token Plan partnership is active.
+                         * Requires: XIAOMI_PROVIDER_ID, XIAOMI_PARTNER_BADGE from shared/providerMeta.
+                         *
+                         * {p.id === XIAOMI_PROVIDER_ID && (
+                         *   <span className={styles.metaPill}>
+                         *     {XIAOMI_PARTNER_BADGE}
+                         *   </span>
+                         * )}
+                         */}
                         {p.id === "aliyun-intl" && (
-                          <Text
-                            type="secondary"
-                            style={{ marginLeft: 8, fontSize: 12 }}
-                          >
-                            Recommended
-                          </Text>
+                          <span className={styles.metaPill}>Recommended</span>
                         )}
                       </span>
                     ),
@@ -643,7 +641,11 @@ export default function WelcomePage() {
 
         {currentStep < 3 && (
           <div className={styles.skipSection}>
-            <Button type="link" onClick={handleFinish}>
+            <Button
+              type="default"
+              className={styles.skipPillButton}
+              onClick={handleFinish}
+            >
               Skip setup — go to chat
             </Button>
           </div>

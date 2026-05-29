@@ -28,6 +28,7 @@ import {
   Users,
   LayoutDashboard,
 } from "lucide-react";
+import adclawSymbolUrl from "../assets/adclaw-symbol.png?url";
 
 const { Sider } = Layout;
 const MOBILE_SIDEBAR_MAX_WIDTH = 1024;
@@ -306,29 +307,36 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
               }}
             />
           </>
-        ) : isNarrowViewport ? (
-          <img
-            src="/adclaw-symbol.svg"
-            alt="AdClaw"
-            style={{ height: 20, width: 20, display: "block" }}
-          />
         ) : (
           <>
-            <Button
-              type="text"
-              icon={<PanelLeftOpen size={20} />}
-              onClick={() => setDesktopCollapsed(false)}
+            <img
+              src={adclawSymbolUrl}
+              alt="AdClaw"
               style={{
-                marginLeft: 0,
-                color: "#0f172a",
-                width: 36,
-                height: 36,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
+                height: 20,
+                width: 20,
+                display: "block",
                 flexShrink: 0,
+                objectFit: "contain",
               }}
             />
+            {!isNarrowViewport && (
+              <Button
+                type="text"
+                icon={<PanelLeftOpen size={20} />}
+                onClick={() => setDesktopCollapsed(false)}
+                style={{
+                  marginLeft: "auto",
+                  color: "#0f172a",
+                  width: 36,
+                  height: 36,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              />
+            )}
           </>
         )}
       </div>
