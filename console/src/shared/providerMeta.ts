@@ -1,5 +1,5 @@
 export const XIAOMI_PROVIDER_ID = "xiaomi-codingplan";
-export const XIAOMI_PROVIDER_NAME = "Xiaomi MiMo Token Plan";
+export const XIAOMI_PROVIDER_NAME = "Xiaomi";
 export const XIAOMI_TOKEN_PLAN_URL =
   "https://platform.xiaomimimo.com/token-plan";
 export const XIAOMI_PARTNER_BADGE = "Partner";

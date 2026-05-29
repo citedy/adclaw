@@ -5,7 +5,7 @@ def test_xiaomi_provider_registered():
     provider = get_provider("xiaomi-codingplan")
 
     assert provider is not None
-    assert provider.name == "Xiaomi MiMo Token Plan"
+    assert provider.name == "Xiaomi"
     assert provider.default_base_url == "https://token-plan-ams.xiaomimimo.com/v1"
     assert [model.id for model in provider.models] == [
         "mimo-v2.5",

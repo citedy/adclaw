@@ -18,7 +18,7 @@ router = APIRouter(prefix="/citedy", tags=["citedy"])
 CITEDY_API_BASE = "https://www.citedy.com"
 CITEDY_DEVELOPER_URL = "https://www.citedy.com/developer"
 CITEDY_BILLING_URL = "https://www.citedy.com/dashboard/billing"
-CITEDY_MCP_DESCRIPTION = "Citedy SEO & Marketing Tools (70+ tools)"
+from ...constant import CITEDY_MCP_DESCRIPTION
 
 
 def _get_citedy_api_key() -> str:

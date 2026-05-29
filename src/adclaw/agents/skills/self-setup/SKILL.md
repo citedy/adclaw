@@ -102,7 +102,8 @@ curl -s -X POST http://localhost:8088/api/models/PROVIDER_ID/models \
 | openrouter | OpenRouter | openrouter.ai/api/v1 | sk-or- |
 | openai | OpenAI | api.openai.com/v1 | sk- |
 | anthropic | Anthropic | api.anthropic.com/v1 | sk-ant- |
-| aliyun-intl | Aliyun Coding (Intl) | coding-intl.dashscope.aliyuncs.com/v1 | sk-sp |
+| aliyun-intl | Alibaba Coding (International) | coding-intl.dashscope.aliyuncs.com/v1 | sk-sp |
+| aliyun-codingplan | Alibaba Coding (China) | coding.dashscope.aliyuncs.com/v1 | sk-sp |
 | ollama | Ollama (local) | localhost:11434/v1 | (none) |
 
 ---

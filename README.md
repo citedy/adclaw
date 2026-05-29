@@ -26,11 +26,11 @@
 - **@tag routing** in Telegram — `@researcher find AI trends` sends the message to the right agent
 - **Coordinator delegation** — one agent orchestrates the rest, delegating tasks automatically
 - **Shared memory** — agents read each other's output files for seamless collaboration
-- **121 built-in skills** — including 43 marketing skills plus SEO, ads, content, social media, analytics, and growth hacking workflows
+- **120+ built-in skills** — SEO (19 skills + 30 reference files), ads (18 skills + 23 reference files), content, social media, analytics, growth hacking
 - **25 built-in MCP servers** — browser automation, AI search, SEO, ads, social media, email marketing, CRM, disposable email inboxes, multimodal generation (image/video/speech/music), and more. Enable what you need from the Web UI
 - **52 marketing tools** via Citedy MCP server
 - **Instant file publishing** — upload any file to [here.now](https://here.now), get a shareable link, host static sites, use your own domain
-- **23 LLM providers, 100+ models** — OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Groq, Cerebras, Together, Mistral, Baseten, Minimax, Inception, Moonshot, xAI, Aliyun, DashScope, Ollama, llama.cpp, MLX, and more. Add custom providers via API
+- **24 LLM providers, 150+ models** — OpenAI, Anthropic, Gemini, DashScope, Alibaba, Xiaomi, Z.AI, xAI, Mistral, DeepSeek, Groq, Together, OpenRouter, Cerebras, MiniMax, Baseten, Moonshot, Inception, ModelScope, Ollama, llama.cpp, MLX, Azure OpenAI. Add custom providers via API
 - **LLM auto-fallback** — if the primary model fails (timeout, rate limit, auth error), automatically switches to the next model in a configurable fallback chain
 - **Multi-channel** — Telegram, Discord, DingTalk, Feishu, QQ, Console
 - **Web UI** — dashboard, per-persona chat tabs, skills, models, and channels from the browser
