@@ -1,7 +1,7 @@
 [project]
 name = "adclaw"
 dynamic = ["version"]
-description = "Multi-agent AI marketing team with 121 skills, multi-channel support, and shared memory"
+description = "Multi-agent AI marketing team with 122 skills, multi-channel support, and shared memory"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 license = {text = "Apache-2.0"}
