@@ -7,10 +7,12 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from urllib.parse import urlsplit, urlunsplit
+from urllib.error import HTTPError
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-from ..constant import SECRET_DIR, WORKING_DIR
+from ..constant import MODEL_PROVIDER_CHECK_TIMEOUT, SECRET_DIR, WORKING_DIR
 from .models import (
     CustomProviderData,
     FallbackConfig,
@@ -37,11 +39,28 @@ from .registry import (
 logger = logging.getLogger(__name__)
 
 _PROVIDERS_JSON = SECRET_DIR / "providers.json"
+_HOST_AI_PROVIDER_ID = "adclaw-host-ai"
+_HOST_AI_TOKEN_PREFIX = "ach_"
+_HOST_AI_ALLOWED_HOSTS_ENV = "ADCLAW_HOST_AI_DIRECT_ALLOWED_HOSTS"
+_HOST_AI_DEFAULT_ALLOWED_HOSTS = ("real.adclaw.app",)
 _LEGACY_PROVIDERS_JSON_CANDIDATES = (
     Path(__file__).resolve().parent / "providers.json",
     WORKING_DIR / "providers.json",
     WORKING_DIR / ".secret" / "providers.json",
 )
+
+
+class ProviderUsageRequestError(Exception):
+    """Upstream provider usage endpoint could not be reached successfully."""
+
+
+class _NoRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, *_args, **_kwargs):  # type: ignore[override]
+        return None
+
+
+def _urlopen_no_redirect(request: Request, *, timeout: float):
+    return build_opener(_NoRedirectHandler).open(request, timeout=timeout)
 
 
 def _same_path(a: Path, b: Path) -> bool:
@@ -57,6 +76,41 @@ def _chmod_best_effort(path: Path, mode: int) -> None:
     except OSError:
         # Some systems/filesystems may not support chmod semantics.
         pass
+
+
+def _host_matches_allowed_pattern(hostname: str, pattern: str) -> bool:
+    host = hostname.strip().lower()
+    allowed = pattern.strip().lower()
+    if not host or not allowed:
+        return False
+    if allowed.startswith("*."):
+        suffix = allowed[1:]
+        return host.endswith(suffix) and host != allowed[2:]
+    return host == allowed
+
+
+def _host_ai_allowed_hosts() -> tuple[str, ...]:
+    raw = os.environ.get(_HOST_AI_ALLOWED_HOSTS_ENV, "")
+    values = tuple(part.strip() for part in raw.split(",") if part.strip())
+    return values or _HOST_AI_DEFAULT_ALLOWED_HOSTS
+
+
+def _host_ai_base_url_allowed(base_url: str) -> bool:
+    try:
+        parsed = urlsplit(base_url)
+    except ValueError:
+        return False
+    if parsed.scheme != "https":
+        return False
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        return False
+    if parsed.path.rstrip("/") != "/api/host-ai/v1":
+        return False
+    hostname = parsed.hostname or ""
+    return any(
+        _host_matches_allowed_pattern(hostname, allowed)
+        for allowed in _host_ai_allowed_hosts()
+    )
 
 
 def _prepare_secret_parent(path: Path) -> None:
@@ -398,6 +452,23 @@ def load_providers_json(path: Optional[Path] = None) -> ProvidersData:
     return data
 
 
+def read_providers_json(path: Optional[Path] = None) -> ProvidersData:
+    """Read providers.json without normalizing and writing it back."""
+    if path is None:
+        path = get_providers_json_path()
+        _migrate_legacy_providers_json(path)
+    if path.exists() and not path.is_file():
+        raise IsADirectoryError(
+            f"providers.json path exists but is not a regular file: {path}",
+        )
+    if not path.is_file():
+        return ProvidersData()
+    try:
+        return _load_providers_data_from_path(path)
+    except (json.JSONDecodeError, ValueError):
+        return ProvidersData()
+
+
 def save_providers_json(
     data: ProvidersData,
     path: Optional[Path] = None,
@@ -562,6 +633,72 @@ def mask_api_key(api_key: str, visible_chars: int = 4) -> str:
     suffix = api_key[-visible_chars:]
     hidden_len = len(api_key) - len(prefix) - visible_chars
     return f"{prefix}{'*' * max(hidden_len, 4)}{suffix}"
+
+
+def fetch_provider_usage(
+    provider_id: str,
+    *,
+    data: Optional[ProvidersData] = None,
+    urlopen_fn: Callable[..., Any] = _urlopen_no_redirect,
+) -> dict[str, Any]:
+    """Fetch server-side usage details for an OpenAI-compatible provider.
+
+    The browser only receives usage numbers. The full provider key remains in
+    the sandbox secret store and is used by this server-side proxy.
+    """
+    state = data or load_providers_json()
+    base_url, api_key = state.get_credentials(provider_id)
+    if not base_url:
+        raise ValueError(f"Provider '{provider_id}' has no base URL configured.")
+    if not api_key:
+        raise ValueError(f"Provider '{provider_id}' has no API key configured.")
+    if (
+        provider_id == _HOST_AI_PROVIDER_ID
+        or api_key.startswith(_HOST_AI_TOKEN_PREFIX)
+    ) and not _host_ai_base_url_allowed(base_url):
+        raise ValueError(
+            f"Provider '{provider_id}' must use a managed AdClaw AI endpoint.",
+        )
+
+    usage_url = f"{base_url.rstrip('/')}/usage"
+    request = Request(
+        usage_url,
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="GET",
+    )
+    try:
+        with urlopen_fn(request, timeout=MODEL_PROVIDER_CHECK_TIMEOUT) as response:
+            status = getattr(response, "status", 200)
+            if status >= 300:
+                raise ProviderUsageRequestError(
+                    f"Provider '{provider_id}' usage request failed with {status}.",
+                )
+            raw = response.read()
+    except (ValueError, ProviderUsageRequestError):
+        raise
+    except HTTPError as exc:
+        raise ProviderUsageRequestError(
+            f"Provider '{provider_id}' usage request failed with {exc.code}.",
+        ) from exc
+    except OSError as exc:
+        raise ProviderUsageRequestError(
+            f"Provider '{provider_id}' usage request failed.",
+        ) from exc
+
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (AttributeError, json.JSONDecodeError) as exc:
+        raise ValueError(
+            f"Provider '{provider_id}' returned invalid usage payload.",
+        ) from exc
+    if not isinstance(payload, dict):
+        raise ValueError(
+            f"Provider '{provider_id}' returned invalid usage payload.",
+        )
+    return payload
 
 
 # -- Custom provider CRUD --

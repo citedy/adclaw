@@ -38,6 +38,21 @@ export interface ModelSlotRequest {
   model: string;
 }
 
+export interface ProviderUsageInfo {
+  provider_id?: string | null;
+  provider_name?: string | null;
+  tier?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  messages_limit?: number | null;
+  messages_used?: number | null;
+  messages_remaining?: number | null;
+  cost_cap_usd?: number | null;
+  estimated_cost_usd?: number | null;
+  default_model?: string | null;
+  models?: Array<Record<string, unknown>>;
+}
+
 /* ---- Custom provider CRUD ---- */
 
 export interface CreateCustomProviderRequest {

@@ -1,3 +1,4 @@
+export const ADCLAW_AI_PROVIDER_ID = "adclaw-host-ai";
 export const XIAOMI_PROVIDER_ID = "xiaomi-codingplan";
 export const XIAOMI_PROVIDER_NAME = "Xiaomi";
 export const XIAOMI_TOKEN_PLAN_URL =
@@ -5,10 +6,11 @@ export const XIAOMI_TOKEN_PLAN_URL =
 export const XIAOMI_PARTNER_BADGE = "Partner";
 
 const PROVIDER_PRIORITY: Record<string, number> = {
-  [XIAOMI_PROVIDER_ID]: 0,
-  "aliyun-intl": 10,
-  zai: 20,
-  openrouter: 30,
+  [ADCLAW_AI_PROVIDER_ID]: 0,
+  [XIAOMI_PROVIDER_ID]: 10,
+  "aliyun-intl": 20,
+  zai: 30,
+  openrouter: 40,
 };
 
 export function sortProviders<T extends { id: string; name: string }>(

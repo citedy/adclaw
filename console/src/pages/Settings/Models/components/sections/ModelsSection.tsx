@@ -4,6 +4,7 @@ import { Select, Button, message } from "@agentscope-ai/design";
 import type { ModelSlotRequest } from "../../../../../api/types";
 import api from "../../../../../api";
 import { useTranslation } from "react-i18next";
+import { ADCLAW_AI_PROVIDER_ID } from "../../../../../shared/providerMeta";
 import styles from "../../index.module.less";
 import { OpenRouterRouting } from "./OpenRouterRouting";
 
@@ -41,6 +42,15 @@ export function ModelsSection({
     undefined,
   );
   const [dirty, setDirty] = useState(false);
+  const [adclawAiUsage, setAdclawAiUsage] = useState<{
+    messages_limit?: number | null;
+    messages_used?: number | null;
+    messages_remaining?: number | null;
+  } | null>(null);
+  const [adclawAiUsageLoading, setAdclawAiUsageLoading] = useState(false);
+  const [adclawAiUsageError, setAdclawAiUsageError] = useState<string | null>(
+    null,
+  );
 
   const currentSlot = activeModels?.active_llm;
 
@@ -76,6 +86,38 @@ export function ModelsSection({
   const chosenProvider = providers.find((p) => p.id === selectedProviderId);
   const modelOptions = chosenProvider?.models ?? [];
   const hasModels = modelOptions.length > 0;
+
+  useEffect(() => {
+    if (selectedProviderId !== ADCLAW_AI_PROVIDER_ID) {
+      setAdclawAiUsage(null);
+      setAdclawAiUsageError(null);
+      setAdclawAiUsageLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAdclawAiUsageLoading(true);
+    setAdclawAiUsageError(null);
+
+    api
+      .getProviderUsage(ADCLAW_AI_PROVIDER_ID)
+      .then((usage) => {
+        if (cancelled) return;
+        setAdclawAiUsage(usage);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setAdclawAiUsage(null);
+        setAdclawAiUsageError(t("models.adclawAiUsageUnavailable"));
+      })
+      .finally(() => {
+        if (!cancelled) setAdclawAiUsageLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProviderId, t]);
 
   const handleProviderChange = (pid: string) => {
     setSelectedProviderId(pid);
@@ -116,6 +158,13 @@ export function ModelsSection({
     currentSlot.provider_id === selectedProviderId &&
     currentSlot.model === selectedModel;
   const canSave = dirty && !!selectedProviderId && !!selectedModel;
+  const adclawAiUsageForDisplay =
+    selectedProviderId === ADCLAW_AI_PROVIDER_ID &&
+    adclawAiUsage != null &&
+    typeof adclawAiUsage?.messages_remaining === "number" &&
+    typeof adclawAiUsage?.messages_limit === "number"
+      ? adclawAiUsage
+      : null;
 
   return (
     <div className={styles.slotSection}>
@@ -171,6 +220,18 @@ export function ModelsSection({
                 label: `${m.name} (${m.id})`,
               }))}
             />
+          )}
+          {selectedProviderId === ADCLAW_AI_PROVIDER_ID && (
+            <div className={styles.adclawAiUsageHint}>
+              {adclawAiUsageLoading
+                ? t("models.adclawAiUsageLoading")
+                : adclawAiUsageForDisplay
+                ? t("models.adclawAiMessagesRemaining", {
+                    remaining: adclawAiUsageForDisplay.messages_remaining,
+                    limit: adclawAiUsageForDisplay.messages_limit,
+                  })
+                : adclawAiUsageError || t("models.adclawAiUsageUnavailable")}
+            </div>
           )}
         </div>
 
