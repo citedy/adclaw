@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "verify:adclaw-ai-models-ui": "node scripts/verify-adclaw-ai-models-ui.mjs",
     "preview": "vite preview",
     "preview:prod": "vite preview --mode production",
     "preview:test": "vite preview --mode test"

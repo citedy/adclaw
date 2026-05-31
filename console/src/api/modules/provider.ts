@@ -3,6 +3,7 @@ import type {
   ProviderInfo,
   ProviderConfigRequest,
   ActiveModelsInfo,
+  ProviderUsageInfo,
   ModelSlotRequest,
   CreateCustomProviderRequest,
   AddModelRequest,
@@ -27,6 +28,11 @@ export const providerApi = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+
+  getProviderUsage: (providerId: string) =>
+    request<ProviderUsageInfo>(
+      `/models/${encodeURIComponent(providerId)}/usage`,
+    ),
 
   /* ---- Custom provider CRUD ---- */
 

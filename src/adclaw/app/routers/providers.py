@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Body, HTTPException, Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from ...providers import (
     ActiveModelsInfo,
@@ -16,14 +16,17 @@ from ...providers import (
     ProviderDefinition,
     ProviderInfo,
     ProvidersData,
+    ProviderUsageRequestError,
     add_model,
     create_custom_provider,
     delete_custom_provider,
+    fetch_provider_usage,
     get_fallback_config,
     get_provider,
     list_providers,
     load_providers_json,
     mask_api_key,
+    read_providers_json,
     remove_model,
     set_active_llm,
     set_fallback_config,
@@ -56,6 +59,21 @@ class CreateCustomProviderRequest(BaseModel):
 class AddModelRequest(BaseModel):
     id: str = Field(...)
     name: str = Field(...)
+
+
+class ProviderUsageResponse(BaseModel):
+    provider_id: Optional[str] = Field(default=None)
+    provider_name: Optional[str] = Field(default=None)
+    tier: Optional[str] = Field(default=None)
+    period_start: Optional[str] = Field(default=None)
+    period_end: Optional[str] = Field(default=None)
+    messages_limit: Optional[int] = Field(default=None)
+    messages_used: Optional[int] = Field(default=None)
+    messages_remaining: Optional[int] = Field(default=None)
+    cost_cap_usd: Optional[float] = Field(default=None)
+    estimated_cost_usd: Optional[float] = Field(default=None)
+    default_model: Optional[str] = Field(default=None)
+    models: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 def _build_provider_info(
@@ -213,6 +231,23 @@ async def test_model(
         return TestConnectionResponse(**result)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get(
+    "/{provider_id}/usage",
+    response_model=ProviderUsageResponse,
+    summary="Get provider usage",
+)
+def get_provider_usage(
+    provider_id: str = Path(...),
+) -> ProviderUsageResponse:
+    try:
+        payload = fetch_provider_usage(provider_id, data=read_providers_json())
+        return ProviderUsageResponse(**payload)
+    except ProviderUsageRequestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except (ValueError, ValidationError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.delete(
