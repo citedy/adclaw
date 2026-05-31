@@ -9,7 +9,12 @@ import pytest
 from fastapi import HTTPException
 
 from adclaw.app.routers import providers as provider_routes
-from adclaw.providers.models import CustomProviderData, ModelInfo, ProvidersData
+from adclaw.providers.models import (
+    CustomProviderData,
+    ModelInfo,
+    ProviderDefinition,
+    ProvidersData,
+)
 from adclaw.providers.store import (
     ProviderUsageRequestError,
     fetch_provider_usage,
@@ -214,3 +219,33 @@ def test_provider_usage_route_is_threadpool_safe_and_validation_guarded():
     assert "def get_provider_usage(" in source
     assert "async def get_provider_usage(" not in source
     assert "except (ValueError, ValidationError)" in source
+
+
+@pytest.mark.asyncio
+async def test_list_all_providers_prioritizes_adclaw_ai(monkeypatch):
+    data = _host_ai_data()
+    xiaomi = ProviderDefinition(
+        id="xiaomi-codingplan",
+        name="Xiaomi Coding Plan",
+        models=[ModelInfo(id="mimo-v2.5", name="MiMo v2.5")],
+    )
+    host_ai = ProviderDefinition(
+        id="adclaw-host-ai",
+        name="AdClaw AI",
+        models=data.custom_providers["adclaw-host-ai"].models,
+        is_custom=True,
+    )
+
+    monkeypatch.setattr(provider_routes, "load_providers_json", lambda: data)
+    monkeypatch.setattr(
+        provider_routes,
+        "list_providers",
+        lambda: [xiaomi, host_ai],
+    )
+
+    providers = await provider_routes.list_all_providers()
+
+    assert [provider.id for provider in providers[:2]] == [
+        "adclaw-host-ai",
+        "xiaomi-codingplan",
+    ]

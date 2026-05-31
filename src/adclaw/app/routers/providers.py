@@ -36,6 +36,7 @@ from ...providers import (
 )
 
 router = APIRouter(prefix="/models", tags=["models"])
+HOST_AI_PROVIDER_ID = "adclaw-host-ai"
 
 
 class ProviderConfigRequest(BaseModel):
@@ -116,6 +117,12 @@ def _build_provider_info(
     )
 
 
+def _provider_info_sort_key(provider: ProviderInfo) -> tuple[int, str]:
+    if provider.id == HOST_AI_PROVIDER_ID:
+        return (0, "")
+    return (1, provider.name.lower())
+
+
 @router.get(
     "",
     response_model=List[ProviderInfo],
@@ -123,7 +130,8 @@ def _build_provider_info(
 )
 async def list_all_providers() -> List[ProviderInfo]:
     data = load_providers_json()
-    return [_build_provider_info(p, data) for p in list_providers()]
+    providers = [_build_provider_info(p, data) for p in list_providers()]
+    return sorted(providers, key=_provider_info_sort_key)
 
 
 @router.put(
