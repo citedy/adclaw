@@ -9,6 +9,10 @@ from pathlib import Path
 
 
 IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+CSS_VAR_RE = re.compile(r"(--[A-Za-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6})")
+ROOT_BLOCK_RE = re.compile(r":root\s*\{(?P<body>[^}]*)\}", re.DOTALL)
+STYLE_ATTR_RE = re.compile(r"\bstyle\s*=\s*(['\"])(?P<body>[^'\"]*--[^'\"]*)\1", re.DOTALL)
+MIN_TEXT_CONTRAST = 4.5
 
 
 def _term(*codes: int) -> str:
@@ -32,9 +36,79 @@ BANNED_RE = re.compile(
 )
 
 
+def _hex_to_rgb(color: str) -> tuple[float, float, float]:
+    value = color.lstrip("#")
+    return tuple(int(value[i : i + 2], 16) / 255 for i in (0, 2, 4))
+
+
+def _linear_channel(channel: float) -> float:
+    if channel <= 0.03928:
+        return channel / 12.92
+    return ((channel + 0.055) / 1.055) ** 2.4
+
+
+def _luminance(color: str) -> float:
+    red, green, blue = (_linear_channel(channel) for channel in _hex_to_rgb(color))
+    return (0.2126 * red) + (0.7152 * green) + (0.0722 * blue)
+
+
+def _contrast(foreground: str, background: str) -> float:
+    high, low = sorted((_luminance(foreground), _luminance(background)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, str]]]:
+    contexts: list[tuple[str, dict[str, str]]] = []
+
+    for index, match in enumerate(ROOT_BLOCK_RE.finditer(html), start=1):
+        variables = dict(CSS_VAR_RE.findall(match.group("body")))
+        if variables:
+            contexts.append((f":root block {index}", variables))
+
+    for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
+        variables = dict(CSS_VAR_RE.findall(match.group("body")))
+        if variables:
+            contexts.append((f"inline style {index}", variables))
+
+    return contexts
+
+
+def _validate_contrast(context_name: str, variables: dict[str, str]) -> list[str]:
+    checks = [
+        ("--muted", "--paper", "muted text on paper"),
+        ("--muted", "--panel", "muted text on panel"),
+        ("--accent-text", "--panel", "accent text on panel"),
+        ("--accent-on", "--accent", "text on accent background"),
+    ]
+    errors: list[str] = []
+
+    for foreground_key, background_key, label in checks:
+        foreground = variables.get(foreground_key)
+        background = variables.get(background_key)
+        if not foreground or not background:
+            continue
+        ratio = _contrast(foreground, background)
+        if ratio < MIN_TEXT_CONTRAST:
+            errors.append(
+                f"{context_name}: {label} contrast is {ratio:.2f}:1 "
+                f"({foreground_key} {foreground} on {background_key} {background}); "
+                f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+            )
+
+    if "--accent" in variables and "--panel" in variables and "--accent-text" not in variables:
+        ratio = _contrast(variables["--accent"], variables["--panel"])
+        if ratio < MIN_TEXT_CONTRAST:
+            errors.append(
+                f"{context_name}: --accent on --panel contrast is {ratio:.2f}:1. "
+                "Add a contrast-safe --accent-text token for labels, metrics, and annotations."
+            )
+
+    return errors
+
+
 def main() -> int:
     if len(sys.argv) != 2:
-        print("Usage: python scripts/validate_html_deck.py <deck.html>", file=sys.stderr)
+        print("Usage: python3 scripts/validate_html_deck.py <deck.html>", file=sys.stderr)
         return 2
 
     path = Path(sys.argv[1])
@@ -74,6 +148,9 @@ def main() -> int:
         image_path = path.parent / src
         if not image_path.exists():
             errors.append(f"Missing local image: {src}")
+
+    for context_name, variables in _css_variable_contexts(html):
+        errors.extend(_validate_contrast(context_name, variables))
 
     if errors:
         print("HTML deck validation failed:", file=sys.stderr)

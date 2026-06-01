@@ -76,7 +76,7 @@ Design traits:
 - Best when the deck needs a memorable point of view.
 
 Template: `assets/template-editorial.html`
-References: `references/themes.md`, `references/layouts-editorial.md`, `references/screenshot-framing.md`
+References: `references/themes.md`, `references/typography.md`, `references/layouts-editorial.md`, `references/screenshot-framing.md`
 
 ### Clean Grid
 
@@ -90,7 +90,7 @@ Design traits:
 - Best when the deck needs clarity, precision, and executive readability.
 
 Template: `assets/template-clean-grid.html`
-References: `references/themes.md`, `references/layouts-clean-grid.md`, `references/screenshot-framing.md`
+References: `references/themes.md`, `references/typography.md`, `references/layouts-clean-grid.md`, `references/screenshot-framing.md`
 
 ## Workflow
 
@@ -122,14 +122,21 @@ References: `references/themes.md`, `references/layouts-clean-grid.md`, `referen
    - Do not invent many new classes; use the template classes first.
    - If a custom adjustment is unavoidable, prefer a small inline style on the slide section.
 
-6. Handle screenshots deliberately.
+6. Choose typography through tokens (legacy Editorial / Clean Grid only).
+   - Read `references/typography.md` before changing fonts, tracking, or type scale.
+   - Use the default system-safe preset unless the user asks for a stronger typographic voice.
+   - Keep offline rendering by default; use external fonts only when the user explicitly allows them.
+   - Change `--display-font`, `--text-font`, and `--label-font` tokens instead of editing every heading class.
+
+7. Handle screenshots deliberately.
    - Read `references/screenshot-framing.md` before placing product screenshots.
    - Preserve screenshot content when details matter.
    - Use generated background assets only as neutral framing surfaces.
    - Do not crop away important UI text, numbers, or controls.
 
-7. Validate before presenting.
+8. Validate before presenting.
    - From the repo root, run `python3 src/adclaw/agents/skills/html-presentation-deck/scripts/validate_html_deck.py deck/index.html`.
+   - When installed via `@citedy/skills`, use `<installed-skill-dir>/scripts/validate_html_deck.py` (usually `.claude/skills/html-presentation-deck` or `.codex/skills/html-presentation-deck`).
    - Open the deck in a browser.
    - Check keyboard navigation, slide index, mobile scaling, broken images, and text overflow.
 
@@ -141,6 +148,13 @@ References: `references/themes.md`, `references/layouts-clean-grid.md`, `referen
 - Keep all visible deck text user-facing and presentation-ready.
 - Keep source comments in English.
 - Avoid external runtime dependencies when possible; templates must work offline.
+- Do not use bright accent colors for small text on light panels. Use contrast-safe text tokens such as `--accent-text`.
+
+## Slash Command (`/html-deck`)
+
+When invoked as `/html-deck`, treat the argument as the presentation brief. If missing, ask for topic, audience, slide count, and visual system (Product Grid v2 default).
+
+After validation, print the path to `deck/index.html` and how to open it locally.
 
 ## Related Skills
 

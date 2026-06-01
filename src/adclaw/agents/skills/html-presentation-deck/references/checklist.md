@@ -22,6 +22,12 @@ Run this before handing off an HTML presentation deck.
 - Data claims include source context in speaker notes or nearby captions.
 - No visible draft notes, private instructions, or placeholder copy.
 
+## Legacy Typography (Editorial / Clean Grid)
+
+- Typography tokens follow `references/typography.md`.
+- Contrast-safe `--accent-text` is used for small labels on light panels.
+- `validate_html_deck.py` passes contrast checks for theme tokens.
+
 ## Design
 
 - One visual system is used throughout.
