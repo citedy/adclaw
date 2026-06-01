@@ -7,14 +7,21 @@ description: "Use this skill when the user wants a browser-native HTML presentat
 
 Create polished, browser-native presentation decks as standalone HTML files. The output is a web presentation, not a PowerPoint file.
 
-## Skill directory (`<skill-dir>`)
+## Skill directory (`<installed-skill-dir>`)
 
-The folder that contains this `SKILL.md`:
+Discover the folder that contains this `SKILL.md` before running scripts:
 
-- **AdClaw repo:** `src/adclaw/agents/skills/html-presentation-deck`
-- **`@citedy/skills` install:** `.claude/skills/html-presentation-deck` or `.codex/skills/html-presentation-deck`
+- **`npx @citedy/skills` install:** `.codex/skills/html-presentation-deck` or `.claude/skills/html-presentation-deck` (match the command namespace when both exist).
+- **AdClaw monorepo:** `src/adclaw/agents/skills/html-presentation-deck`
 
-Run validators with `python3 <skill-dir>/scripts/...` from the project root.
+Run validators from the **project root** (where `deck/index.html` lives), not from inside the skill folder:
+
+```bash
+python3 <installed-skill-dir>/scripts/validate_html_deck.py deck/index.html
+python3 <installed-skill-dir>/scripts/validate_deck_quality.py deck/index.html
+```
+
+Do not use `src/adclaw/agents/...` paths after an npm install; those paths exist only in the AdClaw repo checkout.
 
 ## Default Mode: Product Grid v2
 
@@ -53,9 +60,7 @@ the user explicitly asks for the legacy editorial system.
 4. Copy `assets/template-product-grid.html` to `deck/index.html`.
 5. Replace the `<title>` placeholder and `<!-- SLIDES_HERE -->`.
 6. Use the slide map to pick `PG01`-`PG14` layouts before writing HTML.
-7. Run both validators:
-   - `python3 <skill-dir>/scripts/validate_html_deck.py deck/index.html`
-   - `python3 <skill-dir>/scripts/validate_deck_quality.py deck/index.html`
+7. Run both validators (see commands above).
 8. Open in a browser and check desktop plus mobile for overflow and image legibility.
 
 ## When To Use
@@ -144,7 +149,7 @@ References: `references/themes.md`, `references/typography.md`, `references/layo
    - Do not crop away important UI text, numbers, or controls.
 
 8. Validate before presenting.
-   - From the project root, run `python3 <skill-dir>/scripts/validate_html_deck.py deck/index.html`.
+   - From the project root, run `python3 <installed-skill-dir>/scripts/validate_html_deck.py deck/index.html`.
    - Open the deck in a browser.
    - Check keyboard navigation, slide index, mobile scaling, broken images, and text overflow.
 
@@ -160,9 +165,9 @@ References: `references/themes.md`, `references/typography.md`, `references/layo
 
 ## Slash Command (`/html-deck`)
 
-When invoked as `/html-deck`, treat the argument as the presentation brief. If missing, ask for topic, audience, slide count, and visual system (Product Grid v2 default).
+When invoked as `/html-deck`, discover `<installed-skill-dir>` first (same rules as above), read this `SKILL.md`, then treat the argument as the presentation brief. If missing, ask for topic, audience, slide count, and visual system (Product Grid v2 default).
 
-After validation, print the path to `deck/index.html` and how to open it locally.
+After building the deck, run both validators with the discovered path, then print `deck/index.html` and how to open it locally.
 
 ## Related Skills
 

@@ -25,10 +25,14 @@ npx @citedy/skills install --target codex html-deck
 /html-deck Build a 10-slide investor update for a B2B SaaS launch.
 ```
 
-Creates `deck/index.html`, keeps images in `deck/images/`, and validates with:
+Creates `deck/index.html`, keeps images in `deck/images/`, then validates from the project root:
 
-- `scripts/validate_html_deck.py` (all decks)
-- `scripts/validate_deck_quality.py` (Product Grid v2)
+```bash
+python3 <installed-skill-dir>/scripts/validate_html_deck.py deck/index.html
+python3 <installed-skill-dir>/scripts/validate_deck_quality.py deck/index.html
+```
+
+After `npx @citedy/skills install`, `<installed-skill-dir>` is usually `.codex/skills/html-presentation-deck` or `.claude/skills/html-presentation-deck`.
 
 ## Visual Systems
 
