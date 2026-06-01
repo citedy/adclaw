@@ -187,7 +187,7 @@ def _parse_rgba_alpha(raw: str) -> float | None:
     except ValueError:
         return None
     if value > 1.0:
-        return min(1.0, value / 255.0)
+        return 1.0
     return max(0.0, value)
 
 

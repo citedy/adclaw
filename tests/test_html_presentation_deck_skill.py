@@ -243,7 +243,7 @@ def test_html_deck_parses_slide_theme_rule_tokens():
     dark = [c for n, c in contexts if "theme-dark" in n][0]
     assert dark["--ink"].rgb == "#090b0f"
     assert dark["--muted"].rgb == "#f7f7f1"
-    assert dark["--muted"].alpha == pytest.approx(180 / 255, rel=1e-3)
+    assert dark["--muted"].alpha == pytest.approx(1.0)
 
     bad = [c for n, c in contexts if "theme-dark" in n][1]
     errors = mod._validate_contrast(
@@ -456,6 +456,40 @@ def test_html_deck_contrast_composites_percentage_alpha_tokens(tmp_path):
 
     assert result.returncode == 1, result.stdout
     assert "muted text on paper" in result.stderr
+
+
+def test_html_deck_validator_clamps_numeric_rgba_alpha_above_one(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root {
+  --paper: #ffffff;
+  --panel: #eeeeee;
+  --muted: rgba(0,0,0,2);
+}
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_html_deck_validator_ignores_malformed_rgba_alpha_without_crashing(tmp_path):
