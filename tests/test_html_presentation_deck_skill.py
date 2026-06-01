@@ -59,13 +59,18 @@ def test_html_presentation_deck_has_no_non_english_markers_or_banned_terms():
             assert not BANNED_RE.search(text), f"Banned term found in {path.relative_to(SKILL_DIR)}"
 
 
-def test_html_presentation_deck_skill_docs_use_installed_skill_dir_for_validators():
+def test_html_presentation_deck_skill_docs_use_portable_validator_commands():
     skill_md = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
     checklist = (SKILL_DIR / "references" / "checklist.md").read_text(encoding="utf-8")
-    assert "src/adclaw/agents/skills/html-presentation-deck/scripts/validate" not in skill_md
-    assert "src/adclaw/agents/skills/html-presentation-deck/scripts/validate" not in checklist
-    assert "<installed-skill-dir>/scripts/validate_html_deck.py" in skill_md
-    assert "<installed-skill-dir>/scripts/validate_deck_quality.py" in skill_md
+    hardcoded = "src/adclaw/agents/skills/html-presentation-deck/scripts/validate"
+    for label, text in (("SKILL.md", skill_md), ("checklist.md", checklist)):
+        for line in text.splitlines():
+            if "python3" in line:
+                assert hardcoded not in line, f"{label} must not hardcode AdClaw repo validator path: {line}"
+    assert "<skill-dir>/scripts/validate_html_deck.py" in skill_md
+    assert "<skill-dir>/scripts/validate_deck_quality.py" in skill_md
+    assert ".codex/skills/html-presentation-deck" in skill_md
+    assert "active_skills/html-presentation-deck" in skill_md
 
 
 def test_html_presentation_deck_assets_exist():

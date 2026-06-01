@@ -2,37 +2,42 @@
 
 Create polished, browser-native presentation decks as standalone HTML files. Use it when a deck should open locally, be hosted as a web page, or present product screenshots with clean keyboard and swipe navigation.
 
-## In AdClaw
+## Two installs, two locations
 
-Skill path: `src/adclaw/agents/skills/html-presentation-deck/`
+This skill ships in **AdClaw** (built-in) and **`@citedy/skills`** (npm). They are separate copies with different on-disk paths.
 
-Default mode is **Product Grid v2** (strict layout registry + quality validator). Legacy **Editorial** and **Clean Grid** systems remain available.
+| Install | Where the skill lives |
+|---------|------------------------|
+| **AdClaw runtime** | `~/.adclaw/active_skills/html-presentation-deck` (or `$ADCLAW_WORKING_DIR/active_skills/...`) |
+| **AdClaw repo dev** | `src/adclaw/agents/skills/html-presentation-deck/` (source; synced to `active_skills`) |
+| **`npx @citedy/skills`** | `<your-project>/.codex/skills/html-presentation-deck` and/or `.claude/skills/html-presentation-deck` |
 
-## Install via npm (other agents)
+Default mode is **Product Grid v2** in both packages. Legacy **Editorial** and **Clean Grid** remain available.
+
+## AdClaw
+
+Built into the agent; no npm step. Custom edits can go in `~/.adclaw/customized_skills/html-presentation-deck/`.
+
+## Claude / Codex (`@citedy/skills`)
 
 ```bash
 npx @citedy/skills install html-deck
-```
-
-```bash
 npx @citedy/skills install --target claude html-deck
 npx @citedy/skills install --target codex html-deck
 ```
-
-## Use
 
 ```text
 /html-deck Build a 10-slide investor update for a B2B SaaS launch.
 ```
 
-Creates `deck/index.html`, keeps images in `deck/images/`, then validates from the project root:
+Creates `deck/index.html` under the **project where you ran install**, then validate from that project root:
 
 ```bash
-python3 <installed-skill-dir>/scripts/validate_html_deck.py deck/index.html
-python3 <installed-skill-dir>/scripts/validate_deck_quality.py deck/index.html
+python3 .codex/skills/html-presentation-deck/scripts/validate_html_deck.py deck/index.html
+python3 .codex/skills/html-presentation-deck/scripts/validate_deck_quality.py deck/index.html
 ```
 
-After `npx @citedy/skills install`, `<installed-skill-dir>` is usually `.codex/skills/html-presentation-deck` or `.claude/skills/html-presentation-deck`.
+Use `.claude/skills/...` instead when you installed with `--target claude`.
 
 ## Visual Systems
 

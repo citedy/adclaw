@@ -7,21 +7,47 @@ description: "Use this skill when the user wants a browser-native HTML presentat
 
 Create polished, browser-native presentation decks as standalone HTML files. The output is a web presentation, not a PowerPoint file.
 
-## Skill directory (`<installed-skill-dir>`)
+## Skill directory (`<skill-dir>`)
 
-Discover the folder that contains this `SKILL.md` before running scripts:
+**`<skill-dir>`** is always the folder that contains **this** `SKILL.md`. Install method chooses where that folder lives — do not mix paths across installs.
 
-- **`npx @citedy/skills` install:** `.codex/skills/html-presentation-deck` or `.claude/skills/html-presentation-deck` (match the command namespace when both exist).
-- **AdClaw monorepo:** `src/adclaw/agents/skills/html-presentation-deck`
+### `@citedy/skills` (Claude Code / Codex CLI)
 
-Run validators from the **project root** (where `deck/index.html` lives), not from inside the skill folder:
+`npx @citedy/skills install` copies into the **user project** (where you run the command), not into the npm cache:
+
+| Target | Skill folder | Slash command |
+|--------|--------------|---------------|
+| Codex | `<project>/.codex/skills/html-presentation-deck` | `<project>/.codex/commands/html-deck.md` |
+| Claude | `<project>/.claude/skills/html-presentation-deck` | `<project>/.claude/commands/html-deck.md` |
+
+If both exist, prefer the namespace that matches where `/html-deck` was invoked (see `commands/html-deck.md` in the npm package).
+
+### AdClaw agent (built-in skill)
+
+AdClaw does **not** install skills under `.codex/skills` or `.claude/skills`. It resolves skills from the working directory (default `~/.adclaw`, overridable with `ADCLAW_WORKING_DIR`):
+
+| Context | `<skill-dir>` |
+|---------|----------------|
+| Runtime (normal use) | `$ADCLAW_WORKING_DIR/active_skills/html-presentation-deck` |
+| User customized copy | `$ADCLAW_WORKING_DIR/customized_skills/html-presentation-deck` (wins over active when present) |
+| AdClaw repo development | `src/adclaw/agents/skills/html-presentation-deck` (built-in source; synced into `active_skills` on init) |
+
+When AdClaw loads this skill, use the resolved directory from the agent — not a `.codex` path.
+
+### Both in one machine
+
+AdClaw and `@citedy/skills` keep **separate copies**. Updating one does not update the other. Pick the `<skill-dir>` that matches the tool you are using for this deck.
+
+### Validators (any install)
+
+Run from the **deck project root** (where `deck/index.html` lives):
 
 ```bash
-python3 <installed-skill-dir>/scripts/validate_html_deck.py deck/index.html
-python3 <installed-skill-dir>/scripts/validate_deck_quality.py deck/index.html
+python3 <skill-dir>/scripts/validate_html_deck.py deck/index.html
+python3 <skill-dir>/scripts/validate_deck_quality.py deck/index.html
 ```
 
-Do not use `src/adclaw/agents/...` paths after an npm install; those paths exist only in the AdClaw repo checkout.
+Never paste `src/adclaw/agents/...` into a Codex/Claude project after `npx @citedy/skills install` — that path exists only inside an AdClaw source checkout.
 
 ## Default Mode: Product Grid v2
 
@@ -149,7 +175,7 @@ References: `references/themes.md`, `references/typography.md`, `references/layo
    - Do not crop away important UI text, numbers, or controls.
 
 8. Validate before presenting.
-   - From the project root, run `python3 <installed-skill-dir>/scripts/validate_html_deck.py deck/index.html`.
+   - From the project root, run `python3 <skill-dir>/scripts/validate_html_deck.py deck/index.html`.
    - Open the deck in a browser.
    - Check keyboard navigation, slide index, mobile scaling, broken images, and text overflow.
 
@@ -165,9 +191,9 @@ References: `references/themes.md`, `references/typography.md`, `references/layo
 
 ## Slash Command (`/html-deck`)
 
-When invoked as `/html-deck`, discover `<installed-skill-dir>` first (same rules as above), read this `SKILL.md`, then treat the argument as the presentation brief. If missing, ask for topic, audience, slide count, and visual system (Product Grid v2 default).
+When invoked as `/html-deck` via `@citedy/skills`, discover `<skill-dir>` under `.codex/skills` or `.claude/skills` first (see npm `commands/html-deck.md`). When invoked inside AdClaw, use the agent-resolved active/customized skill path.
 
-After building the deck, run both validators with the discovered path, then print `deck/index.html` and how to open it locally.
+After building the deck, run both validators with that `<skill-dir>`, then print `deck/index.html` and how to open it locally.
 
 ## Related Skills
 
