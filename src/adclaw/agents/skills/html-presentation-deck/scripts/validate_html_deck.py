@@ -489,7 +489,10 @@ def _validate_contrast(context_name: str, variables: dict[str, CssColor]) -> lis
     errors: list[str] = []
 
     for foreground_key, background_key, label in checks:
-        background_token = _resolve_token(variables, background_key, None)
+        background_backdrop = (
+            _resolve_token(variables, "--paper", None) if background_key == "--panel" else None
+        )
+        background_token = _resolve_token(variables, background_key, background_backdrop)
         if background_token is None:
             continue
         if background_token.alpha < 1.0:
