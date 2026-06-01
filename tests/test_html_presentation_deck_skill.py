@@ -253,6 +253,118 @@ def test_html_deck_parses_slide_theme_rule_tokens():
     assert any("muted text on panel" in error for error in errors)
 
 
+def test_html_deck_parses_rgb_tokens_for_contrast(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root {
+  --paper: rgb(255,255,255);
+  --muted: rgb(250,250,250);
+}
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "muted text on paper" in result.stderr
+
+
+def test_html_deck_contrast_composites_translucent_root_tokens(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root {
+  --paper: #ffffff;
+  --muted: rgba(0,0,0,.2);
+}
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "muted text on paper" in result.stderr
+
+
+def test_html_deck_theme_rules_accumulate_and_composite_translucent_tokens():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root { --ink: #000000; --paper: #ffffff; --muted: #111111; --panel: #ffffff; }
+.slide.theme-dark { --muted: rgba(255,255,255,.2); --panel: rgba(255,255,255,.08); }
+.slide.theme-dark { --panel: rgba(255,255,255,.4); }
+</style>
+<section class="slide theme-dark"></section>
+"""
+    contexts = mod._css_variable_contexts(html)
+    second = [c for n, c in contexts if "theme-dark" in n][1]
+    assert second["--muted"].alpha == pytest.approx(0.2)
+    assert second["--panel"].alpha == pytest.approx(0.4)
+
+    errors = mod._validate_contrast("slide theme rule 2 (.slide.theme-dark)", second)
+    assert any("muted text on slide background" in error for error in errors)
+    assert any("muted text on panel" in error for error in errors)
+
+
+def test_html_deck_root_parser_ignores_conditional_tokens_and_css_braces():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root {
+  --paper: #ffffff;
+  --muted: #555555;
+  --accent-text: #111111;
+  --panel: #eeeeee;
+  --asset: url("image{1}.png");
+  /* { ignored } */
+  @media (min-width: 1px) { --muted: #ffffff; --panel: #ffffff; }
+}
+</style>
+<section class="slide" style="--panel: 'decorative'; --muted: #222222"></section>
+"""
+    contexts = mod._css_variable_contexts(html)
+    root_context = [vars for name, vars in contexts if name.startswith(":root")][0]
+    assert root_context["--muted"].rgb == "#555555"
+    assert root_context["--panel"].rgb == "#eeeeee"
+    inline_context = [vars for name, vars in contexts if name.startswith("inline")][0]
+    assert inline_context["--muted"].rgb == "#222222"
+
+
 def test_html_deck_product_grid_theme_tokens_pass_contrast():
     mod = _load_validate_html_deck_module()
     template = SKILL_DIR / "assets" / "template-product-grid.html"
@@ -394,6 +506,39 @@ def test_product_grid_quality_validator_rejects_external_and_unregistered_image_
     assert result.returncode == 1
     assert "external http(s) references" in result.stderr
     assert "image slot pg04-main-16x10 is not allowed for PG02" in result.stderr
+
+
+def test_product_grid_quality_validator_rejects_blank_image_src(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        f"""<!doctype html>
+<html lang="en">
+<head><style>{PRODUCT_GRID_TEST_CSS}</style></head>
+<body>
+<section class="slide" data-system="product-grid" data-layout="PG02">
+  <div class="stage">
+    <img src="" alt="Empty source" data-image-slot="pg02-media-16x10">
+  </div>
+</section>
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_deck_quality.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "image 1 has blank src" in result.stderr
 
 
 def test_product_grid_quality_validator_does_not_warn_when_fewer_than_five_slides(tmp_path):

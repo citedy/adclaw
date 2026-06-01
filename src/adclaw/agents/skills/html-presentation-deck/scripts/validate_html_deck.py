@@ -15,8 +15,8 @@ from typing import NamedTuple
 
 IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 CSS_VAR_HEX_RE = re.compile(r"(--[A-Za-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6})")
-CSS_VAR_RGBA_RE = re.compile(
-    r"(--[A-Za-z0-9-]+)\s*:\s*rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*([\d.]+)\s*\)",
+CSS_VAR_RGB_RE = re.compile(
+    r"^(--[A-Za-z0-9-]+)\s*:\s*rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([\d.]+))?\s*\)\s*$",
     re.IGNORECASE,
 )
 SLIDE_THEME_BACKGROUNDS = {
@@ -27,7 +27,7 @@ SLIDE_THEME_BACKGROUNDS = {
 ROOT_OPEN_RE = re.compile(r":root\s*\{", re.IGNORECASE)
 SLIDE_THEME_RULE_RE = re.compile(r"\.slide\.theme-[a-z0-9-]+\s*\{", re.IGNORECASE)
 STYLE_ATTR_RE = re.compile(
-    r'\bstyle\s*=\s*(["\'])(?P<body>[^"\']*--[A-Za-z0-9-]+[^"\']*)\1',
+    r'\bstyle\s*=\s*"(?P<double>[^"]*--[A-Za-z0-9-]+[^"]*)"|\bstyle\s*=\s*\'(?P<single>[^\']*--[A-Za-z0-9-]+[^\']*)\'',
     re.DOTALL,
 )
 MIN_TEXT_CONTRAST = 4.5
@@ -84,9 +84,29 @@ def _contrast(foreground: str, background: str) -> float:
 def _extract_braced_block_body(html: str, opener_end: int) -> str | None:
     depth = 1
     cursor = opener_end
+    quote: str | None = None
+    in_comment = False
     while cursor < len(html) and depth > 0:
         char = html[cursor]
-        if char == "{":
+        next_char = html[cursor + 1] if cursor + 1 < len(html) else ""
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if char == "\\":
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "{":
             depth += 1
         elif char == "}":
             depth -= 1
@@ -120,15 +140,71 @@ def _parse_rgba_alpha(raw: str) -> float:
     return value
 
 
+def _top_level_declarations(block: str) -> list[str]:
+    declarations: list[str] = []
+    current: list[str] = []
+    depth = 0
+    cursor = 0
+    quote: str | None = None
+    in_comment = False
+    while cursor < len(block):
+        char = block[cursor]
+        next_char = block[cursor + 1] if cursor + 1 < len(block) else ""
+
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            current.append(char)
+            if char == "\\":
+                if next_char:
+                    current.append(next_char)
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+            if depth == 0:
+                current.append(char)
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            if depth > 0:
+                depth -= 1
+        elif char == ";" and depth == 0:
+            declaration = "".join(current).strip()
+            if declaration:
+                declarations.append(declaration)
+            current = []
+        elif depth == 0:
+            current.append(char)
+
+        cursor += 1
+
+    declaration = "".join(current).strip()
+    if declaration:
+        declarations.append(declaration)
+    return declarations
+
+
 def _parse_css_variables(block: str) -> dict[str, CssColor]:
-    variables: dict[str, CssColor] = {
-        name: CssColor(value, 1.0) for name, value in CSS_VAR_HEX_RE.findall(block)
-    }
-    for name, red, green, blue, alpha in CSS_VAR_RGBA_RE.findall(block):
-        variables[name] = CssColor(
-            _rgb_to_hex(red, green, blue),
-            _parse_rgba_alpha(alpha),
-        )
+    variables: dict[str, CssColor] = {}
+    for declaration in _top_level_declarations(block):
+        if match := CSS_VAR_HEX_RE.fullmatch(declaration):
+            variables[match.group(1)] = CssColor(match.group(2), 1.0)
+            continue
+        if match := CSS_VAR_RGB_RE.fullmatch(declaration):
+            variables[match.group(1)] = CssColor(
+                _rgb_to_hex(match.group(2), match.group(3), match.group(4)),
+                _parse_rgba_alpha(match.group(5) or "1"),
+            )
     return variables
 
 
@@ -164,6 +240,7 @@ def _theme_class_from_context(context_name: str) -> str | None:
 def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     contexts: list[tuple[str, dict[str, CssColor]]] = []
     root_aggregate: dict[str, CssColor] = {}
+    theme_aggregates: dict[str, dict[str, CssColor]] = {}
 
     for index, (selector, body) in enumerate(_extract_rule_blocks(html, ROOT_OPEN_RE), start=1):
         variables = _parse_css_variables(body)
@@ -177,13 +254,15 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     ):
         variables = _parse_css_variables(body)
         if variables:
-            merged = dict(root_aggregate)
-            merged.update(variables)
             label = selector.rstrip("{").strip()
+            theme_class = _theme_class_from_context(label) or label
+            theme_aggregate = theme_aggregates.setdefault(theme_class, dict(root_aggregate))
+            theme_aggregate.update(variables)
+            merged = dict(theme_aggregate)
             contexts.append((f"slide theme rule {index} ({label})", merged))
 
     for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
-        variables = _parse_css_variables(match.group("body"))
+        variables = _parse_css_variables(match.group("double") or match.group("single") or "")
         if variables:
             merged = dict(root_aggregate)
             merged.update(variables)
@@ -201,12 +280,13 @@ def _validate_slide_theme_contrast(
     slide_bg = variables.get(slide_bg_key) if slide_bg_key else None
     if slide_bg is None:
         return []
+    if slide_bg.alpha < 1.0:
+        return [f"{context_name}: {slide_bg_key} background must be opaque for contrast validation."]
 
     errors: list[str] = []
     muted = variables.get("--muted")
     panel = variables.get("--panel")
-    # Product Grid themes use translucent rgba tokens by design; only gate opaque overrides.
-    if muted is not None and muted.alpha >= 1.0:
+    if muted is not None:
         muted_on_slide = _resolved_hex(variables, "--muted", slide_bg)
         if muted_on_slide is not None:
             ratio = _contrast(muted_on_slide, slide_bg.rgb)
@@ -217,12 +297,7 @@ def _validate_slide_theme_contrast(
                     f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
                 )
 
-    if (
-        muted is not None
-        and panel is not None
-        and muted.alpha >= 1.0
-        and panel.alpha >= 1.0
-    ):
+    if muted is not None and panel is not None:
         panel_hex = _resolved_hex(variables, "--panel", slide_bg)
         if panel_hex is not None:
             panel_surface = CssColor(panel_hex, 1.0)
@@ -252,9 +327,17 @@ def _validate_contrast(context_name: str, variables: dict[str, CssColor]) -> lis
     errors: list[str] = []
 
     for foreground_key, background_key, label in checks:
-        foreground = _resolved_hex(variables, foreground_key, None)
-        background = _resolved_hex(variables, background_key, None)
-        if not foreground or not background:
+        background_token = variables.get(background_key)
+        if background_token is None:
+            continue
+        if background_token.alpha < 1.0:
+            errors.append(
+                f"{context_name}: {background_key} background must be opaque for contrast validation."
+            )
+            continue
+        background = background_token.rgb
+        foreground = _resolved_hex(variables, foreground_key, background_token)
+        if not foreground:
             continue
         ratio = _contrast(foreground, background)
         if ratio < MIN_TEXT_CONTRAST:
@@ -269,13 +352,24 @@ def _validate_contrast(context_name: str, variables: dict[str, CssColor]) -> lis
         and "--panel" in variables
         and "--accent-text" not in variables
     ):
-        accent = variables["--accent"].rgb
-        panel = _resolved_hex(variables, "--panel", None)
-        if panel is not None:
-            ratio = _contrast(accent, panel)
+        accent = _resolved_hex(variables, "--accent", variables.get("--panel"))
+        panel = variables.get("--panel")
+        if accent is not None and panel is not None and panel.alpha >= 1.0:
+            ratio = _contrast(accent, panel.rgb)
             if ratio < MIN_TEXT_CONTRAST:
                 errors.append(
                     f"{context_name}: --accent on --panel contrast is {ratio:.2f}:1. "
+                    "Add a contrast-safe --accent-text token for labels, metrics, and annotations."
+                )
+
+    if "--accent" in variables and "--paper" in variables and "--accent-text" not in variables:
+        paper = variables["--paper"]
+        accent = _resolved_hex(variables, "--accent", paper)
+        if accent is not None and paper.alpha >= 1.0:
+            ratio = _contrast(accent, paper.rgb)
+            if ratio < MIN_TEXT_CONTRAST:
+                errors.append(
+                    f"{context_name}: --accent on --paper contrast is {ratio:.2f}:1. "
                     "Add a contrast-safe --accent-text token for labels, metrics, and annotations."
                 )
 
