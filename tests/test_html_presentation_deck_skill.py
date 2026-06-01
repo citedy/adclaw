@@ -360,6 +360,24 @@ def test_html_deck_inline_tokens_inherit_slide_theme_context():
     assert any("muted text on panel" in error for error in errors)
 
 
+def test_html_deck_nested_inline_tokens_inherit_ancestor_slide_theme_context():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root { --ink: #000000; --paper: #ffffff; --muted: #111111; --panel: #ffffff; }
+.slide.theme-dark { --muted: rgba(255,255,255,.2); --panel: rgba(255,255,255,.08); }
+</style>
+<section class="slide theme-dark"><div class="panel" style="--panel: #f7f7f1"></div></section>
+"""
+    contexts = mod._css_variable_contexts(html)
+    inline = [c for n, c in contexts if n.startswith("inline")][0]
+    assert inline["--muted"].alpha == pytest.approx(0.2)
+    assert inline["--panel"].rgb == "#f7f7f1"
+
+    errors = mod._validate_contrast("inline style 1 (.theme-dark)", inline)
+    assert any("muted text on panel" in error for error in errors)
+
+
 def test_html_deck_root_parser_ignores_conditional_tokens_and_css_braces():
     mod = _load_validate_html_deck_module()
     html = """
@@ -584,6 +602,38 @@ def test_html_deck_slide_theme_validates_primary_text_contrast():
     errors = mod._validate_contrast("slide theme rule 1 (.slide.theme-accent)", theme_context)
 
     assert any("primary text on theme background" in error for error in errors)
+
+
+def test_html_deck_slide_theme_validates_accent_component_contrast():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root {
+  --ink: #000000;
+  --paper: #ffffff;
+  --accent: #165cff;
+  --accent-on: #ffffff;
+  --muted: #555555;
+  --panel: #eeeeee;
+}
+.slide.theme-dark {
+  --accent: #ffffff;
+  --accent-on: #ffffff;
+  --muted: #ffffff;
+  --panel: rgba(255,255,255,.08);
+}
+</style>
+<section class="slide theme-dark"></section>
+"""
+    theme_context = [
+        variables
+        for name, variables in mod._css_variable_contexts(html)
+        if "theme-dark" in name
+    ][0]
+
+    errors = mod._validate_contrast("slide theme rule 1 (.slide.theme-dark)", theme_context)
+
+    assert any("text on accent background" in error for error in errors)
 
 
 def test_html_deck_product_grid_theme_tokens_pass_contrast():

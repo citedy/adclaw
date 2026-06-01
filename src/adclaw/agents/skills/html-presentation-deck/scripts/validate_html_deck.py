@@ -317,9 +317,21 @@ def _theme_class_from_context(context_name: str) -> str | None:
 def _theme_class_for_style_attr(html: str, style_attr_start: int) -> str | None:
     tag_start = html.rfind("<", 0, style_attr_start)
     tag_end = html.find(">", style_attr_start)
-    if tag_start == -1 or tag_end == -1:
-        return None
-    return _theme_class_from_context(html[tag_start : tag_end + 1])
+    if tag_start != -1 and tag_end != -1:
+        tag_theme = _theme_class_from_context(html[tag_start : tag_end + 1])
+        if tag_theme:
+            return tag_theme
+
+    before_style = html[:style_attr_start]
+    last_section_close = before_style.rfind("</section>")
+    slide_open_re = re.compile(
+        r"<section\b[^>]*\bclass\s*=\s*(['\"])[^'\"]*\bslide\b[^'\"]*\btheme-[a-z0-9-]+\b[^'\"]*\1[^>]*>",
+        re.IGNORECASE | re.DOTALL,
+    )
+    for match in reversed(list(slide_open_re.finditer(before_style))):
+        if match.start() > last_section_close:
+            return _theme_class_from_context(match.group(0))
+    return None
 
 
 def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
@@ -387,6 +399,20 @@ def _validate_slide_theme_contrast(
                 f"({foreground_key} {foreground} on {slide_bg_key} {slide_bg.rgb}); "
                 f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
             )
+
+    if not (slide_bg_key == "--accent" and foreground_key == "--accent-on"):
+        accent = _resolved_hex(variables, "--accent", slide_bg)
+        if accent is not None:
+            accent_surface = CssColor(accent, 1.0)
+            accent_on = _resolved_hex(variables, "--accent-on", accent_surface)
+            if accent_on is not None:
+                ratio = _contrast(accent_on, accent)
+                if ratio < MIN_TEXT_CONTRAST:
+                    errors.append(
+                        f"{context_name}: text on accent background contrast is {ratio:.2f}:1 "
+                        f"(--accent-on {accent_on} on --accent {accent}); "
+                        f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+                    )
 
     muted = variables.get("--muted")
     panel = variables.get("--panel")
