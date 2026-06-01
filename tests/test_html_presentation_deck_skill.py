@@ -386,6 +386,78 @@ def test_html_deck_root_parser_ignores_conditional_tokens_and_css_braces():
     assert inline_context["--muted"].rgb == "#222222"
 
 
+def test_html_deck_css_variable_contexts_ignore_visible_css_snippets():
+    mod = _load_validate_html_deck_module()
+    html = """
+<pre>:root { --paper: #000000; --muted: #000000; }</pre>
+<style>
+:root { --paper: #ffffff; --muted: #555555; --panel: #eeeeee; }
+</style>
+<section class="slide"></section>
+"""
+    contexts = mod._css_variable_contexts(html)
+    root_contexts = [vars for name, vars in contexts if name.startswith(":root")]
+    assert len(root_contexts) == 1
+    assert root_contexts[0]["--paper"].rgb == "#ffffff"
+    assert root_contexts[0]["--muted"].rgb == "#555555"
+
+
+def test_html_deck_resolves_var_token_references_for_contrast():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root {
+  --paper: #ffffff;
+  --muted-base: #777777;
+  --muted: var(--muted-base);
+  --panel-base: #eeeeee;
+  --panel: var(--panel-base);
+}
+</style>
+<section class="slide"></section>
+"""
+    context = [vars for name, vars in mod._css_variable_contexts(html) if name.startswith(":root")][0]
+
+    errors = mod._validate_contrast(":root block 1", context)
+
+    assert any("muted text on paper" in error for error in errors)
+    assert any("muted text on panel" in error for error in errors)
+
+
+def test_html_deck_contrast_composites_percentage_alpha_tokens(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root {
+  --paper: #ffffff;
+  --muted: rgba(0,0,0,20%);
+}
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "muted text on paper" in result.stderr
+
+
 def test_html_deck_product_grid_theme_tokens_pass_contrast():
     mod = _load_validate_html_deck_module()
     template = SKILL_DIR / "assets" / "template-product-grid.html"
