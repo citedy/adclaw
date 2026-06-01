@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from adclaw.agents.skill_scanner import SkillSecurityScanner
 
 
@@ -19,6 +21,8 @@ def _load_validate_html_deck_module():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
 IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 
@@ -198,11 +202,55 @@ def test_html_deck_css_variable_contexts_nested_root_and_shorthand_hex():
     assert len(root_contexts) == 1
     assert "--paper" in root_contexts[0]
     inline_vars = next(vars for name, vars in contexts if name.startswith("inline"))
-    assert inline_vars["--muted"] == "#888888"
-    assert inline_vars["--panel"] == "#222222"
+    assert inline_vars["--muted"].rgb == "#888888"
+    assert inline_vars["--panel"].rgb == "#222222"
 
     shorthand_only = mod._parse_css_variables(":root { --paper: #fff; }")
     assert shorthand_only == {}
+
+
+def test_html_deck_parses_slide_theme_rule_tokens():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root { --ink: #090b0f; --paper: #f7f7f1; --accent: #165cff; --muted: #59605a; --panel: #ecefe6; }
+.slide.theme-dark {
+  --muted: rgba(247,247,241,180);
+  --panel: rgba(247,247,241,18);
+}
+.slide.theme-dark {
+  --muted: #cccccc;
+  --panel: #dddddd;
+}
+</style>
+<section class="slide theme-dark"></section>
+"""
+    contexts = mod._css_variable_contexts(html)
+    dark = [c for n, c in contexts if "theme-dark" in n][0]
+    assert dark["--ink"].rgb == "#090b0f"
+    assert dark["--muted"].rgb == "#f7f7f1"
+    assert dark["--muted"].alpha == pytest.approx(180 / 255, rel=1e-3)
+
+    bad = [c for n, c in contexts if "theme-dark" in n][1]
+    errors = mod._validate_contrast(
+        "slide theme rule 2 (.slide.theme-dark)",
+        bad,
+    )
+    assert any("muted text on panel" in error for error in errors)
+
+
+def test_html_deck_product_grid_theme_tokens_pass_contrast():
+    mod = _load_validate_html_deck_module()
+    template = SKILL_DIR / "assets" / "template-product-grid.html"
+    html = template.read_text(encoding="utf-8")
+    theme_contexts = [
+        (name, variables)
+        for name, variables in mod._css_variable_contexts(html)
+        if name.startswith("slide theme rule")
+    ]
+    assert len(theme_contexts) == 3
+    for name, variables in theme_contexts:
+        assert mod._validate_slide_theme_contrast(name, variables) == []
 
 
 def test_html_deck_root_contexts_use_cumulative_aggregate():
@@ -215,19 +263,20 @@ def test_html_deck_root_contexts_use_cumulative_aggregate():
 """
     contexts = mod._css_variable_contexts(html)
     second_root = [vars for name, vars in contexts if name == ":root block 2"][0]
-    assert second_root["--muted"] == "#595959"
-    assert second_root["--panel"] == "#f0f0f0"
+    assert second_root["--muted"].rgb == "#595959"
+    assert second_root["--panel"].rgb == "#f0f0f0"
 
 
 def test_html_deck_validate_contrast_flags_accent_text_on_paper():
     mod = _load_validate_html_deck_module()
+    color = mod.CssColor
     errors = mod._validate_contrast(
         "test",
         {
-            "--accent-text": "#cccccc",
-            "--paper": "#ffffff",
-            "--muted": "#777777",
-            "--panel": "#f0f0f0",
+            "--accent-text": color("#cccccc"),
+            "--paper": color("#ffffff"),
+            "--muted": color("#777777"),
+            "--panel": color("#f0f0f0"),
         },
     )
     assert any("accent text on paper" in error for error in errors)
