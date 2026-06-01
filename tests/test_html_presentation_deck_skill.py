@@ -642,6 +642,37 @@ def test_html_deck_validator_checks_conditional_root_cascade(tmp_path):
     assert "muted text on paper" in result.stderr
 
 
+def test_html_deck_conditional_root_respects_later_base_cascade(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+@media (max-width: 760px) { :root { --muted: #ffffff; } }
+:root { --paper: #ffffff; --panel: #eeeeee; --muted: #555555; }
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_html_deck_slide_theme_validates_primary_text_contrast():
     mod = _load_validate_html_deck_module()
     html = """
