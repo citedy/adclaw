@@ -36,6 +36,7 @@ SLIDE_THEME_FOREGROUNDS = {
 ROOT_OPEN_RE = re.compile(r":root\s*\{", re.IGNORECASE)
 SLIDE_THEME_RULE_RE = re.compile(r"\.slide\.theme-[a-z0-9-]+\s*\{", re.IGNORECASE)
 STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 STYLE_ATTR_RE = re.compile(
     r'\bstyle\s*=\s*"(?P<double>[^"]*--[A-Za-z0-9-]+[^"]*)"|\bstyle\s*=\s*\'(?P<single>[^\']*--[A-Za-z0-9-]+[^\']*)\'',
     re.DOTALL,
@@ -344,7 +345,8 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     contexts: list[tuple[str, dict[str, CssColor]]] = []
     root_aggregate: dict[str, CssColor] = {}
     theme_aggregates: dict[str, dict[str, CssColor]] = {}
-    style_blocks = [match.group("body") for match in STYLE_BLOCK_RE.finditer(html)]
+    css_html = HTML_COMMENT_RE.sub("", html)
+    style_blocks = [match.group("body") for match in STYLE_BLOCK_RE.finditer(css_html)]
 
     root_rules: list[tuple[tuple[int, int], dict[str, CssColor]]] = []
     conditional_root_rules: list[tuple[tuple[int, int], dict[str, CssColor]]] = []
@@ -424,10 +426,10 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
             merged,
         ))
 
-    for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
+    for index, match in enumerate(STYLE_ATTR_RE.finditer(css_html), start=1):
         variables = _parse_css_variables(match.group("double") or match.group("single") or "")
         if variables:
-            theme_class = _theme_class_for_style_attr(html, match.start())
+            theme_class = _theme_class_for_style_attr(css_html, match.start())
             base = theme_aggregates.get(theme_class or "", root_aggregate)
             merged = dict(base)
             merged.update(variables)

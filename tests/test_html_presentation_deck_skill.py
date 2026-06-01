@@ -420,6 +420,35 @@ def test_html_deck_css_variable_contexts_ignore_visible_css_snippets():
     assert root_contexts[0]["--muted"].rgb == "#555555"
 
 
+def test_html_deck_css_variable_contexts_ignore_commented_style_blocks(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<!-- <style>:root { --paper: #ffffff; --muted: #ffffff; --panel: #ffffff; }</style> -->
+<style>:root { --paper: #ffffff; --muted: #555555; --panel: #eeeeee; }</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_html_deck_resolves_var_token_references_for_contrast():
     mod = _load_validate_html_deck_module()
     html = """
