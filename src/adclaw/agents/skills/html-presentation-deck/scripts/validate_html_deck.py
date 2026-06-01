@@ -160,10 +160,16 @@ def _css_depth_at(html: str, position: int) -> int:
     return depth
 
 
-def _extract_rule_blocks(html: str, opener: re.Pattern[str]) -> list[tuple[str, str]]:
+def _extract_rule_blocks(
+    html: str,
+    opener: re.Pattern[str],
+    *,
+    nested: bool = False,
+) -> list[tuple[str, str]]:
     blocks: list[tuple[str, str]] = []
     for match in opener.finditer(html):
-        if _css_depth_at(html, match.start()) != 0:
+        is_nested = _css_depth_at(html, match.start()) != 0
+        if is_nested != nested:
             continue
         body = _extract_braced_block_body(html, match.end())
         if body is not None:
@@ -350,6 +356,16 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     if root_aggregate:
         contexts.append((f":root block {root_index}", dict(root_aggregate)))
 
+    conditional_root_index = 1
+    for css in style_blocks:
+        for selector, body in _extract_rule_blocks(css, ROOT_OPEN_RE, nested=True):
+            variables = _parse_css_variables(body)
+            if variables:
+                merged = dict(root_aggregate)
+                merged.update(variables)
+                contexts.append((f"conditional :root block {conditional_root_index}", merged))
+                conditional_root_index += 1
+
     theme_index = 1
     for css in style_blocks:
         for selector, body in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE):
@@ -362,6 +378,22 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
                 merged = dict(theme_aggregate)
                 contexts.append((f"slide theme rule {theme_index} ({label})", merged))
                 theme_index += 1
+
+    conditional_theme_index = 1
+    for css in style_blocks:
+        for selector, body in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE, nested=True):
+            variables = _parse_css_variables(body)
+            if variables:
+                label = selector.rstrip("{").strip()
+                theme_class = _theme_class_from_context(label) or label
+                base = theme_aggregates.get(theme_class, root_aggregate)
+                merged = dict(base)
+                merged.update(variables)
+                contexts.append((
+                    f"conditional slide theme rule {conditional_theme_index} ({label})",
+                    merged,
+                ))
+                conditional_theme_index += 1
 
     for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
         variables = _parse_css_variables(match.group("double") or match.group("single") or "")
