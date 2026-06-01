@@ -372,7 +372,7 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
             (order, root_variables)
             for order, root_variables in root_rules
         ]
-        cascade_events.append((conditional_order, variables))
+        cascade_events.extend(conditional_root_rules)
         for _, event_variables in sorted(cascade_events):
             merged.update(event_variables)
         contexts.append((f"conditional :root block {conditional_root_index}", merged))
@@ -412,7 +412,11 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
             for order, _, rule_theme_class, theme_variables in theme_rules
             if rule_theme_class == theme_class
         ]
-        cascade_events.append((conditional_order, variables))
+        cascade_events.extend(
+            (order, theme_variables)
+            for order, _, rule_theme_class, theme_variables in conditional_theme_rules
+            if rule_theme_class == theme_class
+        )
         for _, event_variables in sorted(cascade_events):
             merged.update(event_variables)
         contexts.append((
