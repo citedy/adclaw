@@ -30,7 +30,7 @@
   .slide { width: 100vw; height: 100vh; flex: 0 0 100vw; padding: 6vh 7vw; position: relative; overflow: hidden; background: var(--paper); }
   .slide.dark { background: var(--ink); color: var(--paper); }
   .slide.accent { background: var(--accent); color: #fff8f1; }
-  .kicker { font: 700 12px/1 var(--label-font); letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: 2.5vh; }
+  .kicker { font: 700 12px/1 var(--label-font); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--accent); margin-bottom: 2.5vh; }
   .dark .kicker, .accent .kicker { color: var(--accent-soft); }
   h1, h2, h3, p { margin: 0; }
   .hero-title { font-family: var(--display-font); font-size: clamp(54px, 9vw, 132px); line-height: .9; letter-spacing: var(--hero-tracking); max-width: 12ch; text-wrap: balance; }
@@ -50,7 +50,7 @@
   .frame { width: 100%; aspect-ratio: 16 / 10; overflow: hidden; background: rgba(0,0,0,.05); border-radius: 10px; }
   .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .quote { font-family: var(--display-font); font-size: clamp(38px, 5.4vw, 82px); line-height: 1.02; letter-spacing: var(--headline-tracking); max-width: 15ch; text-wrap: balance; }
-  .caption { font: 600 12px/1.4 var(--label-font); color: var(--muted); text-transform: uppercase; letter-spacing: .12em; margin-top: 2vh; }
+  .caption { font: 600 12px/1.4 var(--label-font); color: var(--muted); text-transform: uppercase; letter-spacing: var(--label-tracking); margin-top: 2vh; }
   .progress { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 5; transition: width .35s ease; }
   .nav { position: fixed; right: 24px; bottom: 18px; z-index: 6; font: 600 12px/1 var(--label-font); color: rgba(255,255,255,.7); mix-blend-mode: difference; }
   .sr-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

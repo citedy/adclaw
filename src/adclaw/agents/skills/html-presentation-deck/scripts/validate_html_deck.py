@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Validate an HTML presentation deck."""
+"""Validate an HTML presentation deck.
+
+Contrast parsing only supports 6-digit hex CSS variables (#RRGGBB).
+:root blocks are extracted with brace counting so nested rules do not truncate.
+"""
 
 from __future__ import annotations
 
@@ -9,9 +13,13 @@ from pathlib import Path
 
 
 IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+# Deck templates use 6-digit hex theme tokens only.
 CSS_VAR_RE = re.compile(r"(--[A-Za-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6})")
-ROOT_BLOCK_RE = re.compile(r":root\s*\{(?P<body>[^}]*)\}", re.DOTALL)
-STYLE_ATTR_RE = re.compile(r"\bstyle\s*=\s*(['\"])(?P<body>[^'\"]*--[^'\"]*)\1", re.DOTALL)
+ROOT_OPEN_RE = re.compile(r":root\s*\{", re.IGNORECASE)
+STYLE_ATTR_RE = re.compile(
+    r'\bstyle\s*=\s*(["\'])(?P<body>[^"\']*--[A-Za-z0-9-]+[^"\']*)\1',
+    re.DOTALL,
+)
 MIN_TEXT_CONTRAST = 4.5
 
 
@@ -57,18 +65,40 @@ def _contrast(foreground: str, background: str) -> float:
     return (high + 0.05) / (low + 0.05)
 
 
+def _extract_root_block_bodies(html: str) -> list[str]:
+    bodies: list[str] = []
+    for match in ROOT_OPEN_RE.finditer(html):
+        index = match.end()
+        depth = 1
+        cursor = index
+        while cursor < len(html) and depth > 0:
+            char = html[cursor]
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+            cursor += 1
+        if depth == 0:
+            bodies.append(html[index : cursor - 1])
+    return bodies
+
+
+def _parse_css_variables(block: str) -> dict[str, str]:
+    return dict(CSS_VAR_RE.findall(block))
+
+
 def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, str]]]:
     contexts: list[tuple[str, dict[str, str]]] = []
     root_aggregate: dict[str, str] = {}
 
-    for index, match in enumerate(ROOT_BLOCK_RE.finditer(html), start=1):
-        variables = dict(CSS_VAR_RE.findall(match.group("body")))
+    for index, body in enumerate(_extract_root_block_bodies(html), start=1):
+        variables = _parse_css_variables(body)
         if variables:
             root_aggregate.update(variables)
             contexts.append((f":root block {index}", variables))
 
     for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
-        variables = dict(CSS_VAR_RE.findall(match.group("body")))
+        variables = _parse_css_variables(match.group("body"))
         if variables:
             merged = dict(root_aggregate)
             merged.update(variables)
@@ -81,6 +111,7 @@ def _validate_contrast(context_name: str, variables: dict[str, str]) -> list[str
     checks = [
         ("--muted", "--paper", "muted text on paper"),
         ("--muted", "--panel", "muted text on panel"),
+        ("--accent-text", "--paper", "accent text on paper"),
         ("--accent-text", "--panel", "accent text on panel"),
         ("--accent-on", "--accent", "text on accent background"),
     ]

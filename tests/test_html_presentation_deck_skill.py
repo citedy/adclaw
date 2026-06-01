@@ -8,6 +8,17 @@ from adclaw.agents.skill_scanner import SkillSecurityScanner
 
 
 SKILL_DIR = Path(__file__).resolve().parents[1] / "src/adclaw/agents/skills/html-presentation-deck"
+
+
+def _load_validate_html_deck_module():
+    spec = importlib.util.spec_from_file_location(
+        "validate_html_deck",
+        SKILL_DIR / "scripts" / "validate_html_deck.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
 IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 
 
@@ -160,6 +171,83 @@ def test_html_deck_validator_merges_inline_tokens_with_root_for_contrast(tmp_pat
 
     assert result.returncode == 1, result.stdout
     assert "muted text on panel" in result.stderr
+
+
+def test_html_deck_contrast_helpers():
+    mod = _load_validate_html_deck_module()
+    assert mod._luminance("#ffffff") > mod._luminance("#000000")
+    assert mod._contrast("#000000", "#ffffff") == 21.0
+
+
+def test_html_deck_css_variable_contexts_nested_root_and_shorthand_hex():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root {
+  --paper: #ffffff;
+  --muted: #888888;
+  --accent-text: #ffcc00;
+  @media (min-width: 1px) { --panel: #111111; }
+}
+</style>
+<section class="slide" style="--panel:#222222"></section>
+"""
+    contexts = mod._css_variable_contexts(html)
+    assert any(name.startswith(":root") for name, _ in contexts)
+    root_vars = next(vars for name, vars in contexts if name.startswith(":root"))
+    assert "--paper" in root_vars
+    inline_vars = next(vars for name, vars in contexts if name.startswith("inline"))
+    assert inline_vars["--muted"] == "#888888"
+    assert inline_vars["--panel"] == "#222222"
+
+    shorthand_only = mod._parse_css_variables(":root { --paper: #fff; }")
+    assert shorthand_only == {}
+
+
+def test_html_deck_validate_contrast_flags_accent_text_on_paper():
+    mod = _load_validate_html_deck_module()
+    errors = mod._validate_contrast(
+        "test",
+        {
+            "--accent-text": "#cccccc",
+            "--paper": "#ffffff",
+            "--muted": "#777777",
+            "--panel": "#f0f0f0",
+        },
+    )
+    assert any("accent text on paper" in error for error in errors)
+
+
+def test_html_deck_validator_parses_nested_root_block(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root {
+  --muted: #595959;
+  --paper: #ffffff;
+  --panel: #f0f0f0;
+  --accent-text: #0b5d1e;
+  @supports (display: grid) { --panel: #e8e8e8; }
+}
+</style>
+</head>
+<body>
+<section class="slide"><p>ok</p></section>
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [sys.executable, str(SKILL_DIR / "scripts/validate_html_deck.py"), str(deck)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_product_grid_quality_validator_ignores_xmlns_urls(tmp_path):
