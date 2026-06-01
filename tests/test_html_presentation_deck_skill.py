@@ -458,6 +458,40 @@ def test_html_deck_contrast_composites_percentage_alpha_tokens(tmp_path):
     assert "muted text on paper" in result.stderr
 
 
+def test_html_deck_validator_ignores_malformed_rgba_alpha_without_crashing(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root {
+  --paper: #ffffff;
+  --muted: rgba(0,0,0,1.2.3);
+}
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Traceback" not in result.stderr
+
+
 def test_html_deck_product_grid_theme_tokens_pass_contrast():
     mod = _load_validate_html_deck_module()
     template = SKILL_DIR / "assets" / "template-product-grid.html"

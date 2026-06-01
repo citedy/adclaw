@@ -174,10 +174,13 @@ def _rgb_to_hex(red: str, green: str, blue: str) -> str:
     )
 
 
-def _parse_rgba_alpha(raw: str) -> float:
-    if raw.endswith("%"):
-        return max(0.0, min(1.0, float(raw[:-1]) / 100.0))
-    value = float(raw)
+def _parse_rgba_alpha(raw: str) -> float | None:
+    try:
+        if raw.endswith("%"):
+            return max(0.0, min(1.0, float(raw[:-1]) / 100.0))
+        value = float(raw)
+    except ValueError:
+        return None
     if value > 1.0:
         return min(1.0, value / 255.0)
     return max(0.0, value)
@@ -246,9 +249,12 @@ def _parse_css_variables(block: str) -> dict[str, CssColor]:
             variables[match.group(1)] = CssColor(match.group(2), 1.0)
             continue
         if match := CSS_VAR_RGB_RE.fullmatch(declaration):
+            alpha = _parse_rgba_alpha(match.group(5) or "1")
+            if alpha is None:
+                continue
             variables[match.group(1)] = CssColor(
                 _rgb_to_hex(match.group(2), match.group(3), match.group(4)),
-                _parse_rgba_alpha(match.group(5) or "1"),
+                alpha,
             )
             continue
         if match := CSS_VAR_REF_RE.fullmatch(declaration):
