@@ -492,6 +492,66 @@ def test_html_deck_validator_ignores_malformed_rgba_alpha_without_crashing(tmp_p
     assert "Traceback" not in result.stderr
 
 
+def test_html_deck_validator_checks_only_final_root_cascade(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --paper: #ffffff; --panel: #eeeeee; --muted: #ffffff; }
+:root { --muted: #555555; }
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_html_deck_slide_theme_validates_primary_text_contrast():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root {
+  --accent: #165cff;
+  --accent-on: #ffffff;
+  --muted: #555555;
+  --panel: #eeeeee;
+}
+.slide.theme-accent {
+  --accent-on: #165cff;
+  --muted: #ffffff;
+  --panel: rgba(255,255,255,.08);
+}
+</style>
+<section class="slide theme-accent"></section>
+"""
+    theme_context = [
+        variables
+        for name, variables in mod._css_variable_contexts(html)
+        if "theme-accent" in name
+    ][0]
+
+    errors = mod._validate_contrast("slide theme rule 1 (.slide.theme-accent)", theme_context)
+
+    assert any("primary text on theme background" in error for error in errors)
+
+
 def test_html_deck_product_grid_theme_tokens_pass_contrast():
     mod = _load_validate_html_deck_module()
     template = SKILL_DIR / "assets" / "template-product-grid.html"

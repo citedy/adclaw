@@ -28,6 +28,11 @@ SLIDE_THEME_BACKGROUNDS = {
     "theme-accent": "--accent",
     "theme-yellow": "--yellow",
 }
+SLIDE_THEME_FOREGROUNDS = {
+    "theme-dark": "--paper",
+    "theme-accent": "--accent-on",
+    "theme-yellow": "--ink",
+}
 ROOT_OPEN_RE = re.compile(r":root\s*\{", re.IGNORECASE)
 SLIDE_THEME_RULE_RE = re.compile(r"\.slide\.theme-[a-z0-9-]+\s*\{", re.IGNORECASE)
 STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
@@ -323,14 +328,15 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     theme_aggregates: dict[str, dict[str, CssColor]] = {}
     style_blocks = [match.group("body") for match in STYLE_BLOCK_RE.finditer(html)]
 
-    root_index = 1
+    root_index = 0
     for css in style_blocks:
         for selector, body in _extract_rule_blocks(css, ROOT_OPEN_RE):
             variables = _parse_css_variables(body)
             if variables:
                 root_aggregate.update(variables)
-                contexts.append((f":root block {root_index}", dict(root_aggregate)))
                 root_index += 1
+    if root_aggregate:
+        contexts.append((f":root block {root_index}", dict(root_aggregate)))
 
     theme_index = 1
     for css in style_blocks:
@@ -371,6 +377,17 @@ def _validate_slide_theme_contrast(
         return [f"{context_name}: {slide_bg_key} background must be opaque for contrast validation."]
 
     errors: list[str] = []
+    foreground_key = SLIDE_THEME_FOREGROUNDS.get(theme_class or "")
+    foreground = _resolved_hex(variables, foreground_key, slide_bg) if foreground_key else None
+    if foreground is not None:
+        ratio = _contrast(foreground, slide_bg.rgb)
+        if ratio < MIN_TEXT_CONTRAST:
+            errors.append(
+                f"{context_name}: primary text on theme background contrast is {ratio:.2f}:1 "
+                f"({foreground_key} {foreground} on {slide_bg_key} {slide_bg.rgb}); "
+                f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+            )
+
     muted = variables.get("--muted")
     panel = variables.get("--panel")
     if muted is not None:
