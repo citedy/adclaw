@@ -1,6 +1,6 @@
 # Skills Library
 
-AdClaw ships with **121 built-in skills** across 10 categories. All skills are security-scanned (208-pattern static analysis + LLM audit).
+AdClaw ships with **122 built-in skills** across 10 categories. All skills are security-scanned (208-pattern static analysis + LLM audit).
 
 ---
 
@@ -15,7 +15,7 @@ AdClaw ships with **121 built-in skills** across 10 categories. All skills are s
 | Browser | 6 | browser-use, agent-browser, camoufox, playwright-mcp, crawl4ai, sitefetch |
 | Social | 5 | Twitter, Instagram, TikTok, Reddit, social media strategy |
 | Agency | 5 | Growth hacker, analytics reporter, app store optimizer, feedback synthesizer, trend researcher |
-| Office | 4 | PDF, DOCX, PPTX, XLSX |
+| Office | 5 | PDF, DOCX, PPTX, XLSX, HTML decks |
 | Utility | 10 | Email, file reader, here.now publish, himalaya, cron, news, self-setup, skill-creator, GA4, GSC |
 | Platform | 5 | AgentHub worker, DingTalk channel, Google Ads API, browser_visible, marketing-mode |
 
@@ -158,7 +158,7 @@ AdClaw ships with **121 built-in skills** across 10 categories. All skills are s
 | `feedback-synthesizer` | Multi-channel feedback analysis into product insights |
 | `trend-researcher` | Market intelligence, emerging trends, competitive analysis |
 
-## Office & Document Skills (4)
+## Office & Document Skills (5)
 
 | Skill | Description |
 |-------|-------------|
@@ -166,6 +166,7 @@ AdClaw ships with **121 built-in skills** across 10 categories. All skills are s
 | `docx` | Create, read, edit Word documents |
 | `pptx` | Create and edit PowerPoint presentations |
 | `xlsx` | Create and manipulate Excel spreadsheets |
+| `html-presentation-deck` | Create browser-native HTML presentation decks |
 
 ## Utility Skills (10)
 

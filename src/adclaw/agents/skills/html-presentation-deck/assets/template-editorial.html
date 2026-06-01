@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replace with deck title</title>
+<style>
+  :root {
+    --paper: #f4efe7;
+    --ink: #111113;
+    --muted: #6f675d;
+    --accent: #9d4f35;
+    --accent-soft: #e7cabb;
+    --rule: rgba(17,17,19,.18);
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: "Aptos", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--ink); color: var(--ink); }
+  body { font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  .deck { width: 100vw; height: 100vh; display: flex; transition: transform .55s cubic-bezier(.22,.61,.36,1); }
+  .slide { width: 100vw; height: 100vh; flex: 0 0 100vw; padding: 6vh 7vw; position: relative; overflow: hidden; background: var(--paper); }
+  .slide.dark { background: var(--ink); color: var(--paper); }
+  .slide.accent { background: var(--accent); color: #fff8f1; }
+  .kicker { font: 700 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: 2.5vh; }
+  .dark .kicker, .accent .kicker { color: var(--accent-soft); }
+  h1, h2, h3, p { margin: 0; }
+  .hero-title { font-family: var(--serif); font-size: clamp(54px, 9vw, 132px); line-height: .9; letter-spacing: -.06em; max-width: 12ch; }
+  .headline { font-family: var(--serif); font-size: clamp(40px, 6.6vw, 92px); line-height: .96; letter-spacing: -.045em; max-width: 13ch; }
+  .statement { font-family: var(--serif); font-size: clamp(44px, 7.4vw, 112px); line-height: .94; letter-spacing: -.05em; max-width: 15ch; }
+  .lead { font-size: clamp(20px, 2.1vw, 34px); line-height: 1.25; color: var(--muted); max-width: 34ch; margin-top: 4vh; }
+  .dark .lead, .accent .lead { color: rgba(255,255,255,.72); }
+  .meta { position: absolute; left: 7vw; bottom: 5vh; font: 600 12px/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .dark .meta, .accent .meta { color: rgba(255,255,255,.58); }
+  .rule { height: 1px; background: currentColor; opacity: .18; margin: 4vh 0; }
+  .grid-2 { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 6vw; align-items: center; height: 100%; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vw; }
+  .card { border-top: 1px solid var(--rule); padding-top: 2vh; }
+  .card .number { font-family: var(--serif); font-size: clamp(48px, 7vw, 104px); line-height: .9; color: var(--accent); }
+  .card h3 { font-size: clamp(20px, 2vw, 30px); margin-top: 2vh; }
+  .card p { color: var(--muted); margin-top: 1.2vh; line-height: 1.45; }
+  .frame { width: 100%; aspect-ratio: 16 / 10; overflow: hidden; background: rgba(0,0,0,.05); border-radius: 10px; }
+  .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .quote { font-family: var(--serif); font-size: clamp(38px, 5.4vw, 82px); line-height: 1.02; letter-spacing: -.045em; max-width: 15ch; }
+  .caption { font: 600 12px/1.4 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .12em; margin-top: 2vh; }
+  .progress { position: fixed; left: 0; bottom: 0; height: 3px; background: var(--accent); width: 0; z-index: 5; transition: width .35s ease; }
+  .nav { position: fixed; right: 24px; bottom: 18px; z-index: 6; font: 600 12px/1 var(--mono); color: rgba(255,255,255,.7); mix-blend-mode: difference; }
+  .sr-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .index { position: fixed; inset: 0; z-index: 10; background: rgba(244,239,231,.96); color: var(--ink); display: none; overflow: auto; padding: 5vh 5vw; }
+  .index.open { display: block; }
+  .index-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .index button { min-height: 110px; text-align: left; border: 1px solid var(--rule); background: transparent; padding: 18px; font: 600 14px/1.3 var(--sans); cursor: pointer; }
+  @media (max-width: 760px) {
+    .slide { padding: 5vh 6vw; }
+    .grid-2 { grid-template-columns: 1fr; gap: 4vh; align-content: center; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .meta { left: 6vw; }
+  }
+</style>
+</head>
+<body>
+<main class="deck" id="deck">
+<!-- SLIDES_HERE -->
+</main>
+<div class="progress" id="progress"></div>
+<div class="nav" id="nav" aria-live="polite" aria-atomic="true">1 / 1</div>
+<div class="sr-status" id="slideStatus" role="status" aria-live="polite" aria-atomic="true"></div>
+<aside class="index" id="index" aria-label="Slide index"><div class="index-grid" id="indexGrid"></div></aside>
+<script>
+(() => {
+  const deck = document.getElementById('deck');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const nav = document.getElementById('nav');
+  const progress = document.getElementById('progress');
+  const index = document.getElementById('index');
+  const indexGrid = document.getElementById('indexGrid');
+  const slideStatus = document.getElementById('slideStatus');
+  let current = 0;
+  const indexButtons = [];
+  slides.forEach((slide, i) => {
+    if (!slide.id) slide.id = `slide-${i + 1}`;
+    slide.setAttribute('tabindex', '-1');
+  });
+
+  function titleFor(slide, i) {
+    const heading = slide.querySelector('h1,h2,.headline,.statement,.hero-title');
+    return heading ? heading.textContent.trim().slice(0, 90) : `Slide ${i + 1}`;
+  }
+  function focusCurrentSlide() {
+    try {
+      slides[current].focus({ preventScroll: true });
+    } catch (error) {
+      slides[current].focus();
+    }
+  }
+  function isEditableTarget(target) {
+    return target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+  }
+  function isAtScrollEnd(slide) {
+    return slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 1;
+  }
+  function renderIndex() {
+    indexGrid.innerHTML = '';
+    indexButtons.length = 0;
+    slides.forEach((slide, i) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = `${String(i + 1).padStart(2, '0')} — ${titleFor(slide, i)}`;
+      button.setAttribute('aria-controls', slide.id);
+      button.addEventListener('click', () => { index.classList.remove('open'); go(i, true); });
+      indexGrid.appendChild(button);
+      indexButtons.push(button);
+    });
+  }
+  function go(next, focusSlide = false) {
+    current = Math.max(0, Math.min(slides.length - 1, next));
+    deck.style.transform = `translateX(${-current * 100}vw)`;
+    nav.textContent = `${current + 1} / ${slides.length}`;
+    progress.style.width = slides.length <= 1 ? '100%' : `${(current / (slides.length - 1)) * 100}%`;
+    slideStatus.textContent = `${current + 1} of ${slides.length}: ${titleFor(slides[current], current)}`;
+    indexButtons.forEach((button, i) => button.setAttribute('aria-current', i === current ? 'true' : 'false'));
+    if (focusSlide) focusCurrentSlide();
+  }
+  document.addEventListener('keydown', (event) => {
+    if (isEditableTarget(event.target)) return;
+    if (event.key === 'Escape') {
+      index.classList.toggle('open');
+      if (!index.classList.contains('open')) focusCurrentSlide();
+    }
+    if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+      event.preventDefault();
+      go(current + 1, true);
+    }
+    if (event.key === ' ') {
+      if (isAtScrollEnd(slides[current])) {
+        event.preventDefault();
+        go(current + 1, true);
+      }
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+      event.preventDefault();
+      go(current - 1, true);
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      go(0, true);
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      go(slides.length - 1, true);
+    }
+  });
+  let touchStart = null;
+  document.addEventListener('touchstart', (event) => { touchStart = event.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', (event) => {
+    if (touchStart === null) return;
+    const delta = event.changedTouches[0].clientX - touchStart;
+    if (Math.abs(delta) > 45) go(current + (delta < 0 ? 1 : -1));
+    touchStart = null;
+  }, { passive: true });
+  renderIndex();
+  go(0);
+})();
+</script>
+</body>
+</html>

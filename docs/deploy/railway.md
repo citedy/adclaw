@@ -6,7 +6,7 @@ This guide walks through deploying AdClaw — an AI marketing agent team — on 
 
 ## What you get
 
-- **121 built-in skills** — SEO, ads, content, social, audio, music, graphics, video, browser automation
+- **122 built-in skills** — SEO, ads, content, social, audio, music, graphics, video, browser automation
 - **Multi-agent personas** — Growth Hacker, Social Media Strategist, Content Writer, Analytics Reporter, plus your own. Coordinated by a central Coordinator. Address with `@persona-name` in chat; untagged messages route to the Coordinator.
 - **24 LLM providers** with 150+ models — OpenAI, Anthropic, Gemini, DashScope, Alibaba, Xiaomi, Z.AI, xAI, Mistral, DeepSeek, Groq, Together, OpenRouter, Cerebras, MiniMax, Baseten, Moonshot, Inception, ModelScope, Ollama, llama.cpp, MLX, Azure OpenAI. Automatic failover between configured providers.
 - **Multi-channel chat** — Telegram, Discord, Feishu, DingTalk, QQ, or the built-in web console.
