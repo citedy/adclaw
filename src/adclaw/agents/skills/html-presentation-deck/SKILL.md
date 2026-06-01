@@ -7,6 +7,15 @@ description: "Use this skill when the user wants a browser-native HTML presentat
 
 Create polished, browser-native presentation decks as standalone HTML files. The output is a web presentation, not a PowerPoint file.
 
+## Skill directory (`<skill-dir>`)
+
+The folder that contains this `SKILL.md`:
+
+- **AdClaw repo:** `src/adclaw/agents/skills/html-presentation-deck`
+- **`@citedy/skills` install:** `.claude/skills/html-presentation-deck` or `.codex/skills/html-presentation-deck`
+
+Run validators with `python3 <skill-dir>/scripts/...` from the project root.
+
 ## Default Mode: Product Grid v2
 
 Use **Product Grid v2** by default for product, launch, sales, investor, demo,
@@ -45,8 +54,8 @@ the user explicitly asks for the legacy editorial system.
 5. Replace the `<title>` placeholder and `<!-- SLIDES_HERE -->`.
 6. Use the slide map to pick `PG01`-`PG14` layouts before writing HTML.
 7. Run both validators:
-   - `python3 src/adclaw/agents/skills/html-presentation-deck/scripts/validate_html_deck.py deck/index.html`
-   - `python3 src/adclaw/agents/skills/html-presentation-deck/scripts/validate_deck_quality.py deck/index.html`
+   - `python3 <skill-dir>/scripts/validate_html_deck.py deck/index.html`
+   - `python3 <skill-dir>/scripts/validate_deck_quality.py deck/index.html`
 8. Open in a browser and check desktop plus mobile for overflow and image legibility.
 
 ## When To Use
@@ -135,8 +144,7 @@ References: `references/themes.md`, `references/typography.md`, `references/layo
    - Do not crop away important UI text, numbers, or controls.
 
 8. Validate before presenting.
-   - From the repo root, run `python3 src/adclaw/agents/skills/html-presentation-deck/scripts/validate_html_deck.py deck/index.html`.
-   - When installed via `@citedy/skills`, use `<installed-skill-dir>/scripts/validate_html_deck.py` (usually `.claude/skills/html-presentation-deck` or `.codex/skills/html-presentation-deck`).
+   - From the project root, run `python3 <skill-dir>/scripts/validate_html_deck.py deck/index.html`.
    - Open the deck in a browser.
    - Check keyboard navigation, slide index, mobile scaling, broken images, and text overflow.
 

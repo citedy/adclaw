@@ -59,16 +59,20 @@ def _contrast(foreground: str, background: str) -> float:
 
 def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, str]]]:
     contexts: list[tuple[str, dict[str, str]]] = []
+    root_aggregate: dict[str, str] = {}
 
     for index, match in enumerate(ROOT_BLOCK_RE.finditer(html), start=1):
         variables = dict(CSS_VAR_RE.findall(match.group("body")))
         if variables:
+            root_aggregate.update(variables)
             contexts.append((f":root block {index}", variables))
 
     for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
         variables = dict(CSS_VAR_RE.findall(match.group("body")))
         if variables:
-            contexts.append((f"inline style {index}", variables))
+            merged = dict(root_aggregate)
+            merged.update(variables)
+            contexts.append((f"inline style {index}", merged))
 
     return contexts
 

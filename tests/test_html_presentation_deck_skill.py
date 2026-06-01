@@ -127,6 +127,41 @@ def test_html_deck_validator_handles_invalid_path_cleanly(tmp_path):
     assert "Invalid HTML deck path" in result.stderr
 
 
+def test_html_deck_validator_merges_inline_tokens_with_root_for_contrast(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --muted: #777777; --paper: #ffffff; --panel: #f5f5f5; --accent: #ff5500; }
+</style>
+</head>
+<body>
+<section class="slide" style="--panel:#151515">
+  <p class="muted">Low contrast body</p>
+</section>
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts" / "validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "muted text on panel" in result.stderr
+
+
 def test_product_grid_quality_validator_ignores_xmlns_urls(tmp_path):
     deck = tmp_path / "deck.html"
     deck.write_text(

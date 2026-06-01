@@ -12,7 +12,7 @@ Run this before handing off an HTML presentation deck.
 - Every local image has `alt` and `data-image-slot`.
 - Required image slots are present for screenshot layouts.
 - Dense slides are followed by PG02 Statement or PG10 Quote.
-- `python3 src/adclaw/agents/skills/html-presentation-deck/scripts/validate_deck_quality.py deck/index.html` passes.
+- `python3 <skill-dir>/scripts/validate_deck_quality.py deck/index.html` passes.
 
 ## Content
 
@@ -38,7 +38,7 @@ Run this before handing off an HTML presentation deck.
 
 ## Technical
 
-- From the repo root, `python3 src/adclaw/agents/skills/html-presentation-deck/scripts/validate_html_deck.py deck/index.html` passes.
+- From the project root, `python3 <skill-dir>/scripts/validate_html_deck.py deck/index.html` passes.
 - Browser opens the file with no console-breaking script error.
 - Arrow keys, touch swipe, and Escape index work.
 - Local images load from `images/`.
