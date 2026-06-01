@@ -377,34 +377,48 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
             merged.update(event_variables)
         contexts.append((f"conditional :root block {conditional_root_index}", merged))
 
-    theme_index = 1
-    for css in style_blocks:
+    theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor]]] = []
+    conditional_theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor]]] = []
+    for style_index, css in enumerate(style_blocks):
         for selector, body, start in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE):
             variables = _parse_css_variables(body)
             if variables:
                 label = selector.rstrip("{").strip()
                 theme_class = _theme_class_from_context(label) or label
-                theme_aggregate = theme_aggregates.setdefault(theme_class, dict(root_aggregate))
-                theme_aggregate.update(variables)
-                merged = dict(theme_aggregate)
-                contexts.append((f"slide theme rule {theme_index} ({label})", merged))
-                theme_index += 1
-
-    conditional_theme_index = 1
-    for css in style_blocks:
+                theme_rules.append(((style_index, start), label, theme_class, variables))
         for selector, body, start in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE, nested=True):
             variables = _parse_css_variables(body)
             if variables:
                 label = selector.rstrip("{").strip()
                 theme_class = _theme_class_from_context(label) or label
-                base = theme_aggregates.get(theme_class, root_aggregate)
-                merged = dict(base)
-                merged.update(variables)
-                contexts.append((
-                    f"conditional slide theme rule {conditional_theme_index} ({label})",
-                    merged,
-                ))
-                conditional_theme_index += 1
+                conditional_theme_rules.append(((style_index, start), label, theme_class, variables))
+
+    for theme_index, (_, label, theme_class, variables) in enumerate(
+        sorted(theme_rules),
+        start=1,
+    ):
+        theme_aggregate = theme_aggregates.setdefault(theme_class, dict(root_aggregate))
+        theme_aggregate.update(variables)
+        merged = dict(theme_aggregate)
+        contexts.append((f"slide theme rule {theme_index} ({label})", merged))
+
+    for conditional_theme_index, (conditional_order, label, theme_class, variables) in enumerate(
+        sorted(conditional_theme_rules),
+        start=1,
+    ):
+        merged = dict(root_aggregate)
+        cascade_events = [
+            (order, theme_variables)
+            for order, _, rule_theme_class, theme_variables in theme_rules
+            if rule_theme_class == theme_class
+        ]
+        cascade_events.append((conditional_order, variables))
+        for _, event_variables in sorted(cascade_events):
+            merged.update(event_variables)
+        contexts.append((
+            f"conditional slide theme rule {conditional_theme_index} ({label})",
+            merged,
+        ))
 
     for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
         variables = _parse_css_variables(match.group("double") or match.group("single") or "")

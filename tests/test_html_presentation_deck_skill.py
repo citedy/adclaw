@@ -702,6 +702,38 @@ def test_html_deck_slide_theme_validates_primary_text_contrast():
     assert any("primary text on theme background" in error for error in errors)
 
 
+def test_html_deck_conditional_theme_respects_later_base_cascade(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --accent: #165cff; --accent-on: #ffffff; --muted: #555555; --panel: #eeeeee; }
+@media (max-width: 760px) { .slide.theme-accent { --accent-on: #165cff; } }
+.slide.theme-accent { --accent-on: #ffffff; --muted: #ffffff; --panel: rgba(255,255,255,.08); }
+</style>
+</head>
+<body><section class="slide theme-accent"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_html_deck_slide_theme_validates_accent_component_contrast():
     mod = _load_validate_html_deck_module()
     html = """
