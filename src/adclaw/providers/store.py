@@ -666,6 +666,7 @@ def fetch_provider_usage(
         headers={
             "Accept": "application/json",
             "Authorization": f"Bearer {api_key}",
+            "User-Agent": "AdClaw/host-ai-usage",
         },
         method="GET",
     )
