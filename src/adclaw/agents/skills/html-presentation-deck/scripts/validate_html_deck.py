@@ -116,9 +116,44 @@ def _extract_braced_block_body(html: str, opener_end: int) -> str | None:
     return html[opener_end : cursor - 1]
 
 
+def _css_depth_at(html: str, position: int) -> int:
+    depth = 0
+    cursor = 0
+    quote: str | None = None
+    in_comment = False
+    while cursor < position:
+        char = html[cursor]
+        next_char = html[cursor + 1] if cursor + 1 < position else ""
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if char == "\\":
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}" and depth > 0:
+            depth -= 1
+        cursor += 1
+    return depth
+
+
 def _extract_rule_blocks(html: str, opener: re.Pattern[str]) -> list[tuple[str, str]]:
     blocks: list[tuple[str, str]] = []
     for match in opener.finditer(html):
+        if _css_depth_at(html, match.start()) != 0:
+            continue
         body = _extract_braced_block_body(html, match.end())
         if body is not None:
             blocks.append((match.group(0).strip(), body))
@@ -174,6 +209,8 @@ def _top_level_declarations(block: str) -> list[str]:
             if depth == 0:
                 current.append(char)
         elif char == "{":
+            if depth == 0:
+                current = []
             depth += 1
         elif char == "}":
             if depth > 0:

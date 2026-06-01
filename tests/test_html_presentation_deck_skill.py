@@ -345,19 +345,21 @@ def test_html_deck_root_parser_ignores_conditional_tokens_and_css_braces():
     mod = _load_validate_html_deck_module()
     html = """
 <style>
+@media (prefers-color-scheme: dark) { :root { --muted: #ffffff; --panel: #ffffff; } }
 :root {
   --paper: #ffffff;
   --muted: #555555;
-  --accent-text: #111111;
-  --panel: #eeeeee;
   --asset: url("image{1}.png");
   /* { ignored } */
   @media (min-width: 1px) { --muted: #ffffff; --panel: #ffffff; }
+  --accent-text: #111111;
+  --panel: #eeeeee;
 }
 </style>
 <section class="slide" style="--panel: 'decorative'; --muted: #222222"></section>
 """
     contexts = mod._css_variable_contexts(html)
+    assert len([name for name, _ in contexts if name.startswith(":root")]) == 1
     root_context = [vars for name, vars in contexts if name.startswith(":root")][0]
     assert root_context["--muted"].rgb == "#555555"
     assert root_context["--panel"].rgb == "#eeeeee"
