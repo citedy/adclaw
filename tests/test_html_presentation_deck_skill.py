@@ -510,6 +510,42 @@ def test_html_deck_validator_composites_translucent_panel_over_paper(tmp_path):
     assert result.returncode == 0, result.stderr
 
 
+def test_html_deck_validator_checks_muted_text_on_panel_2(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root {
+  --paper: #ffffff;
+  --panel: #eeeeee;
+  --panel-2: #555555;
+  --muted: #555555;
+}
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "muted text on panel-2" in result.stderr
+
+
 def test_html_deck_validator_clamps_numeric_rgba_alpha_above_one(tmp_path):
     deck = tmp_path / "deck.html"
     deck.write_text(

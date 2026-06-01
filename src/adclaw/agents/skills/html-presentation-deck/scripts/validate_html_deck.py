@@ -472,7 +472,7 @@ def _validate_slide_theme_contrast(
                     )
 
     muted = variables.get("--muted")
-    panel = variables.get("--panel")
+    panel_keys = [key for key in ("--panel", "--panel-2") if key in variables]
     if muted is not None:
         muted_on_slide = _resolved_hex(variables, "--muted", slide_bg)
         if muted_on_slide is not None:
@@ -484,8 +484,8 @@ def _validate_slide_theme_contrast(
                     f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
                 )
 
-    if muted is not None and panel is not None:
-        panel_hex = _resolved_hex(variables, "--panel", slide_bg)
+    for panel_key in panel_keys:
+        panel_hex = _resolved_hex(variables, panel_key, slide_bg)
         if panel_hex is not None:
             panel_surface = CssColor(panel_hex, 1.0)
             muted_on_panel = _resolved_hex(variables, "--muted", panel_surface)
@@ -494,7 +494,7 @@ def _validate_slide_theme_contrast(
                 if ratio < MIN_TEXT_CONTRAST:
                     errors.append(
                         f"{context_name}: muted text on panel contrast is {ratio:.2f}:1 "
-                        f"(--muted on --panel over {slide_bg_key}); minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+                        f"(--muted on {panel_key} over {slide_bg_key}); minimum is {MIN_TEXT_CONTRAST:.1f}:1."
                     )
 
     return errors
@@ -507,16 +507,19 @@ def _validate_contrast(context_name: str, variables: dict[str, CssColor]) -> lis
     checks = [
         ("--muted", "--paper", "muted text on paper"),
         ("--muted", "--panel", "muted text on panel"),
+        ("--muted", "--panel-2", "muted text on panel-2"),
         ("--accent-text", "--paper", "accent text on paper"),
         ("--accent-text", "--panel", "accent text on panel"),
+        ("--accent-text", "--panel-2", "accent text on panel-2"),
         ("--accent-on", "--accent", "text on accent background"),
     ]
     errors: list[str] = []
 
     for foreground_key, background_key, label in checks:
-        background_backdrop = (
-            _resolve_token(variables, "--paper", None) if background_key == "--panel" else None
-        )
+        background_backdrop = _resolve_token(variables, "--paper", None) if background_key in {
+            "--panel",
+            "--panel-2",
+        } else None
         background_token = _resolve_token(variables, background_key, background_backdrop)
         if background_token is None:
             continue
