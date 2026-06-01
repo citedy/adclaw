@@ -274,6 +274,14 @@ def _theme_class_from_context(context_name: str) -> str | None:
     return match.group(0).lower() if match else None
 
 
+def _theme_class_for_style_attr(html: str, style_attr_start: int) -> str | None:
+    tag_start = html.rfind("<", 0, style_attr_start)
+    tag_end = html.find(">", style_attr_start)
+    if tag_start == -1 or tag_end == -1:
+        return None
+    return _theme_class_from_context(html[tag_start : tag_end + 1])
+
+
 def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     contexts: list[tuple[str, dict[str, CssColor]]] = []
     root_aggregate: dict[str, CssColor] = {}
@@ -301,9 +309,12 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
         variables = _parse_css_variables(match.group("double") or match.group("single") or "")
         if variables:
-            merged = dict(root_aggregate)
+            theme_class = _theme_class_for_style_attr(html, match.start())
+            base = theme_aggregates.get(theme_class or "", root_aggregate)
+            merged = dict(base)
             merged.update(variables)
-            contexts.append((f"inline style {index}", merged))
+            suffix = f" (.{theme_class})" if theme_class else ""
+            contexts.append((f"inline style {index}{suffix}", merged))
 
     return contexts
 
@@ -351,7 +362,7 @@ def _validate_slide_theme_contrast(
 
 
 def _validate_contrast(context_name: str, variables: dict[str, CssColor]) -> list[str]:
-    if context_name.startswith("slide theme rule"):
+    if _theme_class_from_context(context_name) in SLIDE_THEME_BACKGROUNDS:
         return _validate_slide_theme_contrast(context_name, variables)
 
     checks = [
