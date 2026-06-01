@@ -746,7 +746,7 @@ def test_html_deck_conditional_root_cascades_sibling_rules(tmp_path):
 <head>
 <style>
 :root { --paper: #ffffff; --panel: #eeeeee; --muted: #555555; }
-@media (max-width: 760px) { :root { --paper: #000000; --panel: #000000; } }
+@media (max-width: 760px) { :root { --paper: #000000; --panel: #000000; --muted: #ffffff; } }
 @media (max-width: 760px) { :root { --muted: #333333; } }
 </style>
 </head>
@@ -770,6 +770,38 @@ def test_html_deck_conditional_root_cascades_sibling_rules(tmp_path):
     assert result.returncode == 1, result.stdout
     assert "conditional :root" in result.stderr
     assert "muted text on paper" in result.stderr
+
+
+def test_html_deck_conditional_root_does_not_merge_distinct_media_rules(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --paper: #ffffff; --panel: #eeeeee; --muted: #555555; }
+@media (max-width: 760px) { :root { --paper: #000000; --panel: #000000; --muted: #ffffff; } }
+@media (min-width: 1200px) { :root { --muted: #333333; } }
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_html_deck_slide_theme_validates_primary_text_contrast():
@@ -840,9 +872,9 @@ def test_html_deck_conditional_theme_cascades_sibling_rules(tmp_path):
 <html lang="en">
 <head>
 <style>
-:root { --accent: #165cff; --accent-on: #ffffff; --muted: #555555; --panel: #eeeeee; }
-.slide.theme-accent { --muted: #ffffff; --panel: rgba(255,255,255,.08); }
-@media (max-width: 760px) { .slide.theme-accent { --accent: #000000; } }
+:root { --accent: #ffffff; --accent-on: #333333; --accent-text: #333333; --muted: #555555; --panel: #eeeeee; }
+.slide.theme-accent { --muted: #555555; --panel: rgba(0,0,0,.05); }
+@media (max-width: 760px) { .slide.theme-accent { --accent: #000000; --accent-on: #ffffff; --muted: #ffffff; --panel: rgba(255,255,255,.08); } }
 @media (max-width: 760px) { .slide.theme-accent { --accent-on: #333333; } }
 </style>
 </head>
@@ -866,6 +898,39 @@ def test_html_deck_conditional_theme_cascades_sibling_rules(tmp_path):
     assert result.returncode == 1, result.stdout
     assert "conditional slide theme" in result.stderr
     assert "primary text on theme background" in result.stderr
+
+
+def test_html_deck_conditional_theme_does_not_merge_distinct_media_rules(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --accent: #ffffff; --accent-on: #333333; --accent-text: #333333; --muted: #555555; --panel: #eeeeee; }
+.slide.theme-accent { --muted: #555555; --panel: rgba(0,0,0,.05); }
+@media (max-width: 760px) { .slide.theme-accent { --accent: #000000; --accent-on: #ffffff; --muted: #ffffff; --panel: rgba(255,255,255,.08); } }
+@media (min-width: 1200px) { .slide.theme-accent { --accent-on: #333333; } }
+</style>
+</head>
+<body><section class="slide theme-accent"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_html_deck_slide_theme_validates_accent_component_contrast():

@@ -161,20 +161,59 @@ def _css_depth_at(html: str, position: int) -> int:
     return depth
 
 
+def _enclosing_block_header(css: str, position: int) -> str | None:
+    stack: list[int] = []
+    cursor = 0
+    quote: str | None = None
+    in_comment = False
+    while cursor < position:
+        char = css[cursor]
+        next_char = css[cursor + 1] if cursor + 1 < position else ""
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if char == "\\":
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "{":
+            stack.append(cursor)
+        elif char == "}" and stack:
+            stack.pop()
+        cursor += 1
+
+    if not stack:
+        return None
+    opener = stack[-1]
+    previous_boundary = max(css.rfind("{", 0, opener), css.rfind("}", 0, opener))
+    return css[previous_boundary + 1 : opener].strip()
+
+
 def _extract_rule_blocks(
     html: str,
     opener: re.Pattern[str],
     *,
     nested: bool = False,
-) -> list[tuple[str, str, int]]:
-    blocks: list[tuple[str, str, int]] = []
+) -> list[tuple[str, str, int, str | None]]:
+    blocks: list[tuple[str, str, int, str | None]] = []
     for match in opener.finditer(html):
         is_nested = _css_depth_at(html, match.start()) != 0
         if is_nested != nested:
             continue
         body = _extract_braced_block_body(html, match.end())
         if body is not None:
-            blocks.append((match.group(0).strip(), body, match.start()))
+            parent = _enclosing_block_header(html, match.start()) if nested else None
+            blocks.append((match.group(0).strip(), body, match.start(), parent))
     return blocks
 
 
@@ -349,23 +388,23 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     style_blocks = [match.group("body") for match in STYLE_BLOCK_RE.finditer(css_html)]
 
     root_rules: list[tuple[tuple[int, int], dict[str, CssColor]]] = []
-    conditional_root_rules: list[tuple[tuple[int, int], dict[str, CssColor]]] = []
+    conditional_root_rules: list[tuple[tuple[int, int], dict[str, CssColor], str | None]] = []
     for style_index, css in enumerate(style_blocks):
-        for selector, body, start in _extract_rule_blocks(css, ROOT_OPEN_RE):
+        for selector, body, start, parent in _extract_rule_blocks(css, ROOT_OPEN_RE):
             variables = _parse_css_variables(body)
             if variables:
                 root_rules.append(((style_index, start), variables))
-        for selector, body, start in _extract_rule_blocks(css, ROOT_OPEN_RE, nested=True):
+        for selector, body, start, parent in _extract_rule_blocks(css, ROOT_OPEN_RE, nested=True):
             variables = _parse_css_variables(body)
             if variables:
-                conditional_root_rules.append(((style_index, start), variables))
+                conditional_root_rules.append(((style_index, start), variables, parent))
 
     for _, variables in sorted(root_rules):
         root_aggregate.update(variables)
     if root_aggregate:
         contexts.append((f":root block {len(root_rules)}", dict(root_aggregate)))
 
-    for conditional_root_index, (conditional_order, variables) in enumerate(
+    for conditional_root_index, (conditional_order, variables, parent) in enumerate(
         sorted(conditional_root_rules),
         start=1,
     ):
@@ -374,26 +413,30 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
             (order, root_variables)
             for order, root_variables in root_rules
         ]
-        cascade_events.extend(conditional_root_rules)
+        cascade_events.extend(
+            (order, root_variables)
+            for order, root_variables, rule_parent in conditional_root_rules
+            if rule_parent == parent
+        )
         for _, event_variables in sorted(cascade_events):
             merged.update(event_variables)
         contexts.append((f"conditional :root block {conditional_root_index}", merged))
 
     theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor]]] = []
-    conditional_theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor]]] = []
+    conditional_theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor], str | None]] = []
     for style_index, css in enumerate(style_blocks):
-        for selector, body, start in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE):
+        for selector, body, start, parent in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE):
             variables = _parse_css_variables(body)
             if variables:
                 label = selector.rstrip("{").strip()
                 theme_class = _theme_class_from_context(label) or label
                 theme_rules.append(((style_index, start), label, theme_class, variables))
-        for selector, body, start in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE, nested=True):
+        for selector, body, start, parent in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE, nested=True):
             variables = _parse_css_variables(body)
             if variables:
                 label = selector.rstrip("{").strip()
                 theme_class = _theme_class_from_context(label) or label
-                conditional_theme_rules.append(((style_index, start), label, theme_class, variables))
+                conditional_theme_rules.append(((style_index, start), label, theme_class, variables, parent))
 
     for theme_index, (_, label, theme_class, variables) in enumerate(
         sorted(theme_rules),
@@ -404,7 +447,7 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
         merged = dict(theme_aggregate)
         contexts.append((f"slide theme rule {theme_index} ({label})", merged))
 
-    for conditional_theme_index, (conditional_order, label, theme_class, variables) in enumerate(
+    for conditional_theme_index, (conditional_order, label, theme_class, variables, parent) in enumerate(
         sorted(conditional_theme_rules),
         start=1,
     ):
@@ -416,8 +459,8 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
         ]
         cascade_events.extend(
             (order, theme_variables)
-            for order, _, rule_theme_class, theme_variables in conditional_theme_rules
-            if rule_theme_class == theme_class
+            for order, _, rule_theme_class, theme_variables, rule_parent in conditional_theme_rules
+            if rule_theme_class == theme_class and rule_parent == parent
         )
         for _, event_variables in sorted(cascade_events):
             merged.update(event_variables)
