@@ -95,7 +95,7 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, str]]]:
         variables = _parse_css_variables(body)
         if variables:
             root_aggregate.update(variables)
-            contexts.append((f":root block {index}", variables))
+            contexts.append((f":root block {index}", dict(root_aggregate)))
 
     for index, match in enumerate(STYLE_ATTR_RE.finditer(html), start=1):
         variables = _parse_css_variables(match.group("body"))

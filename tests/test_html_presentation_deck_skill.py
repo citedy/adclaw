@@ -194,14 +194,29 @@ def test_html_deck_css_variable_contexts_nested_root_and_shorthand_hex():
 """
     contexts = mod._css_variable_contexts(html)
     assert any(name.startswith(":root") for name, _ in contexts)
-    root_vars = next(vars for name, vars in contexts if name.startswith(":root"))
-    assert "--paper" in root_vars
+    root_contexts = [vars for name, vars in contexts if name.startswith(":root")]
+    assert len(root_contexts) == 1
+    assert "--paper" in root_contexts[0]
     inline_vars = next(vars for name, vars in contexts if name.startswith("inline"))
     assert inline_vars["--muted"] == "#888888"
     assert inline_vars["--panel"] == "#222222"
 
     shorthand_only = mod._parse_css_variables(":root { --paper: #fff; }")
     assert shorthand_only == {}
+
+
+def test_html_deck_root_contexts_use_cumulative_aggregate():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root { --muted: #595959; --paper: #ffffff; }
+:root { --panel: #f0f0f0; }
+</style>
+"""
+    contexts = mod._css_variable_contexts(html)
+    second_root = [vars for name, vars in contexts if name == ":root block 2"][0]
+    assert second_root["--muted"] == "#595959"
+    assert second_root["--panel"] == "#f0f0f0"
 
 
 def test_html_deck_validate_contrast_flags_accent_text_on_paper():
