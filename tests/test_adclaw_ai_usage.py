@@ -65,6 +65,7 @@ def test_fetch_provider_usage_uses_secret_and_usage_endpoint():
     def fake_urlopen(request, timeout=0):
         captured["url"] = request.full_url
         captured["authorization"] = request.get_header("Authorization")
+        captured["user_agent"] = request.get_header("User-agent")
         captured["timeout"] = timeout
         return _FakeResponse(
             {
@@ -85,6 +86,7 @@ def test_fetch_provider_usage_uses_secret_and_usage_endpoint():
     assert captured == {
         "url": "https://real.adclaw.app/api/host-ai/v1/usage",
         "authorization": "Bearer ach_real_secret",
+        "user_agent": "AdClaw/host-ai-usage",
         "timeout": 5.0,
     }
     assert payload["messages_remaining"] == 1483
