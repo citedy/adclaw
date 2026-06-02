@@ -426,12 +426,16 @@ def _theme_class_for_style_attr(html: str, style_attr_start: int) -> str | None:
     before_style = html[:style_attr_start]
     last_section_close = before_style.rfind("</section>")
     slide_open_re = re.compile(
-        r"<section\b[^>]*\bclass\s*=\s*(['\"])[^'\"]*\bslide\b[^'\"]*\btheme-[a-z0-9-]+\b[^'\"]*\1[^>]*>",
+        r"<section\b[^>]*\bclass\s*=\s*(['\"])(?P<class>[^'\"]*)\1[^>]*>",
         re.IGNORECASE | re.DOTALL,
     )
     for match in reversed(list(slide_open_re.finditer(before_style))):
-        if match.start() > last_section_close:
-            return _theme_class_from_context(match.group(0))
+        class_attr = match.group("class")
+        if (
+            match.start() > last_section_close
+            and re.search(r"\bslide\b", class_attr, re.IGNORECASE)
+        ):
+            return _theme_class_from_context(class_attr)
     return None
 
 
@@ -634,6 +638,7 @@ def _validate_contrast(context_name: str, variables: dict[str, CssColor]) -> lis
         return _validate_slide_theme_contrast(context_name, variables)
 
     checks = [
+        ("--ink", "--paper", "primary text on paper"),
         ("--muted", "--paper", "muted text on paper"),
         ("--muted", "--panel", "muted text on panel"),
         ("--muted", "--panel-2", "muted text on panel-2"),

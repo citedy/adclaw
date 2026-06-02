@@ -350,6 +350,37 @@ html, :root { --paper: #ffffff; --muted: #ffffff; --panel: #eeeeee; }
     assert "muted text on paper" in result.stderr
 
 
+def test_html_deck_validator_checks_primary_text_on_paper(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --ink: #ffffff; --paper: #ffffff; --muted: #555555; --panel: #eeeeee; }
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "primary text on paper" in result.stderr
+
+
 def test_html_deck_validator_rechecks_themes_under_conditional_root(tmp_path):
     deck = tmp_path / "deck.html"
     deck.write_text(
@@ -518,6 +549,24 @@ def test_html_deck_nested_inline_tokens_inherit_ancestor_slide_theme_context():
 .slide.theme-dark { --muted: rgba(255,255,255,.2); --panel: rgba(255,255,255,.08); }
 </style>
 <section class="slide theme-dark"><div class="panel" style="--panel: #f7f7f1"></div></section>
+"""
+    contexts = mod._css_variable_contexts(html)
+    inline = [c for n, c in contexts if n.startswith("inline")][0]
+    assert inline["--muted"].alpha == pytest.approx(0.2)
+    assert inline["--panel"].rgb == "#f7f7f1"
+
+    errors = mod._validate_contrast("inline style 1 (.theme-dark)", inline)
+    assert any("muted text on panel" in error for error in errors)
+
+
+def test_html_deck_nested_inline_tokens_accept_ancestor_class_order():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root { --ink: #000000; --paper: #ffffff; --muted: #111111; --panel: #ffffff; }
+.slide.theme-dark { --muted: rgba(255,255,255,.2); --panel: rgba(255,255,255,.08); }
+</style>
+<section class="theme-dark slide"><div class="panel" style="--panel: #f7f7f1"></div></section>
 """
     contexts = mod._css_variable_contexts(html)
     inline = [c for n, c in contexts if n.startswith("inline")][0]
