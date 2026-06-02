@@ -33,8 +33,6 @@ SLIDE_THEME_FOREGROUNDS = {
     "theme-accent": "--accent-on",
     "theme-yellow": "--ink",
 }
-ROOT_OPEN_RE = re.compile(r":root\s*\{", re.IGNORECASE)
-SLIDE_THEME_RULE_RE = re.compile(r"\.slide\.theme-[a-z0-9-]+\s*\{", re.IGNORECASE)
 STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
 HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 STYLE_ATTR_RE = re.compile(
@@ -128,39 +126,6 @@ def _extract_braced_block_body(html: str, opener_end: int) -> str | None:
     return html[opener_end : cursor - 1]
 
 
-def _css_depth_at(html: str, position: int) -> int:
-    depth = 0
-    cursor = 0
-    quote: str | None = None
-    in_comment = False
-    while cursor < position:
-        char = html[cursor]
-        next_char = html[cursor + 1] if cursor + 1 < position else ""
-        if in_comment:
-            if char == "*" and next_char == "/":
-                in_comment = False
-                cursor += 2
-                continue
-        elif quote:
-            if char == "\\":
-                cursor += 2
-                continue
-            if char == quote:
-                quote = None
-        elif char == "/" and next_char == "*":
-            in_comment = True
-            cursor += 2
-            continue
-        elif char in {'"', "'"}:
-            quote = char
-        elif char == "{":
-            depth += 1
-        elif char == "}" and depth > 0:
-            depth -= 1
-        cursor += 1
-    return depth
-
-
 def _enclosing_block_header(css: str, position: int) -> str | None:
     stack: list[int] = []
     cursor = 0
@@ -199,22 +164,111 @@ def _enclosing_block_header(css: str, position: int) -> str | None:
     return css[previous_boundary + 1 : opener].strip()
 
 
-def _extract_rule_blocks(
-    html: str,
-    opener: re.Pattern[str],
+def _block_header_before(css: str, opener_start: int) -> str:
+    previous_boundary = max(css.rfind("{", 0, opener_start), css.rfind("}", 0, opener_start))
+    return css[previous_boundary + 1 : opener_start].strip()
+
+
+def _extract_css_blocks(
+    css: str,
     *,
     nested: bool = False,
 ) -> list[tuple[str, str, int, str | None]]:
     blocks: list[tuple[str, str, int, str | None]] = []
-    for match in opener.finditer(html):
-        is_nested = _css_depth_at(html, match.start()) != 0
-        if is_nested != nested:
+    depth = 0
+    cursor = 0
+    quote: str | None = None
+    in_comment = False
+    while cursor < len(css):
+        char = css[cursor]
+        next_char = css[cursor + 1] if cursor + 1 < len(css) else ""
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if char == "\\":
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
             continue
-        body = _extract_braced_block_body(html, match.end())
-        if body is not None:
-            parent = _enclosing_block_header(html, match.start()) if nested else None
-            blocks.append((match.group(0).strip(), body, match.start(), parent))
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "{":
+            is_nested = depth != 0
+            if is_nested == nested:
+                body = _extract_braced_block_body(css, cursor + 1)
+                if body is not None:
+                    parent = _enclosing_block_header(css, cursor) if nested else None
+                    blocks.append((_block_header_before(css, cursor), body, cursor, parent))
+            depth += 1
+        elif char == "}" and depth > 0:
+            depth -= 1
+        cursor += 1
     return blocks
+
+
+def _split_selector_list(selector_text: str) -> list[str]:
+    selectors: list[str] = []
+    current: list[str] = []
+    depth = 0
+    quote: str | None = None
+    cursor = 0
+    while cursor < len(selector_text):
+        char = selector_text[cursor]
+        if quote:
+            current.append(char)
+            if char == "\\" and cursor + 1 < len(selector_text):
+                cursor += 1
+                current.append(selector_text[cursor])
+            elif char == quote:
+                quote = None
+        elif char in {'"', "'"}:
+            quote = char
+            current.append(char)
+        elif char in "([{":
+            depth += 1
+            current.append(char)
+        elif char in ")]}" and depth > 0:
+            depth -= 1
+            current.append(char)
+        elif char == "," and depth == 0:
+            selector = "".join(current).strip()
+            if selector:
+                selectors.append(selector)
+            current = []
+        else:
+            current.append(char)
+        cursor += 1
+
+    selector = "".join(current).strip()
+    if selector:
+        selectors.append(selector)
+    return selectors
+
+
+def _selector_matches_root(selector_text: str) -> bool:
+    return any(
+        re.search(r"(?<![A-Za-z0-9_-]):root(?![A-Za-z0-9_-])", selector, re.IGNORECASE)
+        for selector in _split_selector_list(selector_text)
+    )
+
+
+def _theme_selectors(selector_text: str) -> list[tuple[str, str]]:
+    themes: list[tuple[str, str]] = []
+    for selector in _split_selector_list(selector_text):
+        classes = [match.group(1).lower() for match in re.finditer(r"\.([A-Za-z0-9_-]+)", selector)]
+        if "slide" not in classes:
+            continue
+        for class_name in classes:
+            if re.fullmatch(r"theme-[a-z0-9-]+", class_name, re.IGNORECASE):
+                themes.append((selector, class_name.lower()))
+    return themes
 
 
 def _rgb_to_hex(red: str, green: str, blue: str) -> str:
@@ -254,9 +308,10 @@ def _top_level_declarations(block: str) -> list[str]:
                 cursor += 2
                 continue
         elif quote:
-            current.append(char)
+            if depth == 0:
+                current.append(char)
             if char == "\\":
-                if next_char:
+                if next_char and depth == 0:
                     current.append(next_char)
                 cursor += 2
                 continue
@@ -390,11 +445,15 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     root_rules: list[tuple[tuple[int, int], dict[str, CssColor]]] = []
     conditional_root_rules: list[tuple[tuple[int, int], dict[str, CssColor], str | None]] = []
     for style_index, css in enumerate(style_blocks):
-        for selector, body, start, parent in _extract_rule_blocks(css, ROOT_OPEN_RE):
+        for selector, body, start, parent in _extract_css_blocks(css):
+            if not _selector_matches_root(selector):
+                continue
             variables = _parse_css_variables(body)
             if variables:
                 root_rules.append(((style_index, start), variables))
-        for selector, body, start, parent in _extract_rule_blocks(css, ROOT_OPEN_RE, nested=True):
+        for selector, body, start, parent in _extract_css_blocks(css, nested=True):
+            if not _selector_matches_root(selector):
+                continue
             variables = _parse_css_variables(body)
             if variables:
                 conditional_root_rules.append(((style_index, start), variables, parent))
@@ -404,6 +463,7 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
     if root_aggregate:
         contexts.append((f":root block {len(root_rules)}", dict(root_aggregate)))
 
+    conditional_root_contexts: list[tuple[int, tuple[int, int], str | None, dict[str, CssColor]]] = []
     for conditional_root_index, (conditional_order, variables, parent) in enumerate(
         sorted(conditional_root_rules),
         start=1,
@@ -421,21 +481,22 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
         for _, event_variables in sorted(cascade_events):
             merged.update(event_variables)
         contexts.append((f"conditional :root block {conditional_root_index}", merged))
+        conditional_root_contexts.append((conditional_root_index, conditional_order, parent, merged))
 
     theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor]]] = []
     conditional_theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor], str | None]] = []
     for style_index, css in enumerate(style_blocks):
-        for selector, body, start, parent in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE):
+        for selector, body, start, parent in _extract_css_blocks(css):
             variables = _parse_css_variables(body)
-            if variables:
-                label = selector.rstrip("{").strip()
-                theme_class = _theme_class_from_context(label) or label
+            if not variables:
+                continue
+            for label, theme_class in _theme_selectors(selector):
                 theme_rules.append(((style_index, start), label, theme_class, variables))
-        for selector, body, start, parent in _extract_rule_blocks(css, SLIDE_THEME_RULE_RE, nested=True):
+        for selector, body, start, parent in _extract_css_blocks(css, nested=True):
             variables = _parse_css_variables(body)
-            if variables:
-                label = selector.rstrip("{").strip()
-                theme_class = _theme_class_from_context(label) or label
+            if not variables:
+                continue
+            for label, theme_class in _theme_selectors(selector):
                 conditional_theme_rules.append(((style_index, start), label, theme_class, variables, parent))
 
     for theme_index, (_, label, theme_class, variables) in enumerate(
@@ -447,11 +508,30 @@ def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
         merged = dict(theme_aggregate)
         contexts.append((f"slide theme rule {theme_index} ({label})", merged))
 
+    for conditional_root_index, _, parent, conditional_root in conditional_root_contexts:
+        for theme_class in sorted(theme_aggregates):
+            merged = dict(conditional_root)
+            for _, _, rule_theme_class, theme_variables in sorted(theme_rules):
+                if rule_theme_class == theme_class:
+                    merged.update(theme_variables)
+            contexts.append((
+                f"conditional :root theme block {conditional_root_index} (.{theme_class})",
+                merged,
+            ))
+
     for conditional_theme_index, (conditional_order, label, theme_class, variables, parent) in enumerate(
         sorted(conditional_theme_rules),
         start=1,
     ):
-        merged = dict(root_aggregate)
+        conditional_root = next(
+            (
+                context
+                for _, _, root_parent, context in reversed(conditional_root_contexts)
+                if root_parent == parent
+            ),
+            root_aggregate,
+        )
+        merged = dict(conditional_root)
         cascade_events = [
             (order, theme_variables)
             for order, _, rule_theme_class, theme_variables in theme_rules

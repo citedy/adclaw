@@ -253,6 +253,156 @@ def test_html_deck_parses_slide_theme_rule_tokens():
     assert any("muted text on panel" in error for error in errors)
 
 
+def test_html_deck_validator_checks_every_grouped_theme_selector(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --ink: #000000; --paper: #ffffff; --yellow: #fff200; --accent: #165cff; --accent-on: #ffffff; --muted: #777777; --panel: #ffffff; }
+.slide.theme-dark, .slide.theme-yellow { --muted: #000000; --panel: #000000; }
+</style>
+</head>
+<body><section class="slide theme-dark"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "theme-dark" in result.stderr
+    assert "muted text on slide background" in result.stderr
+
+
+def test_html_deck_validator_accepts_theme_class_before_slide_class(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --ink: #000000; --paper: #ffffff; --accent: #165cff; --accent-on: #ffffff; --muted: #777777; --panel: #ffffff; }
+.theme-dark.slide { --muted: #000000; --panel: #000000; }
+</style>
+</head>
+<body><section class="slide theme-dark"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "theme-dark" in result.stderr
+    assert "muted text on slide background" in result.stderr
+
+
+def test_html_deck_validator_handles_grouped_root_selector_lists(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+html, :root { --paper: #ffffff; --muted: #ffffff; --panel: #eeeeee; }
+</style>
+</head>
+<body><section class="slide"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "muted text on paper" in result.stderr
+
+
+def test_html_deck_validator_rechecks_themes_under_conditional_root(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --ink: #000000; --paper: #ffffff; --accent: #165cff; --accent-on: #ffffff; --muted: #777777; --panel: #ffffff; }
+.slide.theme-dark { --muted: #dddddd; --panel: #222222; }
+@media (max-width: 760px) { :root { --ink: #ffffff; } }
+</style>
+</head>
+<body><section class="slide theme-dark"></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1, result.stdout
+    assert "conditional :root theme" in result.stderr
+    assert "primary text on theme background" in result.stderr
+
+
+def test_html_deck_root_parser_ignores_nested_quoted_declarations():
+    mod = _load_validate_html_deck_module()
+    html = """
+<style>
+:root {
+  @media (min-width: 1px) { .note::before { content: "--muted: #ffffff;"; } }
+  --paper: #ffffff;
+  --muted: #555555;
+  --panel: #eeeeee;
+}
+</style>
+<section class="slide"></section>
+"""
+    root_context = [vars for name, vars in mod._css_variable_contexts(html) if name.startswith(":root")][0]
+    assert root_context["--paper"].rgb == "#ffffff"
+    assert root_context["--muted"].rgb == "#555555"
+    assert root_context["--panel"].rgb == "#eeeeee"
+
+
 def test_html_deck_parses_rgb_tokens_for_contrast(tmp_path):
     deck = tmp_path / "deck.html"
     deck.write_text(
