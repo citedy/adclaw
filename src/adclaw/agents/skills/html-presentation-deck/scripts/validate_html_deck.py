@@ -1,14 +1,51 @@
 #!/usr/bin/env python3
-"""Validate an HTML presentation deck."""
+"""Validate an HTML presentation deck.
+
+Contrast parsing supports 6-digit hex (#RRGGBB) and rgb/rgba() theme tokens.
+:root and .slide.theme-* rule blocks use brace counting so nested rules do not truncate.
+"""
 
 from __future__ import annotations
 
 import re
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 
 IDEOGRAPH_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+CSS_VAR_HEX_RE = re.compile(r"(--[A-Za-z0-9-]+)\s*:\s*(#[0-9A-Fa-f]{6})")
+CSS_VAR_RGB_RE = re.compile(
+    r"^(--[A-Za-z0-9-]+)\s*:\s*rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*([\d.]+%?))?\s*\)\s*$",
+    re.IGNORECASE,
+)
+CSS_VAR_REF_RE = re.compile(
+    r"^(--[A-Za-z0-9-]+)\s*:\s*var\(\s*(--[A-Za-z0-9-]+)\s*\)\s*$",
+    re.IGNORECASE,
+)
+SLIDE_THEME_BACKGROUNDS = {
+    "theme-dark": "--ink",
+    "theme-accent": "--accent",
+    "theme-yellow": "--yellow",
+}
+SLIDE_THEME_FOREGROUNDS = {
+    "theme-dark": "--paper",
+    "theme-accent": "--accent-on",
+    "theme-yellow": "--ink",
+}
+STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(?P<body>.*?)</style>", re.IGNORECASE | re.DOTALL)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+STYLE_ATTR_RE = re.compile(
+    r'\bstyle\s*=\s*"(?P<double>[^"]*--[A-Za-z0-9-]+[^"]*)"|\bstyle\s*=\s*\'(?P<single>[^\']*--[A-Za-z0-9-]+[^\']*)\'',
+    re.DOTALL,
+)
+MIN_TEXT_CONTRAST = 4.5
+
+
+class CssColor(NamedTuple):
+    rgb: str
+    alpha: float = 1.0
+    ref: str | None = None
 
 
 def _term(*codes: int) -> str:
@@ -32,9 +69,685 @@ BANNED_RE = re.compile(
 )
 
 
+def _hex_to_rgb(color: str) -> tuple[float, float, float]:
+    value = color.lstrip("#")
+    return tuple(int(value[i : i + 2], 16) / 255 for i in (0, 2, 4))
+
+
+def _linear_channel(channel: float) -> float:
+    # WCAG 2.x relative luminance piecewise transfer (threshold 0.03928).
+    if channel <= 0.03928:
+        return channel / 12.92
+    return ((channel + 0.055) / 1.055) ** 2.4
+
+
+def _luminance(color: str) -> float:
+    red, green, blue = (_linear_channel(channel) for channel in _hex_to_rgb(color))
+    return (0.2126 * red) + (0.7152 * green) + (0.0722 * blue)
+
+
+def _contrast(foreground: str, background: str) -> float:
+    high, low = sorted((_luminance(foreground), _luminance(background)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+def _extract_braced_block_body(html: str, opener_end: int) -> str | None:
+    depth = 1
+    cursor = opener_end
+    quote: str | None = None
+    in_comment = False
+    while cursor < len(html) and depth > 0:
+        char = html[cursor]
+        next_char = html[cursor + 1] if cursor + 1 < len(html) else ""
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if char == "\\":
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+        cursor += 1
+    if depth != 0:
+        return None
+    return html[opener_end : cursor - 1]
+
+
+def _enclosing_block_header(css: str, position: int) -> str | None:
+    stack: list[int] = []
+    cursor = 0
+    quote: str | None = None
+    in_comment = False
+    while cursor < position:
+        char = css[cursor]
+        next_char = css[cursor + 1] if cursor + 1 < position else ""
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if char == "\\":
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "{":
+            stack.append(cursor)
+        elif char == "}" and stack:
+            stack.pop()
+        cursor += 1
+
+    if not stack:
+        return None
+    opener = stack[-1]
+    previous_boundary = max(css.rfind("{", 0, opener), css.rfind("}", 0, opener))
+    return css[previous_boundary + 1 : opener].strip()
+
+
+def _block_header_before(css: str, opener_start: int) -> str:
+    previous_boundary = max(css.rfind("{", 0, opener_start), css.rfind("}", 0, opener_start))
+    return css[previous_boundary + 1 : opener_start].strip()
+
+
+def _extract_css_blocks(
+    css: str,
+    *,
+    nested: bool = False,
+) -> list[tuple[str, str, int, str | None]]:
+    blocks: list[tuple[str, str, int, str | None]] = []
+    depth = 0
+    cursor = 0
+    quote: str | None = None
+    in_comment = False
+    while cursor < len(css):
+        char = css[cursor]
+        next_char = css[cursor + 1] if cursor + 1 < len(css) else ""
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if char == "\\":
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+        elif char == "{":
+            is_nested = depth != 0
+            if is_nested == nested:
+                body = _extract_braced_block_body(css, cursor + 1)
+                if body is not None:
+                    parent = _enclosing_block_header(css, cursor) if nested else None
+                    blocks.append((_block_header_before(css, cursor), body, cursor, parent))
+            depth += 1
+        elif char == "}" and depth > 0:
+            depth -= 1
+        cursor += 1
+    return blocks
+
+
+def _split_selector_list(selector_text: str) -> list[str]:
+    selectors: list[str] = []
+    current: list[str] = []
+    depth = 0
+    quote: str | None = None
+    cursor = 0
+    while cursor < len(selector_text):
+        char = selector_text[cursor]
+        if quote:
+            current.append(char)
+            if char == "\\" and cursor + 1 < len(selector_text):
+                cursor += 1
+                current.append(selector_text[cursor])
+            elif char == quote:
+                quote = None
+        elif char in {'"', "'"}:
+            quote = char
+            current.append(char)
+        elif char in "([{":
+            depth += 1
+            current.append(char)
+        elif char in ")]}" and depth > 0:
+            depth -= 1
+            current.append(char)
+        elif char == "," and depth == 0:
+            selector = "".join(current).strip()
+            if selector:
+                selectors.append(selector)
+            current = []
+        else:
+            current.append(char)
+        cursor += 1
+
+    selector = "".join(current).strip()
+    if selector:
+        selectors.append(selector)
+    return selectors
+
+
+def _selector_subject(selector: str) -> str:
+    current: list[str] = []
+    subject = ""
+    depth = 0
+    quote: str | None = None
+    cursor = 0
+    while cursor < len(selector):
+        char = selector[cursor]
+        if quote:
+            current.append(char)
+            if char == "\\" and cursor + 1 < len(selector):
+                cursor += 1
+                current.append(selector[cursor])
+            elif char == quote:
+                quote = None
+        elif char in {'"', "'"}:
+            quote = char
+            current.append(char)
+        elif char in "([{":
+            depth += 1
+            current.append(char)
+        elif char in ")]}" and depth > 0:
+            depth -= 1
+            current.append(char)
+        elif depth == 0 and (char.isspace() or char in ">+~"):
+            part = "".join(current).strip()
+            if part:
+                subject = part
+            current = []
+        else:
+            current.append(char)
+        cursor += 1
+
+    part = "".join(current).strip()
+    return part or subject
+
+
+def _selector_matches_root(selector_text: str) -> bool:
+    return any(
+        re.search(
+            r"(?<![A-Za-z0-9_-]):root(?![A-Za-z0-9_-])",
+            _selector_subject(selector),
+            re.IGNORECASE,
+        )
+        for selector in _split_selector_list(selector_text)
+    )
+
+
+def _theme_selectors(selector_text: str) -> list[tuple[str, str]]:
+    themes: list[tuple[str, str]] = []
+    for selector in _split_selector_list(selector_text):
+        subject = _selector_subject(selector)
+        classes = [match.group(1).lower() for match in re.finditer(r"\.([A-Za-z0-9_-]+)", subject)]
+        if "slide" not in classes:
+            continue
+        for class_name in classes:
+            if re.fullmatch(r"theme-[a-z0-9-]+", class_name, re.IGNORECASE):
+                themes.append((selector, class_name.lower()))
+    return themes
+
+
+def _rgb_to_hex(red: str, green: str, blue: str) -> str:
+    return "#{:02x}{:02x}{:02x}".format(
+        min(255, int(red)),
+        min(255, int(green)),
+        min(255, int(blue)),
+    )
+
+
+def _parse_rgba_alpha(raw: str) -> float | None:
+    try:
+        if raw.endswith("%"):
+            return max(0.0, min(1.0, float(raw[:-1]) / 100.0))
+        value = float(raw)
+    except ValueError:
+        return None
+    if value > 1.0:
+        return 1.0
+    return max(0.0, value)
+
+
+def _top_level_declarations(block: str) -> list[str]:
+    declarations: list[str] = []
+    current: list[str] = []
+    depth = 0
+    cursor = 0
+    quote: str | None = None
+    in_comment = False
+    while cursor < len(block):
+        char = block[cursor]
+        next_char = block[cursor + 1] if cursor + 1 < len(block) else ""
+
+        if in_comment:
+            if char == "*" and next_char == "/":
+                in_comment = False
+                cursor += 2
+                continue
+        elif quote:
+            if depth == 0:
+                current.append(char)
+            if char == "\\":
+                if next_char and depth == 0:
+                    current.append(next_char)
+                cursor += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char == "/" and next_char == "*":
+            in_comment = True
+            cursor += 2
+            continue
+        elif char in {'"', "'"}:
+            quote = char
+            if depth == 0:
+                current.append(char)
+        elif char == "{":
+            if depth == 0:
+                current = []
+            depth += 1
+        elif char == "}":
+            if depth > 0:
+                depth -= 1
+        elif char == ";" and depth == 0:
+            declaration = "".join(current).strip()
+            if declaration:
+                declarations.append(declaration)
+            current = []
+        elif depth == 0:
+            current.append(char)
+
+        cursor += 1
+
+    declaration = "".join(current).strip()
+    if declaration:
+        declarations.append(declaration)
+    return declarations
+
+
+def _parse_css_variables(block: str) -> dict[str, CssColor]:
+    variables: dict[str, CssColor] = {}
+    for declaration in _top_level_declarations(block):
+        if match := CSS_VAR_HEX_RE.fullmatch(declaration):
+            variables[match.group(1)] = CssColor(match.group(2), 1.0)
+            continue
+        if match := CSS_VAR_RGB_RE.fullmatch(declaration):
+            alpha = _parse_rgba_alpha(match.group(5) or "1")
+            if alpha is None:
+                continue
+            variables[match.group(1)] = CssColor(
+                _rgb_to_hex(match.group(2), match.group(3), match.group(4)),
+                alpha,
+            )
+            continue
+        if match := CSS_VAR_REF_RE.fullmatch(declaration):
+            variables[match.group(1)] = CssColor("", 1.0, match.group(2))
+    return variables
+
+
+def _composite_over(foreground: CssColor, background: CssColor) -> str:
+    if foreground.alpha >= 1.0:
+        return foreground.rgb
+    red_f, green_f, blue_f = (
+        int(foreground.rgb[i : i + 2], 16) for i in (1, 3, 5)
+    )
+    red_b, green_b, blue_b = (int(background.rgb[i : i + 2], 16) for i in (1, 3, 5))
+    alpha = foreground.alpha
+    return _rgb_to_hex(
+        str(round(alpha * red_f + (1 - alpha) * red_b)),
+        str(round(alpha * green_f + (1 - alpha) * green_b)),
+        str(round(alpha * blue_f + (1 - alpha) * blue_b)),
+    )
+
+
+def _resolve_token(
+    variables: dict[str, CssColor],
+    key: str,
+    backdrop: CssColor | None,
+    seen: set[str] | None = None,
+) -> CssColor | None:
+    token = variables.get(key)
+    if token is None:
+        return None
+    if token.ref is not None:
+        seen = set() if seen is None else seen
+        if key in seen:
+            return None
+        seen.add(key)
+        return _resolve_token(variables, token.ref, backdrop, seen)
+    if not token.rgb:
+        return None
+    if backdrop is None or token.alpha >= 1.0:
+        return token
+    return CssColor(_composite_over(token, backdrop), 1.0)
+
+
+def _resolved_hex(variables: dict[str, CssColor], key: str, backdrop: CssColor | None) -> str | None:
+    token = _resolve_token(variables, key, backdrop)
+    return token.rgb if token else None
+
+
+def _theme_class_from_context(context_name: str) -> str | None:
+    match = re.search(r"theme-[a-z0-9-]+", context_name, re.IGNORECASE)
+    return match.group(0).lower() if match else None
+
+
+def _theme_class_for_style_attr(html: str, style_attr_start: int) -> str | None:
+    tag_start = html.rfind("<", 0, style_attr_start)
+    tag_end = html.find(">", style_attr_start)
+    if tag_start != -1 and tag_end != -1:
+        tag_theme = _theme_class_from_context(html[tag_start : tag_end + 1])
+        if tag_theme:
+            return tag_theme
+
+    before_style = html[:style_attr_start]
+    last_section_close = before_style.rfind("</section>")
+    slide_open_re = re.compile(
+        r"<section\b[^>]*\bclass\s*=\s*(['\"])(?P<class>[^'\"]*)\1[^>]*>",
+        re.IGNORECASE | re.DOTALL,
+    )
+    for match in reversed(list(slide_open_re.finditer(before_style))):
+        class_attr = match.group("class")
+        if (
+            match.start() > last_section_close
+            and re.search(r"\bslide\b", class_attr, re.IGNORECASE)
+        ):
+            return _theme_class_from_context(class_attr)
+    return None
+
+
+def _css_variable_contexts(html: str) -> list[tuple[str, dict[str, CssColor]]]:
+    contexts: list[tuple[str, dict[str, CssColor]]] = []
+    root_aggregate: dict[str, CssColor] = {}
+    theme_aggregates: dict[str, dict[str, CssColor]] = {}
+    css_html = HTML_COMMENT_RE.sub("", html)
+    style_blocks = [match.group("body") for match in STYLE_BLOCK_RE.finditer(css_html)]
+
+    root_rules: list[tuple[tuple[int, int], dict[str, CssColor]]] = []
+    conditional_root_rules: list[tuple[tuple[int, int], dict[str, CssColor], str | None]] = []
+    for style_index, css in enumerate(style_blocks):
+        for selector, body, start, parent in _extract_css_blocks(css):
+            if not _selector_matches_root(selector):
+                continue
+            variables = _parse_css_variables(body)
+            if variables:
+                root_rules.append(((style_index, start), variables))
+        for selector, body, start, parent in _extract_css_blocks(css, nested=True):
+            if not _selector_matches_root(selector):
+                continue
+            variables = _parse_css_variables(body)
+            if variables:
+                conditional_root_rules.append(((style_index, start), variables, parent))
+
+    for _, variables in sorted(root_rules):
+        root_aggregate.update(variables)
+    if root_aggregate:
+        contexts.append((f":root block {len(root_rules)}", dict(root_aggregate)))
+
+    conditional_root_contexts: list[tuple[int, tuple[int, int], str | None, dict[str, CssColor]]] = []
+    for conditional_root_index, (conditional_order, variables, parent) in enumerate(
+        sorted(conditional_root_rules),
+        start=1,
+    ):
+        merged: dict[str, CssColor] = {}
+        cascade_events = [
+            (order, root_variables)
+            for order, root_variables in root_rules
+        ]
+        cascade_events.extend(
+            (order, root_variables)
+            for order, root_variables, rule_parent in conditional_root_rules
+            if rule_parent == parent
+        )
+        for _, event_variables in sorted(cascade_events):
+            merged.update(event_variables)
+        contexts.append((f"conditional :root block {conditional_root_index}", merged))
+        conditional_root_contexts.append((conditional_root_index, conditional_order, parent, merged))
+
+    theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor]]] = []
+    conditional_theme_rules: list[tuple[tuple[int, int], str, str, dict[str, CssColor], str | None]] = []
+    for style_index, css in enumerate(style_blocks):
+        for selector, body, start, parent in _extract_css_blocks(css):
+            variables = _parse_css_variables(body)
+            if not variables:
+                continue
+            for label, theme_class in _theme_selectors(selector):
+                theme_rules.append(((style_index, start), label, theme_class, variables))
+        for selector, body, start, parent in _extract_css_blocks(css, nested=True):
+            variables = _parse_css_variables(body)
+            if not variables:
+                continue
+            for label, theme_class in _theme_selectors(selector):
+                conditional_theme_rules.append(((style_index, start), label, theme_class, variables, parent))
+
+    for theme_index, (_, label, theme_class, variables) in enumerate(
+        sorted(theme_rules),
+        start=1,
+    ):
+        theme_aggregate = theme_aggregates.setdefault(theme_class, dict(root_aggregate))
+        theme_aggregate.update(variables)
+        merged = dict(theme_aggregate)
+        contexts.append((f"slide theme rule {theme_index} ({label})", merged))
+
+    for conditional_root_index, _, parent, conditional_root in conditional_root_contexts:
+        for theme_class in sorted(theme_aggregates):
+            merged = dict(conditional_root)
+            for _, _, rule_theme_class, theme_variables in sorted(theme_rules):
+                if rule_theme_class == theme_class:
+                    merged.update(theme_variables)
+            contexts.append((
+                f"conditional :root theme block {conditional_root_index} (.{theme_class})",
+                merged,
+            ))
+
+    for conditional_theme_index, (conditional_order, label, theme_class, variables, parent) in enumerate(
+        sorted(conditional_theme_rules),
+        start=1,
+    ):
+        conditional_root = next(
+            (
+                context
+                for _, _, root_parent, context in reversed(conditional_root_contexts)
+                if root_parent == parent
+            ),
+            root_aggregate,
+        )
+        merged = dict(conditional_root)
+        cascade_events = [
+            (order, theme_variables)
+            for order, _, rule_theme_class, theme_variables in theme_rules
+            if rule_theme_class == theme_class
+        ]
+        cascade_events.extend(
+            (order, theme_variables)
+            for order, _, rule_theme_class, theme_variables, rule_parent in conditional_theme_rules
+            if rule_theme_class == theme_class and rule_parent == parent
+        )
+        for _, event_variables in sorted(cascade_events):
+            merged.update(event_variables)
+        contexts.append((
+            f"conditional slide theme rule {conditional_theme_index} ({label})",
+            merged,
+        ))
+
+    for index, match in enumerate(STYLE_ATTR_RE.finditer(css_html), start=1):
+        variables = _parse_css_variables(match.group("double") or match.group("single") or "")
+        if variables:
+            theme_class = _theme_class_for_style_attr(css_html, match.start())
+            base = theme_aggregates.get(theme_class or "", root_aggregate)
+            merged = dict(base)
+            merged.update(variables)
+            suffix = f" (.{theme_class})" if theme_class else ""
+            contexts.append((f"inline style {index}{suffix}", merged))
+
+    return contexts
+
+
+def _validate_slide_theme_contrast(
+    context_name: str,
+    variables: dict[str, CssColor],
+) -> list[str]:
+    theme_class = _theme_class_from_context(context_name)
+    slide_bg_key = SLIDE_THEME_BACKGROUNDS.get(theme_class or "")
+    slide_bg = _resolve_token(variables, slide_bg_key, None) if slide_bg_key else None
+    if slide_bg is None:
+        return []
+    if slide_bg.alpha < 1.0:
+        return [f"{context_name}: {slide_bg_key} background must be opaque for contrast validation."]
+
+    errors: list[str] = []
+    foreground_key = SLIDE_THEME_FOREGROUNDS.get(theme_class or "")
+    foreground = _resolved_hex(variables, foreground_key, slide_bg) if foreground_key else None
+    if foreground is not None:
+        ratio = _contrast(foreground, slide_bg.rgb)
+        if ratio < MIN_TEXT_CONTRAST:
+            errors.append(
+                f"{context_name}: primary text on theme background contrast is {ratio:.2f}:1 "
+                f"({foreground_key} {foreground} on {slide_bg_key} {slide_bg.rgb}); "
+                f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+            )
+
+    if not (slide_bg_key == "--accent" and foreground_key == "--accent-on"):
+        accent = _resolved_hex(variables, "--accent", slide_bg)
+        if accent is not None:
+            accent_surface = CssColor(accent, 1.0)
+            accent_on = _resolved_hex(variables, "--accent-on", accent_surface)
+            if accent_on is not None:
+                ratio = _contrast(accent_on, accent)
+                if ratio < MIN_TEXT_CONTRAST:
+                    errors.append(
+                        f"{context_name}: text on accent background contrast is {ratio:.2f}:1 "
+                        f"(--accent-on {accent_on} on --accent {accent}); "
+                        f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+                    )
+
+    muted = variables.get("--muted")
+    panel_keys = [key for key in ("--panel", "--panel-2") if key in variables]
+    if muted is not None:
+        muted_on_slide = _resolved_hex(variables, "--muted", slide_bg)
+        if muted_on_slide is not None:
+            ratio = _contrast(muted_on_slide, slide_bg.rgb)
+            if ratio < MIN_TEXT_CONTRAST:
+                errors.append(
+                    f"{context_name}: muted text on slide background contrast is {ratio:.2f}:1 "
+                    f"(--muted {muted_on_slide} on {slide_bg_key} {slide_bg.rgb}); "
+                    f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+                )
+
+    for panel_key in panel_keys:
+        panel_hex = _resolved_hex(variables, panel_key, slide_bg)
+        if panel_hex is not None:
+            panel_surface = CssColor(panel_hex, 1.0)
+            muted_on_panel = _resolved_hex(variables, "--muted", panel_surface)
+            if muted_on_panel is not None:
+                ratio = _contrast(muted_on_panel, panel_hex)
+                if ratio < MIN_TEXT_CONTRAST:
+                    errors.append(
+                        f"{context_name}: muted text on panel contrast is {ratio:.2f}:1 "
+                        f"(--muted on {panel_key} over {slide_bg_key}); minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+                    )
+
+    return errors
+
+
+def _validate_contrast(context_name: str, variables: dict[str, CssColor]) -> list[str]:
+    if _theme_class_from_context(context_name) in SLIDE_THEME_BACKGROUNDS:
+        return _validate_slide_theme_contrast(context_name, variables)
+
+    checks = [
+        ("--ink", "--paper", "primary text on paper"),
+        ("--muted", "--paper", "muted text on paper"),
+        ("--muted", "--panel", "muted text on panel"),
+        ("--muted", "--panel-2", "muted text on panel-2"),
+        ("--accent-text", "--paper", "accent text on paper"),
+        ("--accent-text", "--panel", "accent text on panel"),
+        ("--accent-text", "--panel-2", "accent text on panel-2"),
+        ("--accent-on", "--accent", "text on accent background"),
+    ]
+    errors: list[str] = []
+
+    for foreground_key, background_key, label in checks:
+        background_backdrop = _resolve_token(variables, "--paper", None) if background_key in {
+            "--panel",
+            "--panel-2",
+        } else None
+        background_token = _resolve_token(variables, background_key, background_backdrop)
+        if background_token is None:
+            continue
+        if background_token.alpha < 1.0:
+            errors.append(
+                f"{context_name}: {background_key} background must be opaque for contrast validation."
+            )
+            continue
+        background = background_token.rgb
+        foreground = _resolved_hex(variables, foreground_key, background_token)
+        if not foreground:
+            continue
+        ratio = _contrast(foreground, background)
+        if ratio < MIN_TEXT_CONTRAST:
+            errors.append(
+                f"{context_name}: {label} contrast is {ratio:.2f}:1 "
+                f"({foreground_key} {foreground} on {background_key} {background}); "
+                f"minimum is {MIN_TEXT_CONTRAST:.1f}:1."
+            )
+
+    if (
+        "--accent" in variables
+        and "--panel" in variables
+        and "--accent-text" not in variables
+    ):
+        panel = _resolve_token(variables, "--panel", None)
+        accent = _resolved_hex(variables, "--accent", panel)
+        if accent is not None and panel is not None and panel.alpha >= 1.0:
+            ratio = _contrast(accent, panel.rgb)
+            if ratio < MIN_TEXT_CONTRAST:
+                errors.append(
+                    f"{context_name}: --accent on --panel contrast is {ratio:.2f}:1. "
+                    "Add a contrast-safe --accent-text token for labels, metrics, and annotations."
+                )
+
+    if "--accent" in variables and "--paper" in variables and "--accent-text" not in variables:
+        paper = _resolve_token(variables, "--paper", None)
+        accent = _resolved_hex(variables, "--accent", paper)
+        if accent is not None and paper is not None and paper.alpha >= 1.0:
+            ratio = _contrast(accent, paper.rgb)
+            if ratio < MIN_TEXT_CONTRAST:
+                errors.append(
+                    f"{context_name}: --accent on --paper contrast is {ratio:.2f}:1. "
+                    "Add a contrast-safe --accent-text token for labels, metrics, and annotations."
+                )
+
+    return errors
+
+
 def main() -> int:
     if len(sys.argv) != 2:
-        print("Usage: python scripts/validate_html_deck.py <deck.html>", file=sys.stderr)
+        print("Usage: python3 scripts/validate_html_deck.py <deck.html>", file=sys.stderr)
         return 2
 
     path = Path(sys.argv[1])
@@ -74,6 +787,9 @@ def main() -> int:
         image_path = path.parent / src
         if not image_path.exists():
             errors.append(f"Missing local image: {src}")
+
+    for context_name, variables in _css_variable_contexts(html):
+        errors.extend(_validate_contrast(context_name, variables))
 
     if errors:
         print("HTML deck validation failed:", file=sys.stderr)

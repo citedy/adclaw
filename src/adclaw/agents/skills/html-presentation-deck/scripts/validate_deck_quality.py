@@ -271,7 +271,9 @@ def check_file(path: Path) -> tuple[list[str], list[str]]:
             local_src = src[2:] if src.startswith("./images/") else src
             if not alt.strip():
                 errors.append(f"Slide {idx}: image {image_num} is missing alt text.")
-            if local_src.startswith("images/"):
+            if not src.strip():
+                errors.append(f"Slide {idx}: image {image_num} has blank src.")
+            elif local_src.startswith("images/"):
                 if not (path.parent / local_src).exists():
                     errors.append(f"Slide {idx}: missing local image {local_src}.")
                 if not slot:

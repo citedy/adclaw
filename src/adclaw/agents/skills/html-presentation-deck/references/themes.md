@@ -40,7 +40,7 @@ Use for sustainability, operations, community, and long-horizon strategy.
 :root {
   --paper: #eef0e7;
   --ink: #142016;
-  --muted: #65715f;
+  --muted: #5f6a5a;
   --accent: #3f6b48;
   --accent-soft: #cddcc8;
 }
@@ -54,7 +54,7 @@ Use for retrospectives, case studies, culture, and historical narratives.
 :root {
   --paper: #efe1ca;
   --ink: #211811;
-  --muted: #7c6a55;
+  --muted: #725d47;
   --accent: #a65c31;
   --accent-soft: #e4c5a6;
 }
@@ -68,7 +68,7 @@ Use for creative reviews, design narratives, and calm executive decks.
 :root {
   --paper: #eee8dc;
   --ink: #1c1a18;
-  --muted: #746d63;
+  --muted: #6c655b;
   --accent: #8c765c;
   --accent-soft: #d8c9b7;
 }
@@ -88,6 +88,7 @@ Default for product, engineering, board, and operating model decks.
   --line: #d9d9d2;
   --panel: #f0f0eb;
   --accent: #0647ff;
+  --accent-text: #0647ff;
   --accent-on: #ffffff;
 }
 ```
@@ -104,6 +105,7 @@ Use when the deck needs sharp contrast without feeling corporate.
   --line: #ddddc8;
   --panel: #f1f1df;
   --accent: #e5ef2f;
+  --accent-text: #505700;
   --accent-on: #111111;
 }
 ```
@@ -120,6 +122,7 @@ Use for growth systems, automation, and live product operating loops.
   --line: #d7dfcf;
   --panel: #edf4e7;
   --accent: #78d64b;
+  --accent-text: #2f6a18;
   --accent-on: #0b1008;
 }
 ```
@@ -132,10 +135,11 @@ Use for launches, incident reviews, transformation plans, and urgent decisions.
 :root {
   --paper: #fbf8f2;
   --ink: #120f0b;
-  --muted: #72695f;
+  --muted: #6d6258;
   --line: #dfd6ca;
   --panel: #f1e8dc;
   --accent: #f46a23;
-  --accent-on: #ffffff;
+  --accent-text: #9f3d0f;
+  --accent-on: #120f0b;
 }
 ```
