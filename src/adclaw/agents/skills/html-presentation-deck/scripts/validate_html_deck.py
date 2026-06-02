@@ -252,9 +252,50 @@ def _split_selector_list(selector_text: str) -> list[str]:
     return selectors
 
 
+def _selector_subject(selector: str) -> str:
+    current: list[str] = []
+    subject = ""
+    depth = 0
+    quote: str | None = None
+    cursor = 0
+    while cursor < len(selector):
+        char = selector[cursor]
+        if quote:
+            current.append(char)
+            if char == "\\" and cursor + 1 < len(selector):
+                cursor += 1
+                current.append(selector[cursor])
+            elif char == quote:
+                quote = None
+        elif char in {'"', "'"}:
+            quote = char
+            current.append(char)
+        elif char in "([{":
+            depth += 1
+            current.append(char)
+        elif char in ")]}" and depth > 0:
+            depth -= 1
+            current.append(char)
+        elif depth == 0 and (char.isspace() or char in ">+~"):
+            part = "".join(current).strip()
+            if part:
+                subject = part
+            current = []
+        else:
+            current.append(char)
+        cursor += 1
+
+    part = "".join(current).strip()
+    return part or subject
+
+
 def _selector_matches_root(selector_text: str) -> bool:
     return any(
-        re.search(r"(?<![A-Za-z0-9_-]):root(?![A-Za-z0-9_-])", selector, re.IGNORECASE)
+        re.search(
+            r"(?<![A-Za-z0-9_-]):root(?![A-Za-z0-9_-])",
+            _selector_subject(selector),
+            re.IGNORECASE,
+        )
         for selector in _split_selector_list(selector_text)
     )
 
@@ -262,7 +303,8 @@ def _selector_matches_root(selector_text: str) -> bool:
 def _theme_selectors(selector_text: str) -> list[tuple[str, str]]:
     themes: list[tuple[str, str]] = []
     for selector in _split_selector_list(selector_text):
-        classes = [match.group(1).lower() for match in re.finditer(r"\.([A-Za-z0-9_-]+)", selector)]
+        subject = _selector_subject(selector)
+        classes = [match.group(1).lower() for match in re.finditer(r"\.([A-Za-z0-9_-]+)", subject)]
         if "slide" not in classes:
             continue
         for class_name in classes:

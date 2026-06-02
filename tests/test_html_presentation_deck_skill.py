@@ -350,6 +350,37 @@ html, :root { --paper: #ffffff; --muted: #ffffff; --panel: #eeeeee; }
     assert "muted text on paper" in result.stderr
 
 
+def test_html_deck_validator_ignores_descendant_root_scoped_tokens(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --ink: #111111; --paper: #ffffff; --muted: #555555; --panel: #eeeeee; }
+:root .component { --muted: #ffffff; }
+</style>
+</head>
+<body><section class="slide"><div class="component"></div></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_html_deck_validator_checks_primary_text_on_paper(tmp_path):
     deck = tmp_path / "deck.html"
     deck.write_text(
@@ -413,6 +444,38 @@ def test_html_deck_validator_rechecks_themes_under_conditional_root(tmp_path):
     assert result.returncode == 1, result.stdout
     assert "conditional :root theme" in result.stderr
     assert "primary text on theme background" in result.stderr
+
+
+def test_html_deck_validator_ignores_descendant_theme_component_tokens(tmp_path):
+    deck = tmp_path / "deck.html"
+    deck.write_text(
+        """<!doctype html>
+<html lang="en">
+<head>
+<style>
+:root { --ink: #000000; --paper: #ffffff; --accent: #165cff; --accent-on: #ffffff; --muted: #555555; --panel: #eeeeee; }
+.slide.theme-dark { --muted: #dddddd; --panel: #222222; }
+.slide.theme-dark .panel { --muted: #000000; --panel: #ffffff; }
+</style>
+</head>
+<body><section class="slide theme-dark"><div class="panel"></div></section></body>
+</html>
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SKILL_DIR / "scripts/validate_html_deck.py"),
+            str(deck),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_html_deck_root_parser_ignores_nested_quoted_declarations():
