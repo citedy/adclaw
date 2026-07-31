@@ -6,6 +6,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.0.33] - 2026-07-31
+
+### Changed
+- **Provider model catalog refresh**: built-in presets now include current frontier models across major providers.
+  - OpenAI / Azure OpenAI: GPT-5.6 Sol, Terra, Luna
+  - OpenRouter: GPT-5.6 family, Claude Fable/Opus/Sonnet 5, Gemini 3.6 Flash + 3.5 Flash-Lite, Grok 4.5, Kimi K3 / K2.7 Code, GLM 5.2
+  - Anthropic: Claude Fable 5, Opus 5, Sonnet 5
+  - xAI: Grok 4.5
+  - Gemini: 3.6 Flash, 3.5 Flash-Lite
+  - Moonshot: Kimi K3, K2.7 Code (+ highspeed)
+  - Z.AI: GLM-5.2
+  - Baseten: Kimi K3 / K2.7 Code, GLM-5.2 (+ Fast), DeepSeek V4 Pro, Nemotron 3 Ultra; removed deprecated DeepSeek V3.1 and MiniMax M2.5
+  - Alibaba Coding Plan / DashScope: Qwen3.7 Plus and Qwen3.6 Plus (Coding Plan still uses exact allowlist including kimi-k2.5 and MiniMax-M2.5)
+
 ## [1.0.9] - 2026-05-21
 
 ### Fixed

@@ -90,6 +90,7 @@ MODELSCOPE_MODELS: List[ModelInfo] = [
 ]
 
 DASHSCOPE_MODELS: List[ModelInfo] = [
+    ModelInfo(id="qwen3.7-plus", name="Qwen3.7 Plus"),
     ModelInfo(id="qwen3.6-plus", name="Qwen3.6 Plus"),
     ModelInfo(id="qwen3-coder-next", name="Qwen3 Coder Next"),
     ModelInfo(id="qwen3.5-plus", name="Qwen3.5 Plus"),
@@ -99,7 +100,11 @@ DASHSCOPE_MODELS: List[ModelInfo] = [
     ModelInfo(id="qwen3-coder-plus", name="Qwen3 Coder Plus"),
 ]
 
+# Coding Plan allowlist is exact-string (Alibaba docs, Jul 2026).
+# Recommended: qwen3.7-plus, qwen3.6-plus, kimi-k2.5, glm-5, MiniMax-M2.5.
 ALIYUN_CODINGPLAN_MODELS: List[ModelInfo] = [
+    ModelInfo(id="qwen3.7-plus", name="Qwen3.7 Plus"),
+    ModelInfo(id="qwen3.6-plus", name="Qwen3.6 Plus"),
     ModelInfo(id="qwen3.5-plus", name="Qwen3.5 Plus"),
     ModelInfo(id="glm-5", name="GLM-5"),
     ModelInfo(id="glm-4.7", name="GLM-4.7"),
@@ -111,6 +116,9 @@ ALIYUN_CODINGPLAN_MODELS: List[ModelInfo] = [
 ]
 
 OPENAI_MODELS: List[ModelInfo] = [
+    ModelInfo(id="gpt-5.6-sol", name="GPT-5.6 Sol"),
+    ModelInfo(id="gpt-5.6-terra", name="GPT-5.6 Terra"),
+    ModelInfo(id="gpt-5.6-luna", name="GPT-5.6 Luna"),
     ModelInfo(id="gpt-5.5", name="GPT-5.5"),
     ModelInfo(id="gpt-5.4", name="GPT-5.4"),
     ModelInfo(id="gpt-5.4-mini", name="GPT-5.4 Mini"),
@@ -122,7 +130,13 @@ OPENAI_MODELS: List[ModelInfo] = [
     ModelInfo(id="gpt-4o-mini", name="GPT-4o Mini"),
 ]
 
+# Azure deployment names are user-defined; presets match Foundry model catalog IDs.
 AZURE_OPENAI_MODELS: List[ModelInfo] = [
+    ModelInfo(id="gpt-5.6-sol", name="GPT-5.6 Sol"),
+    ModelInfo(id="gpt-5.6-terra", name="GPT-5.6 Terra"),
+    ModelInfo(id="gpt-5.6-luna", name="GPT-5.6 Luna"),
+    ModelInfo(id="gpt-5.5", name="GPT-5.5"),
+    ModelInfo(id="gpt-5.4", name="GPT-5.4"),
     ModelInfo(id="gpt-5-chat", name="GPT-5 Chat"),
     ModelInfo(id="gpt-5-mini", name="GPT-5 Mini"),
     ModelInfo(id="gpt-5-nano", name="GPT-5 Nano"),
@@ -133,7 +147,9 @@ AZURE_OPENAI_MODELS: List[ModelInfo] = [
     ModelInfo(id="gpt-4o-mini", name="GPT-4o Mini"),
 ]
 
+# International Coding endpoint — same plan allowlist as China Coding Plan.
 ALIYUN_INTL_MODELS: List[ModelInfo] = [
+    ModelInfo(id="qwen3.7-plus", name="Qwen3.7 Plus"),
     ModelInfo(id="qwen3.6-plus", name="Qwen3.6 Plus"),
     ModelInfo(id="qwen3-coder-next", name="Qwen3 Coder Next"),
     ModelInfo(id="qwen3.5-plus", name="Qwen3.5 Plus"),
@@ -148,17 +164,9 @@ ALIYUN_INTL_MODELS: List[ModelInfo] = [
 
 OPENROUTER_MODELS: List[ModelInfo] = [
     ModelInfo(id="openrouter/auto", name="Auto (OpenRouter picks)"),
-    ModelInfo(id="google/gemini-3.5-flash", name="Gemini 3.5 Flash"),
-    ModelInfo(id="google/gemini-3.1-pro-preview", name="Gemini 3.1 Pro Preview"),
-    ModelInfo(id="minimax/minimax-m2.5", name="MiniMax M2.5"),
-    ModelInfo(id="moonshotai/kimi-k2.6", name="Kimi K2.6"),
-    ModelInfo(id="anthropic/claude-opus-4.8", name="Claude Opus 4.8"),
-    ModelInfo(id="anthropic/claude-opus-4.7", name="Claude Opus 4.7"),
-    ModelInfo(id="anthropic/claude-sonnet-4.6", name="Claude Sonnet 4.6"),
-    ModelInfo(id="anthropic/claude-haiku-4.5", name="Claude Haiku 4.5"),
-    ModelInfo(id="deepseek/deepseek-v4-pro", name="DeepSeek V4 Pro"),
-    ModelInfo(id="deepseek/deepseek-v4-flash", name="DeepSeek V4 Flash"),
-    ModelInfo(id="qwen/qwen3-32b", name="Qwen3 32B"),
+    ModelInfo(id="openai/gpt-5.6-sol", name="GPT-5.6 Sol"),
+    ModelInfo(id="openai/gpt-5.6-terra", name="GPT-5.6 Terra"),
+    ModelInfo(id="openai/gpt-5.6-luna", name="GPT-5.6 Luna"),
     ModelInfo(id="openai/gpt-5.5", name="GPT-5.5"),
     ModelInfo(id="openai/gpt-5.5-pro", name="GPT-5.5 Pro"),
     ModelInfo(id="openai/gpt-5.4", name="GPT-5.4"),
@@ -167,9 +175,32 @@ OPENROUTER_MODELS: List[ModelInfo] = [
     ModelInfo(id="openai/gpt-5.3-codex", name="GPT-5.3 Codex"),
     ModelInfo(id="openai/gpt-4o-mini", name="GPT-4o Mini"),
     ModelInfo(id="openai/gpt-oss-120b", name="GPT-OSS 120B"),
+    ModelInfo(id="anthropic/claude-fable-5", name="Claude Fable 5"),
+    ModelInfo(id="anthropic/claude-opus-5", name="Claude Opus 5"),
+    ModelInfo(id="anthropic/claude-sonnet-5", name="Claude Sonnet 5"),
+    ModelInfo(id="anthropic/claude-opus-4.8", name="Claude Opus 4.8"),
+    ModelInfo(id="anthropic/claude-opus-4.7", name="Claude Opus 4.7"),
+    ModelInfo(id="anthropic/claude-sonnet-4.6", name="Claude Sonnet 4.6"),
+    ModelInfo(id="anthropic/claude-haiku-4.5", name="Claude Haiku 4.5"),
+    ModelInfo(id="google/gemini-3.6-flash", name="Gemini 3.6 Flash"),
+    ModelInfo(id="google/gemini-3.5-flash", name="Gemini 3.5 Flash"),
+    ModelInfo(id="google/gemini-3.5-flash-lite", name="Gemini 3.5 Flash-Lite"),
+    ModelInfo(id="google/gemini-3.1-pro-preview", name="Gemini 3.1 Pro Preview"),
+    ModelInfo(id="x-ai/grok-4.5", name="Grok 4.5"),
+    ModelInfo(id="moonshotai/kimi-k3", name="Kimi K3"),
+    ModelInfo(id="moonshotai/kimi-k2.7-code", name="Kimi K2.7 Code"),
+    ModelInfo(id="moonshotai/kimi-k2.6", name="Kimi K2.6"),
+    ModelInfo(id="z-ai/glm-5.2", name="GLM 5.2"),
+    ModelInfo(id="minimax/minimax-m2.5", name="MiniMax M2.5"),
+    ModelInfo(id="deepseek/deepseek-v4-pro", name="DeepSeek V4 Pro"),
+    ModelInfo(id="deepseek/deepseek-v4-flash", name="DeepSeek V4 Flash"),
+    ModelInfo(id="qwen/qwen3-32b", name="Qwen3 32B"),
 ]
 
 ANTHROPIC_MODELS: List[ModelInfo] = [
+    ModelInfo(id="claude-fable-5", name="Claude Fable 5"),
+    ModelInfo(id="claude-opus-5", name="Claude Opus 5"),
+    ModelInfo(id="claude-sonnet-5", name="Claude Sonnet 5"),
     ModelInfo(id="claude-opus-4-8", name="Claude Opus 4.8"),
     ModelInfo(id="claude-opus-4-7", name="Claude Opus 4.7"),
     ModelInfo(id="claude-sonnet-4-6", name="Claude Sonnet 4.6"),
@@ -180,13 +211,16 @@ ANTHROPIC_MODELS: List[ModelInfo] = [
 ]
 
 XAI_MODELS: List[ModelInfo] = [
+    ModelInfo(id="grok-4.5", name="Grok 4.5"),
     ModelInfo(id="grok-4.3", name="Grok 4.3"),
     ModelInfo(id="grok-4.20-reasoning", name="Grok 4.20 Reasoning"),
     ModelInfo(id="grok-4.20-non-reasoning", name="Grok 4.20 Non-Reasoning"),
 ]
 
 GEMINI_MODELS: List[ModelInfo] = [
+    ModelInfo(id="gemini-3.6-flash", name="Gemini 3.6 Flash"),
     ModelInfo(id="gemini-3.5-flash", name="Gemini 3.5 Flash"),
+    ModelInfo(id="gemini-3.5-flash-lite", name="Gemini 3.5 Flash-Lite"),
     ModelInfo(id="gemini-3.1-pro-preview", name="Gemini 3.1 Pro Preview"),
     ModelInfo(
         id="gemini-3.1-pro-preview-customtools",
@@ -231,16 +265,20 @@ MISTRAL_MODELS: List[ModelInfo] = [
     ModelInfo(id="mistral-small-latest", name="Mistral Small"),
 ]
 
+# Model API IDs from https://www.baseten.co/products/model-apis/ (Jul 2026).
+# DeepSeek v3.1 and MiniMax M2.5 were deprecated 2026-06-24.
 BASETEN_MODELS: List[ModelInfo] = [
+    ModelInfo(id="moonshotai/Kimi-K3", name="Kimi K3"),
+    ModelInfo(id="moonshotai/Kimi-K2.7-Code", name="Kimi K2.7 Code"),
+    ModelInfo(id="zai-org/GLM-5.2", name="GLM 5.2"),
+    ModelInfo(id="zai-org/GLM-5.2-Fast", name="GLM 5.2 Fast"),
     ModelInfo(id="zai-org/GLM-5", name="GLM 5"),
-    ModelInfo(id="zai-org/GLM-4.7", name="GLM 4.7"),
-    ModelInfo(id="zai-org/GLM-4.6", name="GLM 4.6"),
-    ModelInfo(id="deepseek-ai/DeepSeek-V3.1", name="DeepSeek V3.1"),
-    ModelInfo(id="deepseek-ai/DeepSeek-V3-0324", name="DeepSeek V3 0324"),
-    ModelInfo(id="openai/gpt-oss-120b", name="OpenAI GPT 120B"),
-    ModelInfo(id="nvidia/Nemotron-120B-A12B", name="Nemotron Super"),
-    ModelInfo(id="moonshotai/Kimi-K2.5", name="Kimi K2.5"),
-    ModelInfo(id="MiniMaxAI/MiniMax-M2.5", name="MiniMax M2.5"),
+    ModelInfo(id="deepseek-v4-pro", name="DeepSeek V4 Pro"),
+    ModelInfo(id="openai/gpt-oss-120b", name="OpenAI GPT OSS 120B"),
+    ModelInfo(
+        id="nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
+        name="Nemotron 3 Ultra",
+    ),
 ]
 
 MINIMAX_MODELS: List[ModelInfo] = [
@@ -255,6 +293,9 @@ INCEPTION_MODELS: List[ModelInfo] = [
 ]
 
 MOONSHOT_MODELS: List[ModelInfo] = [
+    ModelInfo(id="kimi-k3", name="Kimi K3"),
+    ModelInfo(id="kimi-k2.7-code", name="Kimi K2.7 Code"),
+    ModelInfo(id="kimi-k2.7-code-highspeed", name="Kimi K2.7 Code Highspeed"),
     ModelInfo(id="kimi-k2.6", name="Kimi K2.6"),
 ]
 
@@ -440,6 +481,7 @@ PROVIDER_MOONSHOT = ProviderDefinition(
 )
 
 ZAI_MODELS: List[ModelInfo] = [
+    ModelInfo(id="glm-5.2", name="GLM-5.2"),
     ModelInfo(id="glm-5.1", name="GLM-5.1"),
     ModelInfo(id="glm-5v-turbo", name="GLM-5V Turbo"),
     ModelInfo(id="glm-5", name="GLM-5"),
